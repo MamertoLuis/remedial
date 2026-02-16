@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Account Details{% endblock %}
+
+{% block content %}
+    <h1>Account Details</h1>
+    <table class="table">
+        <tbody>
+            <tr>
+                <th>Account ID</th>
+                <td>{{ account.account_id }}</td>
+            </tr>
+            <tr>
+                <th>Borrower ID</th>
+                <td><a href="{% url 'borrower_detail' account.borrower.borrower_id %}">{{ account.borrower.borrower_id }}</a></td>
+            </tr>
+            <tr>
+                <th>Borrower Name</th>
+                <td>{{ account.borrower }}</td>
+            </tr>
+            <tr>
+                <th>Loan Type</th>
+                <td>{{ account.loan_type }}</td>
+            </tr>
+            <tr>
+                <th>Booking Date</th>
+                <td>{{ account.booking_date }}</td>
+            </tr>
+            <tr>
+                <th>Original Principal</th>
+                <td>{{ account.original_principal }}</td>
+            </tr>
+            <tr>
+                <th>Interest Rate</th>
+                <td>{{ account.interest_rate }}</td>
+            </tr>
+            <tr>
+                <th>Maturity Date</th>
+                <td>{{ account.maturity_date }}</td>
+            </tr>
+            <tr>
+                <th>Branch Code</th>
+                <td>{{ account.branch_code }}</td>
+            </tr>
+            <tr>
+                <th>Account Officer</th>
+                <td>{{ account.account_officer }}</td>
+            </tr>
+            <tr>
+                <th>Security Type</th>
+                <td>{{ account.security_type }}</td>
+            </tr>
+            <tr>
+                <th>Current Status</th>
+                <td>{{ account.current_status }}</td>
+            </tr>
+            <tr>
+                <th>Days Past Due</th>
+                <td>{{ account.days_past_due }}</td>
+            </tr>
+            <tr>
+                <th>NPL Date</th>
+                <td>{{ account.npl_date }}</td>
+            </tr>
+        </tbody>
+    </table>
+    <a href="{% url 'account_list' %}" class="btn btn-primary">Back to Account List</a>
+    <a href="{% url 'update_account' account.account_id %}" class="btn btn-secondary">Update</a>
+{% endblock %}

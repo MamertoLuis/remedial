@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Borrower Details{% endblock %}
+
+{% block content %}
+    <h1>Borrower Details</h1>
+    
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5>Personal Information</h5>
+        </div>
+        <div class="card-body">
+            <table class="table">
+                <tbody>
+                    <tr>
+                        <th>Borrower ID</th>
+                        <td>{{ borrower.borrower_id }}</td>
+                    </tr>
+                    <tr>
+                        <th>First Name</th>
+                        <td>{{ borrower.first_name }}</td>
+                    </tr>
+                    <tr>
+                        <th>Last Name</th>
+                        <td>{{ borrower.last_name }}</td>
+                    </tr>
+                    <tr>
+                        <th>Email</th>
+                        <td>{{ borrower.email }}</td>
+                    </tr>
+                    <tr>
+                        <th>Phone Number</th>
+                        <td>{{ borrower.phone_number }}</td>
+                    </tr>
+                    <tr>
+                        <th>Address</th>
+                        <td>{{ borrower.address }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5>Associated Accounts</h5>
+        </div>
+        <div class="card-body">
+            {% if accounts %}
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Account ID</th>
+                            <th>Loan Type</th>
+                            <th>booking Date</th>
+                            <th>Status</th>
+                            <th>Principal Amount</th>
+                            <th>Interest Rate</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for account in accounts %}
+                            <tr>
+                                <td>{{ account.account_id }}</td>
+                                <td>{{ account.loan_type }}</td>
+                                <td>{{ account.booking_date }}</td>
+                                <td>
+                                    <span class="badge {% if account.current_status == 'Performing' %}bg-success{% elif account.current_status == 'Past Due' %}bg-warning{% else %}bg-danger{% endif %}">
+                                        {{ account.current_status }}
+                                    </span>
+                                </td>
+                                <td>{{ account.original_principal }}</td>
+                                <td>{{ account.interest_rate }}%</td>
+                                <td>
+                                    <a href="{% url 'account_detail' account.account_id %}" class="btn btn-sm btn-primary">View</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p>No accounts associated with this borrower.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <a href="{% url 'account_list' %}" class="btn btn-secondary">Back to Accounts</a>
+    </div>
+{% endblock %}
