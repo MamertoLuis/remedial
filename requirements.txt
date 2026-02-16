@@ -1,0 +1,11 @@
+django-crispy-forms
+crispy-bootstrap5
+django-debug-toolbar
+django-filter
+whitenoise
+django-allauth
+celery
+django-extensions
+psycopg[binary]
+python-dotenv
+django-tables2
