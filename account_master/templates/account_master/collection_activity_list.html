@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% load render_table from django_tables2 %}
+
+{% block title %}Collection Activities for {{ account.loan_id }}{% endblock %}
+
+{% block content %}
+    <h1>Collection Activities</h1>
+    <div class="card mb-3">
+        <div class="card-header">
+            Account Summary
+        </div>
+        <div class="card-body">
+            <h5 class="card-title"><a href="{% url 'account_detail' account.loan_id %}">Account ID: {{ account.loan_id }}</a></h5>
+            <p class="card-text"><strong>Borrower:</strong> <a href="{% url 'borrower_detail' account.borrower.borrower_id %}">{{ account.borrower }}</a></p>
+        </div>
+    </div>
+    <a href="{% url 'account_detail' account.loan_id %}" class="btn btn-secondary mb-3">Back to Account Details</a>
+    <a href="{% url 'create_collection_activity' account.loan_id %}" class="btn btn-primary mb-3">Add New Activity</a>
+    {% render_table table %}
+{% endblock %}

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load render_table from django_tables2 %}
 
 {% block title %}Borrower Details{% endblock %}
 
@@ -17,24 +18,36 @@
                         <td>{{ borrower.borrower_id }}</td>
                     </tr>
                     <tr>
-                        <th>First Name</th>
-                        <td>{{ borrower.first_name }}</td>
+                        <th>Full Name</th>
+                        <td>{{ borrower.full_name }}</td>
                     </tr>
                     <tr>
-                        <th>Last Name</th>
-                        <td>{{ borrower.last_name }}</td>
+                        <th>Borrower Type</th>
+                        <td>{{ borrower.get_borrower_type_display }}</td>
+                    </tr>
+                    <tr>
+                        <th>TIN</th>
+                        <td>{{ borrower.tin }}</td>
+                    </tr>
+                    <tr>
+                        <th>Birth/Incorporation Date</th>
+                        <td>{{ borrower.birth_or_incorp_date }}</td>
+                    </tr>
+                    <tr>
+                        <th>Primary Address</th>
+                        <td>{{ borrower.primary_address }}</td>
+                    </tr>
+                    <tr>
+                        <th>Mobile</th>
+                        <td>{{ borrower.mobile }}</td>
                     </tr>
                     <tr>
                         <th>Email</th>
                         <td>{{ borrower.email }}</td>
                     </tr>
                     <tr>
-                        <th>Phone Number</th>
-                        <td>{{ borrower.phone_number }}</td>
-                    </tr>
-                    <tr>
-                        <th>Address</th>
-                        <td>{{ borrower.address }}</td>
+                        <th>Risk Rating</th>
+                        <td>{{ borrower.risk_rating }}</td>
                     </tr>
                 </tbody>
             </table>
@@ -46,46 +59,12 @@
             <h5>Associated Accounts</h5>
         </div>
         <div class="card-body">
-            {% if accounts %}
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>Account ID</th>
-                            <th>Loan Type</th>
-                            <th>booking Date</th>
-                            <th>Status</th>
-                            <th>Principal Amount</th>
-                            <th>Interest Rate</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for account in accounts %}
-                            <tr>
-                                <td>{{ account.account_id }}</td>
-                                <td>{{ account.loan_type }}</td>
-                                <td>{{ account.booking_date }}</td>
-                                <td>
-                                    <span class="badge {% if account.current_status == 'Performing' %}bg-success{% elif account.current_status == 'Past Due' %}bg-warning{% else %}bg-danger{% endif %}">
-                                        {{ account.current_status }}
-                                    </span>
-                                </td>
-                                <td>{{ account.original_principal }}</td>
-                                <td>{{ account.interest_rate }}%</td>
-                                <td>
-                                    <a href="{% url 'account_detail' account.account_id %}" class="btn btn-sm btn-primary">View</a>
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            {% else %}
-                <p>No accounts associated with this borrower.</p>
-            {% endif %}
+            {% render_table table %}
         </div>
     </div>
 
     <div class="mt-4">
-        <a href="{% url 'account_list' %}" class="btn btn-secondary">Back to Accounts</a>
+        <a href="{% url 'borrower_list' %}" class="btn btn-secondary">Back to Borrower List</a>
+        <a href="{% url 'update_borrower' borrower.borrower_id %}" class="btn btn-primary">Update</a>
     </div>
 {% endblock %}

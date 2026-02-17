@@ -9,3 +9,4 @@ django-extensions
 psycopg[binary]
 python-dotenv
 django-tables2
+django-htmx

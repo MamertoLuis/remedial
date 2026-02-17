@@ -1,0 +1,4 @@
+borrower_id,borrower_type,full_name,tin,birth_or_incorp_date,primary_address,mobile,email,risk_rating
+P0001,PERSON,John Doe,123-456-789,1980-01-15,"123 Main St, Anytown, USA",123-456-7890,john.doe@email.com,A
+C0001,CORP,ABC Corporation,987-654-321,2005-05-20,"456 Corporate Blvd, Business City, USA",987-654-3210,contact@abccorp.com,B
+P0002,PERSON,Jane Smith,111-222-333,1992-03-10,"789 Oak Ave, Villagetown, USA",111-222-3333,jane.smith@email.com,A

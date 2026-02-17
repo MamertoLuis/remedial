@@ -39,9 +39,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.humanize',
 
     # local apps
     'account_master',
+    'compromise_agreement',
 
     # 3rd party
     'crispy_forms',
@@ -53,6 +55,7 @@ INSTALLED_APPS = [
     'allauth.socialaccount',
     'django_extensions',
     'django_tables2',
+    'django_htmx',
 ]
 
 MIDDLEWARE = [
@@ -66,6 +69,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'debug_toolbar.middleware.DebugToolbarMiddleware',
+    'django_htmx.middleware.HtmxMiddleware',
 ]
 
 INTERNAL_IPS = [
@@ -130,8 +134,14 @@ LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
 
 USE_I18N = True
-
+USE_L10N = True
 USE_TZ = True
+USE_THOUSAND_SEPARATOR = True
+
+DATE_INPUT_FORMATS = [
+    '%m/%d/%Y',  # new format
+    '%Y-%m-%d',  # existing default format
+]
 
 
 # Static files (CSS, JavaScript, Images)
@@ -139,3 +149,20 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
+LOGIN_URL = 'account_login'
+LOGIN_REDIRECT_URL = 'dashboard'
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+}

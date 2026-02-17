@@ -1,13 +1,8 @@
-from django import forms
-from .models import AccountMaster, Borrower
 
-class AccountMasterForm(forms.ModelForm):
+class ECLProvisionHistoryForm(forms.ModelForm):
     class Meta:
-        model = AccountMaster
+        model = ECLProvisionHistory
         fields = '__all__'
-
-class BorrowerForm(forms.ModelForm):
-    class Meta:
-        model = Borrower
-        fields = '__all__'
-
+        widgets = {
+            'as_of_date': forms.DateInput(attrs={'type': 'date'}),
+        }

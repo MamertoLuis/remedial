@@ -1,0 +1,8 @@
+<div id="account-status" hx-target="this" hx-swap="outerHTML">
+    <form hx-post="{% url 'update_account_status' account.loan_id %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-secondary btn-sm">
+            {{ account.get_status_display }} <i class="bi bi-arrow-repeat"></i>
+        </button>
+    </form>
+</div>

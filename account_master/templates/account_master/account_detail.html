@@ -1,69 +1,166 @@
 {% extends "base.html" %}
+{% load humanize %}
+{% load django_tables2 %}
 
-{% block title %}Account Details{% endblock %}
+{% block title %}Account Details for {{ account.loan_id }}{% endblock %}
 
 {% block content %}
-    <h1>Account Details</h1>
-    <table class="table">
-        <tbody>
-            <tr>
-                <th>Account ID</th>
-                <td>{{ account.account_id }}</td>
-            </tr>
-            <tr>
-                <th>Borrower ID</th>
-                <td><a href="{% url 'borrower_detail' account.borrower.borrower_id %}">{{ account.borrower.borrower_id }}</a></td>
-            </tr>
-            <tr>
-                <th>Borrower Name</th>
-                <td>{{ account.borrower }}</td>
-            </tr>
-            <tr>
-                <th>Loan Type</th>
-                <td>{{ account.loan_type }}</td>
-            </tr>
-            <tr>
-                <th>Booking Date</th>
-                <td>{{ account.booking_date }}</td>
-            </tr>
-            <tr>
-                <th>Original Principal</th>
-                <td>{{ account.original_principal }}</td>
-            </tr>
-            <tr>
-                <th>Interest Rate</th>
-                <td>{{ account.interest_rate }}</td>
-            </tr>
-            <tr>
-                <th>Maturity Date</th>
-                <td>{{ account.maturity_date }}</td>
-            </tr>
-            <tr>
-                <th>Branch Code</th>
-                <td>{{ account.branch_code }}</td>
-            </tr>
-            <tr>
-                <th>Account Officer</th>
-                <td>{{ account.account_officer }}</td>
-            </tr>
-            <tr>
-                <th>Security Type</th>
-                <td>{{ account.security_type }}</td>
-            </tr>
-            <tr>
-                <th>Current Status</th>
-                <td>{{ account.current_status }}</td>
-            </tr>
-            <tr>
-                <th>Days Past Due</th>
-                <td>{{ account.days_past_due }}</td>
-            </tr>
-            <tr>
-                <th>NPL Date</th>
-                <td>{{ account.npl_date }}</td>
-            </tr>
-        </tbody>
-    </table>
-    <a href="{% url 'account_list' %}" class="btn btn-primary">Back to Account List</a>
-    <a href="{% url 'update_account' account.account_id %}" class="btn btn-secondary">Update</a>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Account Details: {{ account.loan_id }}</h1>
+    <a href="{% url 'account_list' %}" class="btn btn-secondary">Back to Account List</a>
+</div>
+
+
+<div class="row">
+    <div class="col-md-6">
+        <!-- Borrower Summary Card -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Borrower Summary</h5>
+                <a href="{% url 'borrower_detail' account.borrower.borrower_id %}" class="btn btn-sm btn-outline-primary">View Borrower</a>
+            </div>
+            <div class="card-body">
+                <p><strong>Name:</strong> {{ account.borrower.full_name }}</p>
+                <p><strong>ID:</strong> {{ account.borrower.borrower_id }}</p>
+                <p><strong>Type:</strong> {{ account.borrower.get_borrower_type_display }}</p>
+                <p><strong>Contact:</strong> {{ account.borrower.email|default:"N/A" }} | {{ account.borrower.mobile|default:"N/A" }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <!-- Account Detail Card -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Account Details</h5>
+                <a href="{% url 'update_account' account.loan_id %}" class="btn btn-sm btn-outline-primary">Update Account</a>
+            </div>
+            <div class="card-body">
+                <p><strong>PN Number:</strong> {{ account.pn_number }}</p>
+                <p><strong>Loan Type:</strong> {{ account.loan_type }}</p>
+                <p><strong>Original Principal:</strong> ₱{{ account.original_principal|intcomma }}</p>
+                <p><strong>Status:</strong> {{ account.get_status_display }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <!-- Latest Exposure Card -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Latest Exposure</h5>
+                <a href="{% url 'create_exposure' account.loan_id %}" class="btn btn-sm btn-outline-success">Add New</a>
+            </div>
+            {% if latest_exposure %}
+            <div class="card-body">
+                <p class="card-text"><strong>As of:</strong> {{ latest_exposure.as_of_date|date:"M d, Y" }}</p>
+                <h5 class="card-title">Total: ₱{{ latest_exposure.total_exposure|intcomma }}</h5>
+                <p class="card-text text-muted mb-1">Principal: {{ latest_exposure.principal_outstanding|intcomma }}</p>
+                <p class="card-text text-muted">Interest: {{ latest_exposure.accrued_interest|intcomma }}</p>
+            </div>
+            {% else %}
+            <div class="card-body">
+                <p class="text-muted">No exposure data available.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-md-4">
+        <!-- Latest Delinquency Card -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Latest Delinquency</h5>
+                 <a href="{% url 'create_delinquency_status' account.loan_id %}" class="btn btn-sm btn-outline-success">Add New</a>
+            </div>
+             {% if latest_delinquency %}
+            <div class="card-body">
+                <p class="card-text"><strong>As of:</strong> {{ latest_delinquency.as_of_date|date:"M d, Y" }}</p>
+                <h5 class="card-title">{{ latest_delinquency.days_past_due }} Days Past Due</h5>
+                <p class="card-text text-muted mb-1">Bucket: {{ latest_delinquency.get_aging_bucket_display }}</p>
+                <p class="card-text text-muted">Classification: {{ latest_delinquency.get_classification_display }}</p>
+            </div>
+             {% else %}
+            <div class="card-body">
+                <p class="text-muted">No delinquency data available.</p>
+            </div>
+             {% endif %}
+        </div>
+    </div>
+    <div class="col-md-4">
+        <!-- Current Remedial Strategy Card -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Current Strategy</h5>
+                <a href="{% url 'create_remedial_strategy' account.loan_id %}" class="btn btn-sm btn-outline-success">Add New</a>
+            </div>
+             {% if current_strategy %}
+            <div class="card-body">
+                <p class="card-text"><strong>Start Date:</strong> {{ current_strategy.strategy_start_date|date:"M d, Y" }}</p>
+                <h5 class="card-title">{{ current_strategy.get_strategy_type_display }}</h5>
+                <p class="card-text text-muted">Status: {{ current_strategy.get_strategy_status_display }}</p>
+            </div>
+             {% else %}
+            <div class="card-body">
+                <p class="text-muted">No active remedial strategy.</p>
+            </div>
+             {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Historical Data Tables -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Historical Exposures</h5>
+    </div>
+    <div class="card-body">
+        {% if historical_exposure_table.data %}
+            {% render_table historical_exposure_table %}
+        {% else %}
+            <p class="text-muted">No historical exposure data available.</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Historical Delinquency Status</h5>
+    </div>
+    <div class="card-body">
+        {% if historical_delinquency_table.data %}
+            {% render_table historical_delinquency_table %}
+        {% else %}
+            <p class="text-muted">No historical delinquency data available.</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Historical Remedial Strategies</h5>
+    </div>
+    <div class="card-body">
+        {% if historical_strategies_table.data %}
+            {% render_table historical_strategies_table %}
+        {% else %}
+            <p class="text-muted">No historical remedial strategies available.</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Collection Activities</h5>
+        <a href="{% url 'create_collection_activity' account.loan_id %}" class="btn btn-sm btn-success">Add New Activity</a>
+    </div>
+    <div class="card-body">
+        {% if collection_activities_table.data %}
+            {% render_table collection_activities_table %}
+        {% else %}
+            <p class="text-muted">No collection activities logged for this account.</p>
+        {% endif %}
+    </div>
+</div>
+
 {% endblock %}

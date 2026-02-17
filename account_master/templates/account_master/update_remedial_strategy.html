@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}Update Remedial Strategy{% endblock %}
+
+{% block content %}
+    <h1>Update Remedial Strategy for Account: {{ account.loan_id }}</h1>
+    <form method="post">
+        {% csrf_token %}
+        {{ form|crispy }}
+        <button type="submit" class="btn btn-primary">Update Strategy</button>
+        <a href="{% url 'account_detail' account.loan_id %}" class="btn btn-secondary">Cancel</a>
+    </form>
+{% endblock %}

@@ -22,6 +22,8 @@ Intended dev. stack:
 - django-tables2
 
 
+
+
 Work-flow:
 - Complete only one domain first, MVP
 - Prefer to use recommended django libraries rather than code from scratch
@@ -30,4 +32,18 @@ Work-flow:
 
 All Development plans and accomplishments concisely recorded in DEVPLAN.md
 
+# To run migrations:
 
+- uv run python manage.py makemigrations
+- uv run python manage.py migrate
+
+# To run development server:
+
+**I may allready be running the server on the background
+
+- uv run python manage.py runserver 
+
+
+# Instructions:
+
+- List Views with table views to use `django-tables2
