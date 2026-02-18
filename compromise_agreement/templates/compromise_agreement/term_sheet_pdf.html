@@ -1,0 +1,180 @@
+{% load humanize %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Compromise Agreement Term Sheet - {{ agreement.compromise_id }}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1.5cm;
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body { 
+            font-family: Arial, sans-serif; 
+            font-size: 9pt; 
+            line-height: 1.3;
+        }
+        h1 { 
+            text-align: center; 
+            margin-bottom: 15px; 
+            font-size: 14pt;
+        }
+        h2, h3 { 
+            font-family: Arial, sans-serif; 
+            color: #333; 
+            font-size: 10pt;
+            margin-bottom: 8px;
+        }
+        .section { 
+            margin-bottom: 12px; 
+        }
+        .section-header { 
+            font-weight: bold; 
+            margin-bottom: 5px; 
+            border-bottom: 1px solid #333; 
+            padding-bottom: 2px; 
+        }
+        .data-row { 
+            margin-bottom: 2px; 
+        }
+        .data-row span { 
+            font-weight: normal; 
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            margin-top: 8px; 
+            font-size: 8pt;
+        }
+        th, td { 
+            border: 1px solid #666; 
+            padding: 4px; 
+            text-align: left; 
+        }
+        th { 
+            background-color: #e0e0e0; 
+        }
+        
+        .signatures {
+            margin-top: 20px;
+            page-break-inside: avoid;
+        }
+        .signature-section {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+        }
+        .signature-block {
+            width: 45%;
+        }
+        .signature-line {
+            border-bottom: 1px solid #333;
+            margin-top: 30px;
+            margin-bottom: 5px;
+            height: 20px;
+        }
+        .signature-label {
+            font-weight: bold;
+        }
+        
+        .footer {
+            margin-top: 15px;
+            text-align: center;
+            font-size: 7pt;
+            color: #666;
+            border-top: 1px solid #ccc;
+            padding-top: 5px;
+        }
+
+        .currency { font-family: Arial, sans-serif; }
+    </style>
+</head>
+<body>
+    <h1>Compromise Agreement Term Sheet</h1>
+
+    <div class="section">
+        <div class="section-header">Agreement Details</div>
+        <div class="data-row"><strong>Compromise ID:</strong> <span>{{ agreement.compromise_id }}</span></div>
+        <div class="data-row"><strong>Date of Agreement:</strong> <span>{{ agreement.approval_date|date:"F d, Y" }}</span></div>
+        <div class="data-row"><strong>Account ID:</strong> <span>{{ agreement.account.loan_id }}</span></div>
+        <div class="data-row"><strong>Borrower:</strong> <span>{{ agreement.account.borrower.full_name }} ({{ agreement.account.borrower.borrower_id }})</span></div>
+        <div class="data-row"><strong>Status:</strong> <span>{{ agreement.get_status_display }}</span></div>
+        <div class="data-row"><strong>Approval Level:</strong> <span>{{ agreement.get_approval_level_display }}</span></div>
+    </div>
+
+    <div class="section">
+        <div class="section-header">Financial Terms</div>
+        <div class="data-row"><strong>Original Total Exposure:</strong> <span class="currency">PHP {{ agreement.original_total_exposure|floatformat:2|intcomma }}</span></div>
+        <div class="data-row"><strong>Approved Compromise Amount:</strong> <span class="currency">PHP {{ agreement.approved_compromise_amount|floatformat:2|intcomma }}</span></div>
+        <div class="data-row"><strong>Discount Amount:</strong> <span class="currency">PHP {{ agreement.discount_amount|floatformat:2|intcomma }}</span></div>
+        <div class="data-row"><strong>Discount Percentage:</strong> <span>{{ agreement.discount_percentage|floatformat:2 }}%</span></div>
+    </div>
+
+    <div class="section">
+        <div class="section-header">Payment Terms</div>
+        <div class="data-row"><strong>Installment Flag:</strong> <span>{% if agreement.installment_flag %}Yes{% else %}No{% endif %}</span></div>
+        {% if agreement.installment_flag %}
+            <div class="data-row"><strong>Number of Installments:</strong> <span>{{ agreement.number_of_installments }}</span></div>
+            <div class="data-row"><strong>Payment Frequency:</strong> <span>{{ agreement.get_payment_frequency_display }}</span></div>
+            <div class="data-row"><strong>First Payment Due:</strong> <span>{{ agreement.first_payment_date|date:"F d, Y" }}</span></div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>No.</th>
+                        <th>Due Date</th>
+                        <th>Amount Due</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for installment in installments %}
+                        <tr>
+                            <td>{{ installment.installment_number }}</td>
+                            <td>{{ installment.due_date|date:"M d, Y" }}</td>
+                            <td class="currency">PHP {{ installment.amount_due|floatformat:2|intcomma }}</td>
+                            <td>{{ installment.get_status_display }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>This compromise agreement is for a lump-sum payment.</p>
+        {% endif %}
+    </div>
+
+    <div class="section">
+        <div class="section-header">Additional Clauses</div>
+        <div class="data-row"><strong>Rescission Clause:</strong> <span>{% if agreement.rescission_clause_flag %}Applicable{% else %}Not Applicable{% endif %}</span></div>
+        {% if agreement.rescission_clause_flag %}
+            <p style="font-size: 8pt;">This agreement includes a rescission clause. Failure to comply with the terms, particularly missed installment payments beyond the grace period, may lead to the rescission of this agreement, reinstatement of the original loan exposure, and enabling of legal action.</p>
+        {% else %}
+            <p>This agreement does not include a rescission clause.</p>
+        {% endif %}
+    </div>
+
+    <div class="signatures">
+        <div class="signature-section">
+            <div class="signature-block">
+                <div class="signature-line"></div>
+                <div class="signature-label">Borrower: {{ agreement.account.borrower.full_name }}</div>
+                <div style="font-size: 8pt;">Signature over Printed Name</div>
+            </div>
+            <div class="signature-block">
+                <div class="signature-line"></div>
+                <div class="signature-label">Noted By: {% if request.user.get_full_name %}{{ request.user.get_full_name }}{% else %}{{ request.user.username }}{% endif %}</div>
+                <div style="font-size: 8pt;">Loan Officer / Account Manager</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        Generated by Remedial Management System on {% now "F d, Y H:i" %}
+    </div>
+</body>
+</html>

@@ -25,8 +25,8 @@
 
 ### Next Steps
 
-- [ ] Add link to compromise agreement list page in the base template or dashboard.
-- [ ] Thoroughly test the new compromise agreement functionality.
+- [x] Add link to compromise agreement list page in the base template or dashboard.
+- [x] Thoroughly test the new compromise agreement functionality.
 - [x] Create views for `CompromiseInstallment` CRUD operations (Creation and Update views already exist and are working. Listing is handled by `CompromiseAgreementDetailView`).
 - [x] Create templates for `CompromiseInstallment` views (Form template already exists. Listing is handled by `CompromiseAgreementDetailView`).
 

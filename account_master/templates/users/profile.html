@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">User Profile</h4>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    {{ form|crispy }}
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">Update Profile</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Account Info</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Username:</strong> {{ user.username }}</p>
+                <p><strong>Email:</strong> {{ user.email }}</p>
+                <p><strong>Role:</strong> {{ user.get_role_display }}</p>
+                <p><strong>Staff Status:</strong> {{ user.is_staff|yesno:"Yes,No" }}</p>
+                <p><strong>Active:</strong> {{ user.is_active|yesno:"Yes,No" }}</p>
+                <p><strong>Date Joined:</strong> {{ user.date_joined|date:"F d, Y" }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

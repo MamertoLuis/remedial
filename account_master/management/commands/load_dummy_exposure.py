@@ -62,8 +62,8 @@ class Command(BaseCommand):
                 legal_fees = random.uniform(0, 500) if i > 5 else 0
                 other_charges = random.uniform(0, 200) if i > 7 else 0
                 total_exposure = principal + interest + penalty + legal_fees + other_charges
-                provision_level = random.uniform(0.01, 0.05) if i > 3 else 0
-                provision_amount = total_exposure * provision_level
+                provision_rate = random.uniform(0.01, 0.05) if i > 3 else 0
+                provision_amount = total_exposure * provision_rate
 
                 Exposure.objects.create(
                     account=account,
@@ -74,7 +74,7 @@ class Command(BaseCommand):
                     legal_fees=round(legal_fees, 2),
                     other_charges=round(other_charges, 2),
                     total_exposure=round(total_exposure, 2),
-                    provision_level=round(provision_level, 2),
+                    provision_rate=round(provision_rate, 2),
                     provision_amount=round(provision_amount, 2),
                 )
                 self.stdout.write(f'  Created exposure for {account.loan_id} on {as_of_date}')

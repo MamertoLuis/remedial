@@ -10,3 +10,4 @@ psycopg[binary]
 python-dotenv
 django-tables2
 django-htmx
+djangorestframework==3.14.0

@@ -92,13 +92,32 @@
         <div class="card mb-4">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">Current Strategy</h5>
-                <a href="{% url 'create_remedial_strategy' account.loan_id %}" class="btn btn-sm btn-outline-success">Add New</a>
+                <div>
+                    {% if current_strategy %}
+                        <a href="{% url 'remedial_strategy_detail' account.loan_id current_strategy.strategy_id %}" class="btn btn-sm btn-outline-primary">View Details</a>
+                    {% else %}
+                        <a href="{% url 'create_remedial_strategy' account.loan_id %}" class="btn btn-sm btn-outline-success">Add New</a>
+                    {% endif %}
+                </div>
             </div>
              {% if current_strategy %}
             <div class="card-body">
                 <p class="card-text"><strong>Start Date:</strong> {{ current_strategy.strategy_start_date|date:"M d, Y" }}</p>
                 <h5 class="card-title">{{ current_strategy.get_strategy_type_display }}</h5>
                 <p class="card-text text-muted">Status: {{ current_strategy.get_strategy_status_display }}</p>
+                <hr>
+                <p class="mb-1"><strong>Compromise Agreements:</strong></p>
+                {% with agreements=current_strategy.compromise_agreements.all %}
+                    {% if agreements %}
+                        <a href="{% url 'remedial_strategy_detail' account.loan_id current_strategy.strategy_id %}" class="btn btn-sm btn-outline-primary">
+                            View {{ agreements.count }} Agreement{{ agreements.count|pluralize }}
+                        </a>
+                    {% else %}
+                        <a href="{% url 'compromise_agreement_create' current_strategy.strategy_id %}" class="btn btn-sm btn-success">
+                            Add Compromise Agreement
+                        </a>
+                    {% endif %}
+                {% endwith %}
             </div>
              {% else %}
             <div class="card-body">
@@ -110,6 +129,20 @@
 </div>
 
 <!-- Historical Data Tables -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Collection Activities</h5>
+        <a href="{% url 'create_collection_activity' account.loan_id %}" class="btn btn-sm btn-success">Add New Activity</a>
+    </div>
+    <div class="card-body">
+        {% if collection_activities_table.data %}
+            {% render_table collection_activities_table %}
+        {% else %}
+            <p class="text-muted">No collection activities logged for this account.</p>
+        {% endif %}
+    </div>
+</div>
+
 <div class="card mb-4">
     <div class="card-header">
         <h5 class="mb-0">Historical Exposures</h5>
@@ -151,14 +184,13 @@
 
 <div class="card mb-4">
     <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">Collection Activities</h5>
-        <a href="{% url 'create_collection_activity' account.loan_id %}" class="btn btn-sm btn-success">Add New Activity</a>
+        <h5 class="mb-0">Compromise Agreements</h5>
     </div>
     <div class="card-body">
-        {% if collection_activities_table.data %}
-            {% render_table collection_activities_table %}
+        {% if compromise_agreements_table.data %}
+            {% render_table compromise_agreements_table %}
         {% else %}
-            <p class="text-muted">No collection activities logged for this account.</p>
+            <p class="text-muted">No compromise agreements found for this account.</p>
         {% endif %}
     </div>
 </div>

@@ -5,6 +5,27 @@
 
 {% block content %}
     <h1>Account List</h1>
-    <a href="{% url 'create_account' %}" class="btn btn-primary mb-3">Create New Account</a>
+    
+    <div class="mb-3">
+        <form method="get" class="row g-3">
+            <div class="col-auto">
+                <select name="account_officer" class="form-select" onchange="this.form.submit()">
+                    <option value="" {% if not selected_officer %}selected{% endif %}>All Account Officers</option>
+                    {% for officer in account_officers %}
+                        <option value="{{ officer }}" {% if selected_officer == officer %}selected{% endif %}>
+                            {{ officer }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-auto">
+                <a href="{% url 'account_list' %}" class="btn btn-secondary">Clear Filter</a>
+            </div>
+            <div class="col-auto">
+                <a href="{% url 'create_account' %}" class="btn btn-primary">Create New Account</a>
+            </div>
+        </form>
+    </div>
+    
     {% render_table table %}
 {% endblock %}

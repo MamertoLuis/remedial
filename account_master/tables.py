@@ -73,6 +73,11 @@ class DelinquencyStatusTable(tables.Table):
         order_by = ('-as_of_date',)
 
 class RemedialStrategyTable(tables.Table):
+    strategy_type = tables.LinkColumn(
+        'remedial_strategy_detail',
+        args=[tables.A('account.loan_id'), tables.A('strategy_id')]
+    )
+
     class Meta:
         model = RemedialStrategy
         fields = (

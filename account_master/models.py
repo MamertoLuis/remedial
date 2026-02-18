@@ -100,16 +100,31 @@ class RemedialStrategy(AuditableModel):
     strategy_outcome = models.TextField(blank=True)
 
     def save(self, *args, **kwargs):
-        if self.strategy_status == self.StrategyStatus.ACTIVE and self._state.adding:
+        super().save(*args, **kwargs)
+        
+        if self.strategy_status == self.StrategyStatus.ACTIVE:
             # Deactivate any other active strategies for the same account
             RemedialStrategy.objects.filter(
                 account=self.account,
                 strategy_status=self.StrategyStatus.ACTIVE
             ).exclude(pk=self.pk).update(strategy_status=self.StrategyStatus.CANCELLED)
-        super().save(*args, **kwargs)
+
+            # Supersede any active compromise agreements for the same account
+            self.account.compromise_agreements.filter(
+                status='ACTIVE'
+            ).exclude(strategy=self).update(status='SUPERSEDED')
 
     def __str__(self):
         return f"{self.strategy_type} for {self.account.loan_id}"
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['account', 'strategy_type'],
+                condition=models.Q(strategy_status='ACTIVE'),
+                name='unique_active_strategy_per_account'
+            )
+        ]
 
 class Exposure(AuditableModel):
 

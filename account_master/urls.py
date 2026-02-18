@@ -22,4 +22,5 @@ urlpatterns = [
     path('account/<str:loan_id>/delinquency/<int:delinquency_id>/update/', views.update_delinquency_status, name='update_delinquency_status'),
     path('account/<str:loan_id>/strategy/create/', views.create_remedial_strategy, name='create_remedial_strategy'),
     path('account/<str:loan_id>/strategy/<int:strategy_id>/update/', views.update_remedial_strategy, name='update_remedial_strategy'),
+    path('account/<str:loan_id>/strategy/<int:strategy_id>/', views.remedial_strategy_detail, name='remedial_strategy_detail'),
 ]

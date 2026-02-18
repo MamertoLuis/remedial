@@ -1,34 +1,60 @@
 {% extends "base.html" %}
+{% load humanize %}
 {% load django_tables2 %}
 
 {% block title %}Compromise Agreement Details{% endblock %}
 
 {% block content %}
-    <h1>Compromise Agreement Details</h1>
-    <div class="card">
-        <div class="card-header">
-            <h2>{{ object.account }}</h2>
-        </div>
-        <div class="card-body">
-            <p><strong>Original Total Exposure:</strong> {{ object.original_total_exposure }}</p>
-            <p><strong>Approved Compromise Amount:</strong> {{ object.approved_compromise_amount }}</p>
-            <p><strong>Discount Amount:</strong> {{ object.discount_amount }}</p>
-            <p><strong>Discount Percentage:</strong> {{ object.discount_percentage }}%</p>
-            <p><strong>Status:</strong> {{ object.get_status_display }}</p>
-            <p><strong>Approval Level:</strong> {{ object.get_approval_level_display }}</p>
-            <p><strong>Approval Date:</strong> {{ object.approval_date }}</p>
-            <p><strong>Installment Plan:</strong> {{ object.installment_flag|yesno }}</p>
-            <p><strong>Rescission Clause:</strong> {{ object.rescission_clause_flag|yesno }}</p>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Compromise Agreement: {{ object.compromise_id }}</h1>
+    <div>
+        <a href="{% url 'compromise_agreement_update' object.pk %}" class="btn btn-sm btn-outline-primary">Edit Agreement</a>
+        <a href="{% url 'generate_term_sheet_pdf' object.pk %}" class="btn btn-sm btn-info" target="_blank">Print Term Sheet</a>
+        <a href="{% url 'remedial_strategy_detail' account.loan_id strategy.strategy_id %}" class="btn btn-secondary">Back to Strategy</a>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Agreement Details</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Account ID:</strong> <a href="{% url 'account_detail' account.loan_id %}">{{ account.loan_id }}</a></p>
+                <p><strong>Strategy Type:</strong> <a href="{% url 'remedial_strategy_detail' account.loan_id strategy.strategy_id %}">{{ strategy.get_strategy_type_display }}</a></p>
+                <p><strong>Original Total Exposure:</strong> ₱{{ object.original_total_exposure|floatformat:2|intcomma }}</p>
+                <p><strong>Approved Compromise Amount:</strong> ₱{{ object.approved_compromise_amount|floatformat:2|intcomma }}</p>
+                <p><strong>Discount Amount:</strong> ₱{{ object.discount_amount|floatformat:2|intcomma }}</p>
+                <p><strong>Discount Percentage:</strong> {{ object.discount_percentage|floatformat:2 }}%</p>
+            </div>
+            <div class="col-md-6">
+                <p><strong>Status:</strong> <span class="badge bg-{% if object.status == 'ACTIVE' %}success{% elif object.status == 'COMPLETED' %}info{% elif object.status == 'SUPERSEDED' %}warning{% else %}danger{% endif %}">{{ object.get_status_display }}</span></p>
+                <p><strong>Approval Level:</strong> {{ object.get_approval_level_display }}</p>
+                <p><strong>Approval Date:</strong> {{ object.approval_date|date:"F d, Y" }}</p>
+                <p><strong>Installment Plan:</strong> {% if object.installment_flag %}Yes ({{ object.number_of_installments }} {{ object.get_payment_frequency_display }}){% else %}No{% endif %}</p>
+                {% if object.installment_flag %}
+                    <p><strong>First Payment Due:</strong> {{ object.first_payment_date|date:"F d, Y" }}</p>
+                {% endif %}
+                <p><strong>Rescission Clause:</strong> {{ object.rescission_clause_flag|yesno }}</p>
+            </div>
         </div>
     </div>
+</div>
 
-    <h3 class="mt-4">Installments</h3>
-    <a href="{% url 'compromise_installment_create' object.pk %}" class="btn btn-primary mb-3">Add New Installment</a>
-    {% if installments_table %}
-        {% render_table installments_table %}
-    {% else %}
-        <p>No installments for this agreement.</p>
-    {% endif %}
-
-    <a href="{% url 'compromise_agreement_list' %}" class="btn btn-secondary mt-3">Back to List</a>
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Installment Schedule</h5>
+        {% if object.installment_flag %}
+            <a href="{% url 'compromise_installment_create' object.pk %}" class="btn btn-sm btn-success">Add New Installment</a>
+        {% endif %}
+    </div>
+    <div class="card-body">
+        {% if installments_table.data %}
+            {% render_table installments_table %}
+        {% else %}
+            <p class="text-muted">No installments scheduled for this agreement.</p>
+        {% endif %}
+    </div>
+</div>
 {% endblock %}

@@ -86,8 +86,8 @@ class Command(BaseCommand):
                     aging_bucket = '30'
                     classification = 'SM'
                 else:
-                    # Performing or very early past due, not classified yet in these buckets
-                    pass
+                    # Performing or very early past due
+                    classification = 'C'
 
                 # Only create record if it's actually past due for relevant classification
                 if current_dpd > 0: # Only record if there's actual delinquency

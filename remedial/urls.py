@@ -1,10 +1,13 @@
 from django.contrib import admin
 from django.urls import path, include
+from users.views import profile
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('', include('account_master.urls')),
-    path('__debug__/', include('debug_toolbar.urls')),
-    path('accounts/', include('allauth.urls')),
-    path('compromise/', include('compromise_agreement.urls')),
+    path("admin/", admin.site.urls),
+    path("api/v1/", include("api.urls")),
+    path("", include("account_master.urls")),
+    path("__debug__/", include("debug_toolbar.urls")),
+    path("accounts/", include("allauth.urls")),
+    path("compromise/", include("compromise_agreement.urls")),
+    path("profile/", profile, name="profile"),
 ]
