@@ -4,7 +4,6 @@ from users.views import profile
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("api/v1/", include("api.urls")),
     path("", include("account_master.urls")),
     path("__debug__/", include("debug_toolbar.urls")),
     path("accounts/", include("allauth.urls")),
