@@ -1,4 +1,0 @@
-loan_id,borrower_id,pn_number,booking_date,maturity_date,original_principal,interest_rate,loan_type,branch_code,account_officer_id,status
-L0001,P0001,PN-001,2023-01-10,2028-01-10,500000.00,5.5,Auto Loan,BR01,AO-01,PERFORMING
-L0002,C0001,PN-002,2022-11-05,2027-11-05,2500000.00,6.2,Business Loan,BR02,AO-02,PERFORMING
-L0003,P0002,PN-003,2023-05-20,2026-05-20,75000.00,12.0,Personal Loan,BR01,AO-01,PAST_DUE

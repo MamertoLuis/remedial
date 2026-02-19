@@ -1,0 +1,4 @@
+Loan ID,As_Of_Date,Days_Past_Due,NPL_Flag,NPL_Date
+LN001,2025-02-01,45,True,2025-02-15
+ln002,2025-02-01,,False,
+LN003,2025-01-15,60,1,2025-02-01

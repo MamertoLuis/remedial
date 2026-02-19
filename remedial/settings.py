@@ -25,7 +25,7 @@ SECRET_KEY = "django-insecure-zslq$g(5^9yh06-oscm=3t9%)(zjc=1+cu&5@b5kn_4&2qv=l^
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["127.0.0.1", "0.0.0.0", "192.168.100.112"]
 
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
@@ -212,3 +212,5 @@ ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
 # ACCOUNT_RATE_LIMITS = {
 #     "login_failed": "5/min;10/hour",
 # }
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

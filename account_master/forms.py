@@ -9,7 +9,6 @@ from .models import (
     ECLProvisionHistory,
 )
 
-
 class ECLProvisionHistoryForm(forms.ModelForm):
     class Meta:
         model = ECLProvisionHistory
