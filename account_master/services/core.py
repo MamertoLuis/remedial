@@ -17,24 +17,16 @@ def upsert_borrower(*, borrower_id: str, defaults: dict) -> tuple[Borrower, bool
     """
     borrower_type = defaults.get("borrower_type", "PERSON")
     full_name = defaults.get("full_name")
-    tin = defaults.get("tin")
-    birth_or_incorp_date = defaults.get("birth_or_incorp_date")
     primary_address = defaults.get("primary_address")
     mobile = defaults.get("mobile")
-    email = defaults.get("email")
-    risk_rating = defaults.get("risk_rating")
 
     obj, created = Borrower.objects.update_or_create(
         borrower_id=borrower_id,
         defaults={
             "borrower_type": borrower_type,
             "full_name": full_name,
-            "tin": tin,
-            "birth_or_incorp_date": birth_or_incorp_date,
             "primary_address": primary_address,
             "mobile": mobile,
-            "email": email,
-            "risk_rating": risk_rating,
         },
     )
     return obj, created
@@ -45,13 +37,11 @@ def upsert_loan_account(*, loan_id: str, defaults: dict) -> tuple[LoanAccount, b
     Create or update a LoanAccount.
     """
     borrower = defaults.get("borrower")
-    pn_number = defaults.get("pn_number")
     booking_date = defaults.get("booking_date")
     maturity_date = defaults.get("maturity_date")
     original_principal = defaults.get("original_principal")
     interest_rate = defaults.get("interest_rate")
     loan_type = defaults.get("loan_type")
-    branch_code = defaults.get("branch_code")
     account_officer_id = defaults.get("account_officer_id")
     status = defaults.get("status", "PERFORMING")
 
@@ -59,13 +49,11 @@ def upsert_loan_account(*, loan_id: str, defaults: dict) -> tuple[LoanAccount, b
         loan_id=loan_id,
         defaults={
             "borrower": borrower,
-            "pn_number": pn_number,
             "booking_date": booking_date,
             "maturity_date": maturity_date,
             "original_principal": original_principal,
             "interest_rate": interest_rate,
             "loan_type": loan_type,
-            "branch_code": branch_code,
             "account_officer_id": account_officer_id,
             "status": status,
         },
@@ -82,19 +70,9 @@ def upsert_exposure(
     principal_outstanding = defaults.get("principal_outstanding", Decimal("0.00"))
     accrued_interest = defaults.get("accrued_interest", Decimal("0.00"))
     accrued_penalty = defaults.get("accrued_penalty", Decimal("0.00"))
-    legal_fees = defaults.get("legal_fees", Decimal("0.00"))
-    other_charges = defaults.get("other_charges", Decimal("0.00"))
-    provision_rate = defaults.get("provision_rate", Decimal("0.00"))
     snapshot_type = defaults.get("snapshot_type", "EVENT")
 
-    total_exposure = (
-        principal_outstanding
-        + accrued_interest
-        + accrued_penalty
-        + legal_fees
-        + other_charges
-    )
-    provision_amount = total_exposure * provision_rate
+    total_exposure = principal_outstanding + accrued_interest + accrued_penalty
 
     obj, created = Exposure.objects.update_or_create(
         account=account,
@@ -103,11 +81,7 @@ def upsert_exposure(
             "principal_outstanding": principal_outstanding,
             "accrued_interest": accrued_interest,
             "accrued_penalty": accrued_penalty,
-            "legal_fees": legal_fees,
-            "other_charges": other_charges,
             "total_exposure": total_exposure,
-            "provision_rate": provision_rate,
-            "provision_amount": provision_amount,
             "snapshot_type": snapshot_type,
         },
     )

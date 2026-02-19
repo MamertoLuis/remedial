@@ -65,15 +65,23 @@ def account_list(request):
     )
 
 
-def create_account(request):
+def create_account(request, borrower_id=None):
+    if borrower_id:
+        borrower = get_object_or_404(Borrower, borrower_id=borrower_id)
+        initial = {"borrower": borrower}
+    else:
+        initial = {}
+
     if request.method == "POST":
         form = LoanAccountForm(request.POST)
         if form.is_valid():
             account_data = form.cleaned_data
             upsert_loan_account(loan_id=account_data["loan_id"], defaults=account_data)
+            if borrower_id:
+                return redirect("borrower_detail", borrower_id=borrower_id)
             return redirect("account_list")
     else:
-        form = LoanAccountForm()
+        form = LoanAccountForm(initial=initial)
     return render(request, "account_master/create_account.html", {"form": form})
 
 
@@ -372,7 +380,7 @@ def update_delinquency_status(request, loan_id, delinquency_id):
 def create_remedial_strategy(request, loan_id):
     account = get_object_or_404(LoanAccount, loan_id=loan_id)
     if request.method == "POST":
-        form = RemedialStrategyForm(request.POST)
+        form = RemedialStrategyForm(request.POST, account=account)
         if form.is_valid():
             strategy = form.save(commit=False)
             strategy.account = account
@@ -381,7 +389,7 @@ def create_remedial_strategy(request, loan_id):
             strategy.save()
             return redirect("account_detail", loan_id=loan_id)
     else:
-        form = RemedialStrategyForm(initial={"account": account})
+        form = RemedialStrategyForm(initial={"account": account}, account=account)
     return render(
         request,
         "account_master/create_remedial_strategy.html",
@@ -396,14 +404,16 @@ def update_remedial_strategy(request, loan_id, strategy_id):
         RemedialStrategy, strategy_id=strategy_id, account=account
     )
     if request.method == "POST":
-        form = RemedialStrategyForm(request.POST, instance=remedial_strategy)
+        form = RemedialStrategyForm(
+            request.POST, instance=remedial_strategy, account=account
+        )
         if form.is_valid():
             strategy = form.save(commit=False)
             strategy.updated_by = request.user
             strategy.save()
             return redirect("account_detail", loan_id=loan_id)
     else:
-        form = RemedialStrategyForm(instance=remedial_strategy)
+        form = RemedialStrategyForm(instance=remedial_strategy, account=account)
     return render(
         request,
         "account_master/update_remedial_strategy.html",

@@ -19,9 +19,6 @@ class ExposureAdmin(admin.ModelAdmin):
             "principal_outstanding": obj.principal_outstanding,
             "accrued_interest": obj.accrued_interest,
             "accrued_penalty": obj.accrued_penalty,
-            "legal_fees": obj.legal_fees,
-            "other_charges": obj.other_charges,
-            "provision_rate": obj.provision_rate,
             "snapshot_type": obj.snapshot_type,
         }
         services.upsert_exposure(

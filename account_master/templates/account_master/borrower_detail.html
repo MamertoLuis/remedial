@@ -25,14 +25,7 @@
                         <th>Borrower Type</th>
                         <td>{{ borrower.get_borrower_type_display }}</td>
                     </tr>
-                    <tr>
-                        <th>TIN</th>
-                        <td>{{ borrower.tin }}</td>
-                    </tr>
-                    <tr>
-                        <th>Birth/Incorporation Date</th>
-                        <td>{{ borrower.birth_or_incorp_date }}</td>
-                    </tr>
+
                     <tr>
                         <th>Primary Address</th>
                         <td>{{ borrower.primary_address }}</td>
@@ -41,22 +34,16 @@
                         <th>Mobile</th>
                         <td>{{ borrower.mobile }}</td>
                     </tr>
-                    <tr>
-                        <th>Email</th>
-                        <td>{{ borrower.email }}</td>
-                    </tr>
-                    <tr>
-                        <th>Risk Rating</th>
-                        <td>{{ borrower.risk_rating }}</td>
-                    </tr>
+
                 </tbody>
             </table>
         </div>
     </div>
 
-    <div class="card">
-        <div class="card-header">
+<div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
             <h5>Associated Accounts</h5>
+            <a href="{% url 'create_account_for_borrower' borrower.borrower_id %}" class="btn btn-sm btn-success">Add Account</a>
         </div>
         <div class="card-body">
             {% render_table table %}

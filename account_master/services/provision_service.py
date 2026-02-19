@@ -2,15 +2,18 @@ from decimal import Decimal, ROUND_HALF_UP
 from django.db import transaction
 from account_master.models import ECLProvisionHistory, Exposure
 
-def compute_provision_amount(total_exposure: Decimal, provision_rate: Decimal) -> Decimal:
+
+def compute_provision_amount(
+    total_exposure: Decimal, provision_rate: Decimal
+) -> Decimal:
     total_exposure = total_exposure or Decimal("0")
     provision_rate = provision_rate or Decimal("0")
 
     # Round to cents
     return (total_exposure * provision_rate).quantize(
-        Decimal("0.01"),
-        rounding=ROUND_HALF_UP
+        Decimal("0.01"), rounding=ROUND_HALF_UP
     )
+
 
 @transaction.atomic
 def create_provision_entry(
@@ -30,15 +33,11 @@ def create_provision_entry(
         raise ValueError("Provision rate cannot be negative.")
 
     # Deactivate old current record
-    ECLProvisionHistory.objects.filter(
-        exposure=exposure,
-        is_current=True
-    ).update(is_current=False)
-
-    provision_amount = compute_provision_amount(
-        exposure.total_exposure,
-        provision_rate
+    ECLProvisionHistory.objects.filter(exposure=exposure, is_current=True).update(
+        is_current=False
     )
+
+    provision_amount = compute_provision_amount(exposure.total_exposure, provision_rate)
 
     entry = ECLProvisionHistory.objects.create(
         exposure=exposure,
@@ -53,16 +52,5 @@ def create_provision_entry(
         created_by=user,
         updated_by=user,
     )
-
-    # Update cached fields on Exposure
-    exposure.provision_rate = provision_rate
-    exposure.provision_amount = provision_amount
-    exposure.updated_by = user
-    exposure.save(update_fields=[
-        "provision_rate",
-        "provision_amount",
-        "updated_at",
-        "updated_by"
-    ])
 
     return entry

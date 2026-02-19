@@ -23,7 +23,7 @@
                 <p><strong>Name:</strong> {{ account.borrower.full_name }}</p>
                 <p><strong>ID:</strong> {{ account.borrower.borrower_id }}</p>
                 <p><strong>Type:</strong> {{ account.borrower.get_borrower_type_display }}</p>
-                <p><strong>Contact:</strong> {{ account.borrower.email|default:"N/A" }} | {{ account.borrower.mobile|default:"N/A" }}</p>
+                <p><strong>Contact:</strong> {{ account.borrower.mobile|default:"N/A" }}</p>
             </div>
         </div>
     </div>
@@ -35,7 +35,7 @@
                 <a href="{% url 'update_account' account.loan_id %}" class="btn btn-sm btn-outline-primary">Update Account</a>
             </div>
             <div class="card-body">
-                <p><strong>PN Number:</strong> {{ account.pn_number }}</p>
+                <p><strong>Loan Id:</strong> {{ account.loan_id }}</p>
                 <p><strong>Loan Type:</strong> {{ account.loan_type }}</p>
                 <p><strong>Original Principal:</strong> ₱{{ account.original_principal|intcomma }}</p>
                 <p><strong>Status:</strong> {{ account.get_status_display }}</p>
