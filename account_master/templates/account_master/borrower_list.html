@@ -1,8 +1,15 @@
 {% extends 'base.html' %}
 {% load django_tables2 %}
+{% load crispy_forms_tags %}
 
 {% block content %}
     <h1>Borrowers</h1>
     <a href="{% url 'create_borrower' %}" class="btn btn-primary mb-3">Create Borrower</a>
+    
+    <form method="get">
+        {{ filter.form|crispy }}
+        <button type="submit" class="btn btn-primary">Search</button>
+    </form>
+    
     {% render_table table %}
 {% endblock %}

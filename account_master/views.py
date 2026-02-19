@@ -32,6 +32,7 @@ from .tables import (
     DelinquencyStatusTable,
     RemedialStrategyTable,
 )
+from .filters import BorrowerFilter
 from compromise_agreement.tables import CompromiseAgreementTable
 import django_tables2 as tables
 
@@ -42,10 +43,8 @@ def account_list(request):
     account_officer = request.GET.get("account_officer")
     if account_officer and account_officer != "":
         accounts = accounts.filter(account_officer_id=account_officer)
-    elif request.user.is_authenticated and request.user.username:
-        accounts = accounts.filter(account_officer_id=request.user.username)
 
-    table = LoanAccountTable(accounts)
+    table = LoanAccountTable(accounts, user=request.user)
 
     account_officers = (
         LoanAccount.objects.exclude(account_officer_id="")
@@ -141,8 +140,13 @@ def update_account(request, loan_id):
 
 def borrower_list(request):
     borrowers = Borrower.objects.all()
-    table = BorrowerTable(borrowers)
-    return render(request, "account_master/borrower_list.html", {"table": table})
+    filter = BorrowerFilter(request.GET, queryset=borrowers)
+    table = BorrowerTable(filter.qs)
+    return render(
+        request,
+        "account_master/borrower_list.html",
+        {"table": table, "filter": filter},
+    )
 
 
 def borrower_detail(request, borrower_id):

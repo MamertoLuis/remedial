@@ -11,11 +11,20 @@ class BorrowerTable(tables.Table):
 
 class LoanAccountTable(tables.Table):
     loan_id = tables.LinkColumn('account_detail', args=[tables.A('loan_id')])
+    account_officer_id = tables.Column()
 
     class Meta:
         model = LoanAccount
-        fields = ('loan_id', 'borrower', 'loan_type', 'status')
+        fields = ('loan_id', 'borrower', 'loan_type', 'status', 'account_officer_id')
         attrs = {'class': 'table table-striped'}
+
+    def __init__(self, data, user=None, **kwargs):
+        super().__init__(data, **kwargs)
+        # Hide account_officer_id column if user is an account officer
+        if user and user.is_authenticated:
+            from users.models import User
+            if user.role == User.Role.ACCOUNT_OFFICER:
+                self.columns.hide('account_officer_id')
 
 class CollectionActivityLogTable(tables.Table):
     actions = tables.LinkColumn('update_collection_activity', args=[tables.A('account.loan_id'), tables.A('activity_id')], verbose_name=('Actions'), text='Update', orderable=False)
