@@ -179,8 +179,11 @@ class Exposure(AuditableModel):
     principal_outstanding = models.DecimalField(max_digits=18, decimal_places=2)
     accrued_interest = models.DecimalField(max_digits=18, decimal_places=2)
     accrued_penalty = models.DecimalField(max_digits=18, decimal_places=2)
+    days_past_due = models.IntegerField(default=0)
 
-    total_exposure = models.DecimalField(max_digits=18, decimal_places=2)
+    @property
+    def total_exposure(self):
+        return self.principal_outstanding + self.accrued_interest + self.accrued_penalty
 
     class Meta:
         constraints = [
@@ -197,11 +200,14 @@ class Exposure(AuditableModel):
 
 class DelinquencyStatus(AuditableModel):
     AGING_BUCKET_CHOICES = [
-        ("30", "30 days"),
-        ("60", "60 days"),
-        ("90", "90 days"),
-        ("180", "180 days"),
-        ("360+", "360+ days"),
+        ("Current", "Current"),
+        ("1-30", "1-30"),
+        ("31-60", "31-60"),
+        ("61-90", "61-90"),
+        ("91-120", "91-120"),
+        ("121-180", "121-180"),
+        ("181-360", "181-360"),
+        ("Over 360", "Over 360"),
     ]
 
     CLASSIFICATION_CHOICES = [
@@ -228,6 +234,7 @@ class DelinquencyStatus(AuditableModel):
     )
 
     days_past_due = models.IntegerField(default=0)
+
     aging_bucket = models.CharField(
         max_length=10, choices=AGING_BUCKET_CHOICES, blank=True, null=True
     )

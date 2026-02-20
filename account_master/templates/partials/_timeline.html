@@ -1,0 +1,33 @@
+{% comment %}
+Timeline Partial
+
+Usage:
+{% include "partials/_timeline.html" with activities=activities %}
+
+Each activity should have:
+- date: the activity date
+- description: the activity description/remarks
+- type: optional activity type badge
+{% endcomment %}
+
+{% if activities %}
+    <ul class="list-group list-group-flush">
+        {% for activity in activities %}
+            <li class="list-group-item px-0">
+                <div class="timeline-item">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            {% if activity.type %}
+                                <span class="badge bg-secondary me-2">{{ activity.type }}</span>
+                            {% endif %}
+                            <span class="timeline-event">{{ activity.description }}</span>
+                        </div>
+                        <small class="timeline-date">{{ activity.date|date:"M d, Y" }}</small>
+                    </div>
+                </div>
+            </li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p class="text-muted">No activities recorded.</p>
+{% endif %}

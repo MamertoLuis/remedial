@@ -46,7 +46,6 @@ class AccountDetailViewTests(TestCase):
             principal_outstanding=Decimal("90000.00"),
             accrued_interest=Decimal("1000.00"),
             accrued_penalty=Decimal("100.00"),
-            total_exposure=Decimal("91100.00"),
             created_by=self.user,
         )
         self.latest_exposure = Exposure.objects.create(
@@ -55,7 +54,6 @@ class AccountDetailViewTests(TestCase):
             principal_outstanding=Decimal("85000.00"),
             accrued_interest=Decimal("1500.00"),
             accrued_penalty=Decimal("150.00"),
-            total_exposure=Decimal("86650.00"),
             created_by=self.user,
         )
 

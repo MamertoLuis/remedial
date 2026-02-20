@@ -66,13 +66,13 @@ def upsert_exposure(
 ) -> tuple[Exposure, bool]:
     """
     Create or update an Exposure record.
+    Auto-creates DelinquencyStatus from Exposure data.
     """
     principal_outstanding = defaults.get("principal_outstanding", Decimal("0.00"))
     accrued_interest = defaults.get("accrued_interest", Decimal("0.00"))
     accrued_penalty = defaults.get("accrued_penalty", Decimal("0.00"))
+    days_past_due = defaults.get("days_past_due", 0)
     snapshot_type = defaults.get("snapshot_type", "EVENT")
-
-    total_exposure = principal_outstanding + accrued_interest + accrued_penalty
 
     obj, created = Exposure.objects.update_or_create(
         account=account,
@@ -81,11 +81,42 @@ def upsert_exposure(
             "principal_outstanding": principal_outstanding,
             "accrued_interest": accrued_interest,
             "accrued_penalty": accrued_penalty,
-            "total_exposure": total_exposure,
+            "days_past_due": days_past_due,
             "snapshot_type": snapshot_type,
         },
     )
+
+    _auto_create_delinquency_status(account, as_of_date, days_past_due)
+
     return obj, created
+
+
+def _auto_create_delinquency_status(
+    account: LoanAccount, as_of_date: date, days_past_due: int
+) -> None:
+    """
+    Auto-create or update DelinquencyStatus from Exposure data.
+    Derives classification and aging_bucket based on rules.
+    """
+    aging_bucket = _derive_aging_bucket(days_past_due)
+    classification = _derive_classification(days_past_due)
+    npl_flag = classification in ["SS", "D", "L"]
+
+    defaults = {
+        "days_past_due": days_past_due,
+        "aging_bucket": aging_bucket,
+        "classification": classification,
+        "npl_flag": npl_flag,
+        "snapshot_type": "EVENT",
+    }
+
+    DelinquencyStatus.objects.update_or_create(
+        account=account,
+        as_of_date=as_of_date,
+        defaults=defaults,
+    )
+
+    _update_loan_account_status(account, classification)
 
 
 def upsert_delinquency_status(
@@ -93,6 +124,8 @@ def upsert_delinquency_status(
 ) -> tuple[DelinquencyStatus, bool]:
     """
     Create or update a DelinquencyStatus record.
+    Auto-derives aging_bucket from days_past_due.
+    Auto-updates LoanAccount.status based on classification.
     """
     days_past_due = defaults.get("days_past_due", 0)
     aging_bucket = defaults.get("aging_bucket")
@@ -100,6 +133,9 @@ def upsert_delinquency_status(
     npl_flag = defaults.get("npl_flag", False)
     npl_date = defaults.get("npl_date")
     snapshot_type = defaults.get("snapshot_type", "EVENT")
+
+    if aging_bucket is None or aging_bucket == "":
+        aging_bucket = _derive_aging_bucket(days_past_due)
 
     obj, created = DelinquencyStatus.objects.update_or_create(
         account=account,
@@ -113,7 +149,67 @@ def upsert_delinquency_status(
             "snapshot_type": snapshot_type,
         },
     )
+
+    _update_loan_account_status(account, classification)
+
     return obj, created
+
+
+def _derive_aging_bucket(days_past_due: int) -> str:
+    """
+    Derive aging bucket based on days past due.
+    """
+    if days_past_due == 0:
+        return "Current"
+    elif 1 <= days_past_due <= 30:
+        return "1-30"
+    elif 31 <= days_past_due <= 60:
+        return "31-60"
+    elif 61 <= days_past_due <= 90:
+        return "61-90"
+    elif 91 <= days_past_due <= 120:
+        return "91-120"
+    elif 121 <= days_past_due <= 180:
+        return "121-180"
+    elif 181 <= days_past_due <= 360:
+        return "181-360"
+    else:
+        return "Over 360"
+
+
+def _derive_classification(days_past_due: int) -> str:
+    """
+    Derive suggested classification based on days past due.
+    This is a suggested value - MANAGER can override.
+    """
+    if days_past_due == 0:
+        return "C"
+    elif 1 <= days_past_due <= 90:
+        return "SM"
+    elif 91 <= days_past_due <= 180:
+        return "SS"
+    elif 181 <= days_past_due <= 360:
+        return "D"
+    else:
+        return "L"
+
+
+def _update_loan_account_status(account: LoanAccount, classification: str) -> None:
+    """
+    Update LoanAccount.status based on delinquency classification.
+    """
+    if classification in ["C"]:
+        new_status = "PERFORMING"
+    elif classification in ["SM"]:
+        new_status = "PAST_DUE"
+    elif classification in ["SS", "D", "L"]:
+        new_status = "NPL"
+    else:
+        new_status = "PERFORMING"
+
+    if account.status != new_status:
+        account.status = new_status
+        account.save(update_fields=["status", "updated_at"])
 
 
 def create_collection_activity(

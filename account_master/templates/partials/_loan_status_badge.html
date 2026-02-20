@@ -1,0 +1,26 @@
+{% comment %}
+Loan Status Badge Partial
+
+Usage: {% include "partials/_loan_status_badge.html" with status=account.status %}
+
+Status values:
+- PERFORMING
+- PAST_DUE
+- NPL
+- WRITEOFF
+- CLOSED
+{% endcomment %}
+
+{% if status == 'PERFORMING' %}
+    <span class="badge badge-performing">Performing</span>
+{% elif status == 'PAST_DUE' %}
+    <span class="badge badge-past-due">Past Due</span>
+{% elif status == 'NPL' %}
+    <span class="badge badge-npl">NPL</span>
+{% elif status == 'WRITEOFF' %}
+    <span class="badge badge-writeoff">Write-Off</span>
+{% elif status == 'CLOSED' %}
+    <span class="badge bg-secondary">Closed</span>
+{% else %}
+    <span class="badge bg-secondary">{{ status|default:"N/A" }}</span>
+{% endif %}

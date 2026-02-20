@@ -1,0 +1,27 @@
+{% load humanize %}
+{% comment %}
+Classification Badge Partial
+
+Usage: {% include "partials/_class_badge.html" with classification=loan.classification %}
+
+Classification values:
+- C = Current
+- SM = Especially Mentioned  
+- SS = Substandard
+- D = Doubtful
+- L = Loss
+{% endcomment %}
+
+{% if classification == 'C' %}
+    <span class="badge badge-current">Current</span>
+{% elif classification == 'SM' %}
+    <span class="badge badge-especially-mentioned">Especially Mentioned</span>
+{% elif classification == 'SS' %}
+    <span class="badge badge-substandard">Substandard</span>
+{% elif classification == 'D' %}
+    <span class="badge badge-doubtful">Doubtful</span>
+{% elif classification == 'L' %}
+    <span class="badge badge-loss">Loss</span>
+{% else %}
+    <span class="badge bg-secondary">{{ classification|default:"N/A" }}</span>
+{% endif %}

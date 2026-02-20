@@ -35,10 +35,23 @@
                 <a href="{% url 'update_account' account.loan_id %}" class="btn btn-sm btn-outline-primary">Update Account</a>
             </div>
             <div class="card-body">
-                <p><strong>Loan Id:</strong> {{ account.loan_id }}</p>
-                <p><strong>Loan Type:</strong> {{ account.loan_type }}</p>
-                <p><strong>Original Principal:</strong> ₱{{ account.original_principal|intcomma }}</p>
-                <p><strong>Status:</strong> {{ account.get_status_display }}</p>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Loan ID:</strong> {{ account.loan_id }}</p>
+                        <p><strong>Loan Type:</strong> {{ account.loan_type }}</p>
+                        <p><strong>Original Principal:</strong> ₱{{ account.original_principal|intcomma }}</p>
+                        <p><strong>Interest Rate:</strong> {{ account.interest_rate }}%</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Booking Date:</strong> {{ account.booking_date|date:"M d, Y" }}</p>
+                        <p><strong>Maturity Date:</strong> {{ account.maturity_date|date:"M d, Y" }}</p>
+                        <p><strong>Loan Security:</strong> {{ account.get_loan_security_display }}</p>
+                        <p><strong>Account Officer:</strong> {{ account.account_officer_id|default:"N/A" }}</p>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <p class="mb-0"><strong>Status:</strong> <span class="badge bg-primary">{{ account.get_status_display }}</span></p>
+                </div>
             </div>
         </div>
     </div>
@@ -56,8 +69,9 @@
             <div class="card-body">
                 <p class="card-text"><strong>As of:</strong> {{ latest_exposure.as_of_date|date:"M d, Y" }}</p>
                 <h5 class="card-title">Total: ₱{{ latest_exposure.total_exposure|intcomma }}</h5>
-                <p class="card-text text-muted mb-1">Principal: {{ latest_exposure.principal_outstanding|intcomma }}</p>
-                <p class="card-text text-muted">Interest: {{ latest_exposure.accrued_interest|intcomma }}</p>
+                <p class="card-text text-muted mb-1">Principal: ₱{{ latest_exposure.principal_outstanding|intcomma }}</p>
+                <p class="card-text text-muted mb-1">Interest: ₱{{ latest_exposure.accrued_interest|intcomma }}</p>
+                <p class="card-text text-muted">Penalty: ₱{{ latest_exposure.accrued_penalty|intcomma }}</p>
             </div>
             {% else %}
             <div class="card-body">
@@ -77,8 +91,11 @@
             <div class="card-body">
                 <p class="card-text"><strong>As of:</strong> {{ latest_delinquency.as_of_date|date:"M d, Y" }}</p>
                 <h5 class="card-title">{{ latest_delinquency.days_past_due }} Days Past Due</h5>
-                <p class="card-text text-muted mb-1">Bucket: {{ latest_delinquency.get_aging_bucket_display }}</p>
-                <p class="card-text text-muted">Classification: {{ latest_delinquency.get_classification_display }}</p>
+                <p class="card-text text-muted mb-1">Bucket: {{ latest_delinquency.get_aging_bucket_display|default:"N/A" }}</p>
+                <p class="card-text text-muted mb-1">Classification: {{ latest_delinquency.get_classification_display }}</p>
+                {% if latest_delinquency.npl_flag %}
+                <p class="card-text"><span class="badge bg-danger">NPL</span></p>
+                {% endif %}
             </div>
              {% else %}
             <div class="card-body">
@@ -128,6 +145,8 @@
     </div>
 </div>
 
+
+
 <!-- Historical Data Tables -->
 <div class="card mb-4">
     <div class="card-header d-flex justify-content-between align-items-center">
@@ -144,6 +163,19 @@
 </div>
 
 <div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Compromise Agreements</h5>
+    </div>
+    <div class="card-body">
+        {% if compromise_agreements_table.data %}
+            {% render_table compromise_agreements_table %}
+        {% else %}
+            <p class="text-muted">No compromise agreements found for this account.</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card mb-4">
     <div class="card-header">
         <h5 class="mb-0">Historical Exposures</h5>
     </div>
@@ -155,6 +187,8 @@
         {% endif %}
     </div>
 </div>
+
+
 
 <div class="card mb-4">
     <div class="card-header">
@@ -182,17 +216,6 @@
     </div>
 </div>
 
-<div class="card mb-4">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">Compromise Agreements</h5>
-    </div>
-    <div class="card-body">
-        {% if compromise_agreements_table.data %}
-            {% render_table compromise_agreements_table %}
-        {% else %}
-            <p class="text-muted">No compromise agreements found for this account.</p>
-        {% endif %}
-    </div>
-</div>
+
 
 {% endblock %}

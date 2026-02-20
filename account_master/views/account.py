@@ -1,0 +1,142 @@
+from django.shortcuts import render, redirect, get_object_or_404
+from account_master.models import (
+    LoanAccount,
+    Exposure,
+    DelinquencyStatus,
+    RemedialStrategy,
+    CollectionActivityLog,
+)
+from account_master.services import upsert_loan_account
+from account_master.forms import LoanAccountForm
+from account_master.tables import (
+    LoanAccountTable,
+    ExposureTable,
+    DelinquencyStatusTable,
+    RemedialStrategyTable,
+    CollectionActivityLogTable,
+)
+from compromise_agreement.tables import CompromiseAgreementTable
+
+
+def account_list(request):
+    accounts = LoanAccount.objects.all()
+
+    account_officer = request.GET.get("account_officer")
+    if account_officer and account_officer != "":
+        accounts = accounts.filter(account_officer_id=account_officer)
+
+    table = LoanAccountTable(accounts, user=request.user)
+
+    account_officers = (
+        LoanAccount.objects.exclude(account_officer_id="")
+        .values_list("account_officer_id", flat=True)
+        .distinct()
+        .order_by("account_officer_id")
+    )
+
+    return render(
+        request,
+        "account_master/account_list.html",
+        {
+            "table": table,
+            "account_officers": account_officers,
+            "selected_officer": account_officer,
+        },
+    )
+
+
+def create_account(request, borrower_id=None):
+    from account_master.models import Borrower
+
+    if borrower_id:
+        borrower = get_object_or_404(Borrower, borrower_id=borrower_id)
+        initial = {"borrower": borrower}
+    else:
+        initial = {}
+
+    if request.method == "POST":
+        form = LoanAccountForm(request.POST)
+        if form.is_valid():
+            account_data = form.cleaned_data
+            upsert_loan_account(loan_id=account_data["loan_id"], defaults=account_data)
+            if borrower_id:
+                return redirect("borrower_detail", borrower_id=borrower_id)
+            return redirect("account_list")
+    else:
+        form = LoanAccountForm(initial=initial)
+    return render(request, "account_master/create_account.html", {"form": form})
+
+
+def account_detail(request, loan_id):
+    account = get_object_or_404(LoanAccount, loan_id=loan_id)
+
+    latest_exposure = account.exposures.order_by("-as_of_date").first()
+    latest_delinquency = account.delinquency_statuses.order_by("-as_of_date").first()
+    current_strategy = (
+        account.remedial_strategies.filter(strategy_status="ACTIVE")
+        .order_by("-strategy_start_date")
+        .first()
+    )
+
+    historical_exposures_table = ExposureTable(
+        account.exposures.order_by("-as_of_date")
+    )
+    historical_delinquency_table = DelinquencyStatusTable(
+        account.delinquency_statuses.order_by("-as_of_date")
+    )
+    historical_strategies_table = RemedialStrategyTable(
+        account.remedial_strategies.exclude(strategy_status="ACTIVE").order_by(
+            "-strategy_start_date"
+        )
+    )
+    collection_activities_table = CollectionActivityLogTable(
+        account.collection_activities.order_by("-activity_date")
+    )
+    compromise_agreements_table = CompromiseAgreementTable(
+        account.compromise_agreements.order_by("-created_at")
+    )
+
+    return render(
+        request,
+        "account_master/account_detail.html",
+        {
+            "account": account,
+            "latest_exposure": latest_exposure,
+            "latest_delinquency": latest_delinquency,
+            "current_strategy": current_strategy,
+            "historical_exposure_table": historical_exposures_table,
+            "historical_delinquency_table": historical_delinquency_table,
+            "historical_strategies_table": historical_strategies_table,
+            "collection_activities_table": collection_activities_table,
+            "compromise_agreements_table": compromise_agreements_table,
+        },
+    )
+
+
+def update_account(request, loan_id):
+    account = get_object_or_404(LoanAccount, loan_id=loan_id)
+    if request.method == "POST":
+        form = LoanAccountForm(request.POST, instance=account)
+        if form.is_valid():
+            account_data = form.cleaned_data
+            upsert_loan_account(loan_id=loan_id, defaults=account_data)
+            return redirect("account_detail", loan_id=loan_id)
+    else:
+        form = LoanAccountForm(instance=account)
+    return render(request, "account_master/update_account.html", {"form": form})
+
+
+def update_account_status(request, loan_id):
+    account = get_object_or_404(LoanAccount, loan_id=loan_id)
+    if request.method == "POST":
+        current_status = account.status
+        status_choices = [choice[0] for choice in LoanAccount.LOAN_STATUS_CHOICES]
+        try:
+            current_index = status_choices.index(current_status)
+            next_index = (current_index + 1) % len(status_choices)
+            account.status = status_choices[next_index]
+            account.save()
+        except ValueError:
+            account.status = status_choices[0]
+            account.save()
+    return render(request, "account_master/_account_status.html", {"account": account})

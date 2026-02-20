@@ -65,7 +65,6 @@ class Command(BaseCommand):
                 principal = float(account.original_principal) * (0.95 - (i * 0.01))
                 interest = principal * 0.01 * (i + 1)
                 penalty = principal * 0.005 * i
-                total_exposure = principal + interest + penalty
 
                 Exposure.objects.create(
                     account=account,
@@ -73,7 +72,6 @@ class Command(BaseCommand):
                     principal_outstanding=round(principal, 2),
                     accrued_interest=round(interest, 2),
                     accrued_penalty=round(penalty, 2),
-                    total_exposure=round(total_exposure, 2),
                 )
                 self.stdout.write(
                     f"  Created exposure for {account.loan_id} on {as_of_date}"

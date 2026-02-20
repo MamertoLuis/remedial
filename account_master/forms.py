@@ -64,7 +64,7 @@ class ExposureForm(forms.ModelForm):
             "principal_outstanding",
             "accrued_interest",
             "accrued_penalty",
-            "total_exposure",
+            "days_past_due",
         ]
         widgets = {
             "as_of_date": forms.DateInput(attrs={"type": "date"}),

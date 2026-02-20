@@ -1,0 +1,204 @@
+/* Bank Theme - Remedial Management System */
+/* Design System for Operations/Banking UI */
+
+/* Typography */
+body {
+    font-size: 0.92rem;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+}
+
+.table {
+    font-size: 0.88rem;
+}
+
+.metric {
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.small-label {
+    font-size: .72rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: .03em;
+    margin-bottom: .25rem;
+}
+
+/* Card System */
+.card {
+    border: none;
+    box-shadow: 0 1px 2px rgba(0,0,0,.06);
+}
+
+.card-header {
+    background: white;
+    font-weight: 600;
+    border-bottom: 1px solid #eee;
+}
+
+.card-section-title {
+    font-size: .75rem;
+    text-transform: uppercase;
+    color: #6c757d;
+    margin-bottom: .25rem;
+}
+
+/* Sticky Context Header */
+.context-header {
+    background: #fff;
+    border-left: 4px solid #0d6efd;
+}
+
+/* Table Standard */
+.table thead th {
+    font-size: .72rem;
+    text-transform: uppercase;
+    color: #6c757d;
+    letter-spacing: .03em;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.table-hover tbody tr:hover {
+    background: #f3f6f9;
+}
+
+/* Form Controls */
+.form-control,
+.form-select {
+    font-size: .9rem;
+}
+
+.form-label {
+    font-size: .75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #6c757d;
+}
+
+input:focus,
+select:focus {
+    box-shadow: none !important;
+    border-color: #0d6efd;
+}
+
+/* KPI Row (Decision Panel) */
+.kpi-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: .4rem;
+}
+
+.kpi-label {
+    color: #6c757d;
+}
+
+.kpi-value {
+    font-weight: 600;
+}
+
+/* Timeline Style */
+.timeline-item {
+    border-left: 2px solid #dee2e6;
+    padding-left: .6rem;
+    margin-bottom: .7rem;
+}
+
+.timeline-date {
+    font-size: .72rem;
+    color: #6c757d;
+}
+
+.timeline-event {
+    font-weight: 500;
+}
+
+/* Buttons */
+.btn {
+    padding: .25rem .6rem;
+    font-size: .85rem;
+}
+
+.btn-danger {
+    font-weight: 600;
+}
+
+/* Alerts */
+.alert {
+    padding: .4rem .7rem;
+    font-size: .85rem;
+}
+
+/* Classification Badges */
+.badge-current {
+    background-color: #6c757d !important;
+}
+
+.badge-especially-mentioned {
+    background-color: #0dcaf0 !important;
+    color: #000 !important;
+}
+
+.badge-substandard {
+    background-color: #ffc107 !important;
+    color: #000 !important;
+}
+
+.badge-doubtful {
+    background-color: #dc3545 !important;
+}
+
+.badge-loss {
+    background-color: #212529 !important;
+}
+
+/* Loan Status Badges */
+.badge-performing {
+    background-color: #198754 !important;
+}
+
+.badge-past-due {
+    background-color: #ffc107 !important;
+    color: #000 !important;
+}
+
+.badge-npl {
+    background-color: #dc3545 !important;
+}
+
+.badge-writeoff {
+    background-color: #212529 !important;
+}
+
+/* Risk Panel (Context Header) */
+.risk-panel {
+    background: #fff;
+    border-left: 4px solid #0d6efd;
+}
+
+.risk-panel .kpi-label {
+    font-size: .7rem;
+}
+
+.risk-panel .kpi-value {
+    font-size: .95rem;
+}
+
+/* Breadcrumbs */
+.breadcrumb {
+    background: transparent;
+    padding: 0;
+    margin-bottom: 0;
+    font-size: .85rem;
+}
+
+.breadcrumb-item + .breadcrumb-item::before {
+    content: ">";
+}
+
+/* Tab Content */
+.tab-content {
+    padding-top: 1rem;
+}

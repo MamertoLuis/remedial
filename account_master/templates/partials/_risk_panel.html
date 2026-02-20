@@ -1,0 +1,92 @@
+{% load humanize %}
+{% comment %}
+Risk Panel Partial - Sticky Context Header for Loan Workspace
+
+Usage:
+{% include "partials/_risk_panel.html" with account=account latest_exposure=exposure latest_delinquency=delinquency current_strategy=strategy %}
+
+Required context:
+- account: LoanAccount instance
+- latest_exposure: latest Exposure instance (optional)
+- latest_delinquency: latest DelinquencyStatus instance (optional)
+- current_strategy: current RemedialStrategy instance (optional)
+{% endcomment %}
+
+<div class="risk-panel card-body">
+    <div class="row">
+        <div class="col-md-3">
+            <div class="mb-2">
+                <div class="small-label">Borrower</div>
+                <div class="fw-bold">
+                    <a href="{% url 'borrower_detail' account.borrower.borrower_id %}">
+                        {{ account.borrower.full_name }}
+                    </a>
+                </div>
+            </div>
+            <div class="mb-2">
+                <div class="small-label">Loan ID</div>
+                <div class="fw-bold">{{ account.loan_id }}</div>
+            </div>
+            <div class="mb-2">
+                <div class="small-label">Account Officer</div>
+                <div>{{ account.account_officer_id|default:"Unassigned" }}</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            {% if latest_exposure %}
+                <div class="mb-2">
+                    <div class="small-label">Total Balance</div>
+                    <div class="metric">₱{{ latest_exposure.total_exposure|intcomma }}</div>
+                </div>
+                <div class="mb-2">
+                    <div class="small-label">Last Payment</div>
+                    <div>{{ latest_exposure.as_of_date|date:"M d, Y"|default:"N/A" }}</div>
+                </div>
+            {% else %}
+                <div class="mb-2">
+                    <div class="small-label">Original Principal</div>
+                    <div class="metric">₱{{ account.original_principal|intcomma }}</div>
+                </div>
+            {% endif %}
+        </div>
+        <div class="col-md-3">
+            {% if latest_delinquency %}
+                <div class="mb-2">
+                    <div class="small-label">Days Past Due</div>
+                    <div class="metric">{{ latest_delinquency.days_past_due }}</div>
+                </div>
+                <div class="mb-2">
+                    <div class="small-label">Classification</div>
+                    <div>
+                        {% include "partials/_class_badge.html" with classification=latest_delinquency.classification %}
+                    </div>
+                </div>
+            {% else %}
+                <div class="mb-2">
+                    <div class="small-label">Status</div>
+                    <div>
+                        {% include "partials/_loan_status_badge.html" with status=account.status %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+        <div class="col-md-3">
+            {% if current_strategy %}
+                <div class="mb-2">
+                    <div class="small-label">Strategy</div>
+                    <div>
+                        <span class="badge bg-secondary">{{ current_strategy.get_strategy_type_display }}</span>
+                    </div>
+                </div>
+            {% endif %}
+            <div class="mb-2">
+                <div class="small-label">Loan Type</div>
+                <div>{{ account.loan_type }}</div>
+            </div>
+            <div class="mb-2">
+                <div class="small-label">Security</div>
+                <div>{{ account.get_loan_security_display }}</div>
+            </div>
+        </div>
+    </div>
+</div>

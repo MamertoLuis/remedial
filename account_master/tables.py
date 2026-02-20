@@ -94,7 +94,7 @@ class ExposureTable(tables.Table):
             "principal_outstanding",
             "accrued_interest",
             "accrued_penalty",
-            "total_exposure",
+            "days_past_due",
         )
         attrs = {"class": "table table-striped"}
         order_by = ("-as_of_date",)
