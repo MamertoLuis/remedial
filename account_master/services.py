@@ -1,5 +1,6 @@
 from datetime import date
 from decimal import Decimal
+from typing import Optional
 from django.db import transaction
 from .models import (
     Borrower,
@@ -8,7 +9,16 @@ from .models import (
     DelinquencyStatus,
     CollectionActivityLog,
     RemedialStrategy,
+    ECLProvisionHistory,
 )
+
+
+# Import ECL functions from the new service module
+try:
+    from .services.ecl_service import update_ecl_provision
+except ImportError:
+    # Fallback for when services.py is being imported (circular import)
+    from account_master.services.ecl_service import update_ecl_provision
 
 
 def upsert_borrower(*, borrower_id: str, defaults: dict) -> tuple[Borrower, bool]:
@@ -257,7 +267,12 @@ def take_snapshot(
     """
     Atomically create or update Exposure and DelinquencyStatus records for a given account and date.
     """
-    upsert_exposure(account=account, as_of_date=as_of_date, defaults=exposure_data)
-    upsert_delinquency_status(
+    exposure = upsert_exposure(
+        account=account, as_of_date=as_of_date, defaults=exposure_data
+    )
+    delinquency = upsert_delinquency_status(
         account=account, as_of_date=as_of_date, defaults=delinquency_data
     )
+
+    # Update ECL provision based on the new delinquency status
+    update_ecl_provision(exposure, delinquency)

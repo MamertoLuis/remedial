@@ -1,5 +1,7 @@
 from django.urls import path
 from account_master import views
+from account_master.views import alerts_api
+from account_master.views import alert_list
 
 urlpatterns = [
     path("", views.dashboard, name="dashboard"),
@@ -79,5 +81,47 @@ urlpatterns = [
         "account/<str:loan_id>/strategy/<int:strategy_id>/",
         views.remedial_strategy_detail,
         name="remedial_strategy_detail",
+    ),
+    path("search/", views.search, name="search"),
+    # Alert management URLs
+    path("alerts/", alert_list.alert_list, name="alert_list"),
+    # Alert API URLs
+    path("api/alerts/refresh/", alerts_api.refresh_alerts, name="api_refresh_alerts"),
+    path(
+        "api/alerts/acknowledge/",
+        alerts_api.acknowledge_alert,
+        name="api_acknowledge_alert",
+    ),
+    path("api/alerts/resolve/", alerts_api.resolve_alert, name="api_resolve_alert"),
+    path("api/alerts/dismiss/", alerts_api.dismiss_alert, name="api_dismiss_alert"),
+    path(
+        "api/alerts/detail/<int:alert_id>/",
+        alerts_api.get_alert_detail,
+        name="api_get_alert_detail",
+    ),
+    path(
+        "api/alerts/rules/create/",
+        alerts_api.create_alert_rule,
+        name="api_create_alert_rule",
+    ),
+    path(
+        "api/alerts/acknowledge/",
+        alerts_api.bulk_alert_action,
+        name="api_bulk_acknowledge",
+    ),
+    path(
+        "api/alerts/resolve/",
+        alerts_api.bulk_alert_action,
+        name="api_bulk_resolve",
+    ),
+    path(
+        "api/alerts/dismiss/",
+        alerts_api.bulk_alert_action,
+        name="api_bulk_dismiss",
+    ),
+    path(
+        "account/<str:loan_id>/ecl-provision/generate/",
+        views.generate_ecl_provision,
+        name="generate_ecl_provision",
     ),
 ]

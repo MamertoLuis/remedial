@@ -1,0 +1,279 @@
+{% load static %}
+
+<div class="alert-list {{ container_class|default:'' }}">
+    <!-- Alert List Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="mb-0">{{ title|default:'Alerts' }}</h5>
+        <div class="d-flex gap-2">
+            <!-- Filter Dropdown -->
+            {% if show_filters %}
+            <div class="dropdown">
+                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    <i class="bi bi-funnel me-1"></i>Filter
+                </button>
+                <ul class="dropdown-menu">
+                    <li>
+                        <a class="dropdown-item {% if selected_type == 'all' %}active{% endif %}" href="#" data-alert-type="all">
+                            All Types
+                        </a>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <a class="dropdown-item {% if selected_type == 'CRITICAL' %}active{% endif %}" href="#" data-alert-type="CRITICAL">
+                            <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Critical
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item {% if selected_type == 'WARNING' %}active{% endif %}" href="#" data-alert-type="WARNING">
+                            <i class="bi bi-exclamation-circle-fill text-warning me-2"></i>Warning
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item {% if selected_type == 'INFO' %}active{% endif %}" href="#" data-alert-type="INFO">
+                            <i class="bi bi-info-circle-fill text-info me-2"></i>Info
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item {% if selected_type == 'SUCCESS' %}active{% endif %}" href="#" data-alert-type="SUCCESS">
+                            <i class="bi bi-check-circle-fill text-success me-2"></i>Success
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            {% endif %}
+            
+            <!-- Refresh Button -->
+            {% if show_refresh %}
+            <button class="btn btn-sm btn-outline-secondary refresh-btn" title="Refresh alerts">
+                <i class="bi bi-arrow-clockwise"></i>
+            </button>
+            {% endif %}
+            
+            <!-- View All Link -->
+            {% if view_all_url %}
+            <a href="{{ view_all_url }}" class="btn btn-sm btn-outline-primary">
+                View All <i class="bi bi-arrow-right"></i>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Alert Summary Stats -->
+    {% if show_stats and alert_counts %}
+    <div class="row g-2 mb-3">
+        <div class="col">
+            <div class="card bg-light border-0">
+                <div class="card-body text-center py-2">
+                    <div class="h6 mb-0">{{ alert_counts.total|default:0 }}</div>
+                    <small class="text-muted">Total</small>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card bg-danger bg-opacity-10 border-danger border-0">
+                <div class="card-body text-center py-2">
+                    <div class="h6 mb-0">{{ alert_counts.total_critical|default:0 }}</div>
+                    <small class="text-danger">Critical</small>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card bg-warning bg-opacity-10 border-warning border-0">
+                <div class="card-body text-center py-2">
+                    <div class="h6 mb-0">{{ alert_counts.total_warning|default:0 }}</div>
+                    <small class="text-warning">Warning</small>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card bg-info bg-opacity-10 border-info border-0">
+                <div class="card-body text-center py-2">
+                    <div class="h6 mb-0">{{ alert_counts.total_info|default:0 }}</div>
+                    <small class="text-info">Info</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Alert Items Container -->
+    <div class="alert-items {{ scrollable_class|default:'' }}" {% if max_height %}style="max-height: {{ max_height }}; overflow-y: auto;"{% endif %}>
+        {% if alerts %}
+            {% for alert in alerts %}
+                <div class="alert-item-wrapper mb-3" data-alert-id="{{ alert.alert_id }}">
+                    {% include 'partials/_alert_card.html' with alert=alert %}
+                </div>
+            {% endfor %}
+        {% else %}
+            <!-- Empty State -->
+            <div class="text-center py-4">
+                <i class="bi bi-bell-slash text-muted" style="font-size: 2rem;"></i>
+                <h6 class="text-muted mt-2">{{ empty_message|default:'No alerts to display' }}</h6>
+                <p class="text-muted small">{{ empty_subtext|default:'Alerts will appear here when triggered.' }}</p>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- Loading State -->
+    <div class="loading-state d-none text-center py-4">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <p class="text-muted mt-2">Loading alerts...</p>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Alert type filter handlers
+    const filterButtons = document.querySelectorAll('[data-alert-type]');
+    filterButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const alertType = this.dataset.alertType;
+            
+            // Update active state
+            filterButtons.forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Here you would typically make an AJAX call to filter alerts
+            console.log('Filter by alert type:', alertType);
+        });
+    });
+    
+    // Refresh button handler
+    const refreshButton = document.querySelector('.refresh-btn');
+    if (refreshButton) {
+        refreshButton.addEventListener('click', function() {
+            const icon = this.querySelector('i');
+            icon.classList.add('spin-animation');
+            
+            // Here you would typically make an AJAX call to refresh alerts
+            setTimeout(() => {
+                icon.classList.remove('spin-animation');
+            }, 1000);
+        });
+    }
+    
+    // Acknowledge button handlers
+    const acknowledgeButtons = document.querySelectorAll('.acknowledge-btn');
+    acknowledgeButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const alertId = this.dataset.alertId;
+            
+            // Here you would typically make an AJAX call to acknowledge the alert
+            console.log('Acknowledge alert:', alertId);
+            
+            // For demo purposes, just update the UI
+            const alertCard = this.closest('.alert-card');
+            if (alertCard) {
+                alertCard.style.opacity = '0.6';
+                this.disabled = true;
+                this.innerHTML = '<i class="bi bi-check-circle me-1"></i>Acknowledged';
+            }
+        });
+    });
+    
+    // Resolve confirm button handlers
+    const resolveConfirmButtons = document.querySelectorAll('.resolve-confirm-btn');
+    resolveConfirmButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const alertId = this.dataset.alertId;
+            const modal = document.querySelector(`#resolveModal${alertId}`);
+            const textarea = modal.querySelector('textarea');
+            
+            // Here you would typically make an AJAX call to resolve the alert
+            console.log('Resolve alert:', alertId, 'Notes:', textarea.value);
+            
+            // Close modal
+            const bsModal = bootstrap.Modal.getInstance(modal);
+            bsModal.hide();
+            
+            // For demo purposes, remove the alert card
+            const alertCard = document.querySelector(`[data-alert-id="${alertId}"]`);
+            if (alertCard) {
+                alertCard.style.transition = 'opacity 0.3s';
+                alertCard.style.opacity = '0';
+                setTimeout(() => alertCard.remove(), 300);
+            }
+        });
+    });
+    
+    // Dismiss confirm button handlers
+    const dismissConfirmButtons = document.querySelectorAll('.dismiss-confirm-btn');
+    dismissConfirmButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const alertId = this.dataset.alertId;
+            const modal = document.querySelector(`#dismissModal${alertId}`);
+            const textarea = modal.querySelector('textarea');
+            
+            // Here you would typically make an AJAX call to dismiss the alert
+            console.log('Dismiss alert:', alertId, 'Reason:', textarea.value);
+            
+            // Close modal
+            const bsModal = bootstrap.Modal.getInstance(modal);
+            bsModal.hide();
+            
+            // For demo purposes, remove the alert card
+            const alertCard = document.querySelector(`[data-alert-id="${alertId}"]`);
+            if (alertCard) {
+                alertCard.style.transition = 'opacity 0.3s';
+                alertCard.style.opacity = '0';
+                setTimeout(() => alertCard.remove(), 300);
+            }
+        });
+    });
+});
+
+// Add spin animation for refresh button
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+    .spin-animation {
+        animation: spin 1s linear infinite;
+    }
+`;
+document.head.appendChild(style);
+</script>
+
+<style>
+.alert-items {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.alert-items::-webkit-scrollbar {
+    width: 6px;
+}
+
+.alert-items::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+.alert-items::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+.alert-items::-webkit-scrollbar-thumb:hover {
+    background: #a1a1a1;
+}
+
+.alert-card {
+    transition: all 0.2s ease;
+}
+
+.alert-card:hover {
+    transform: translateY(-2px);
+}
+
+@media (max-width: 768px) {
+    .alert-items {
+        max-height: 300px;
+    }
+}
+</style>

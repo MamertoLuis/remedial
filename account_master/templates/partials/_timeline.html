@@ -1,33 +1,82 @@
-{% comment %}
-Timeline Partial
+{% load static %}
 
-Usage:
-{% include "partials/_timeline.html" with activities=activities %}
-
-Each activity should have:
-- date: the activity date
-- description: the activity description/remarks
-- type: optional activity type badge
-{% endcomment %}
-
-{% if activities %}
-    <ul class="list-group list-group-flush">
-        {% for activity in activities %}
-            <li class="list-group-item px-0">
-                <div class="timeline-item">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            {% if activity.type %}
-                                <span class="badge bg-secondary me-2">{{ activity.type }}</span>
-                            {% endif %}
-                            <span class="timeline-event">{{ activity.description }}</span>
-                        </div>
-                        <small class="timeline-date">{{ activity.date|date:"M d, Y" }}</small>
-                    </div>
+<div class="timeline-container">
+    {% if activities %}
+        <!-- Timeline Header with Filter -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h5 class="mb-0">Recent Activities</h5>
+            {% include 'partials/_timeline_filter.html' %}
+        </div>
+        
+        <!-- Timeline -->
+        <div class="timeline">
+            {% regroup activities by timestamp|date:"Y-m-d" as day_activities %}
+            
+            {% for day_group in day_activities %}
+                <!-- Date Header -->
+                <div class="timeline-date-header mb-3">
+                    <small class="text-muted fw-bold">
+                        {% if day_group.grouper == today|date:"Y-m-d" %}
+                            Today
+                        {% elif day_group.grouper == yesterday|date:"Y-m-d" %}
+                            Yesterday
+                        {% else %}
+                            {{ day_group.grouper|date:"F j, Y" }}
+                        {% endif %}
+                    </small>
                 </div>
-            </li>
-        {% endfor %}
-    </ul>
-{% else %}
-    <p class="text-muted">No activities recorded.</p>
-{% endif %}
+                
+                <!-- Activities for this day -->
+                {% for activity in day_group.list %}
+                    {% include 'partials/_timeline_item.html' with activity=activity %}
+                {% endfor %}
+            {% endfor %}
+        </div>
+        
+        <!-- View All Link -->
+        <div class="text-center mt-4">
+            <a href="#" class="btn btn-sm btn-outline-primary">
+                View All Activities <i class="bi bi-arrow-right"></i>
+            </a>
+        </div>
+    {% else %}
+        <!-- Empty State -->
+        <div class="text-center py-5">
+            <i class="bi bi-activity text-muted" style="font-size: 3rem;"></i>
+            <h6 class="text-muted mt-3">No recent activities</h6>
+            <p class="text-muted small">Activities will appear here when actions are performed.</p>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+.timeline {
+    position: relative;
+    padding-left: 30px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 8px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: #e9ecef;
+}
+
+.timeline-date-header {
+    position: relative;
+    margin-left: -20px;
+}
+
+@media (max-width: 768px) {
+    .timeline {
+        padding-left: 20px;
+    }
+    
+    .timeline::before {
+        left: 5px;
+    }
+}
+</style>

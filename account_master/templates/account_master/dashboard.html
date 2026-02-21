@@ -2,51 +2,191 @@
 {% load render_table from django_tables2 %}
 
 {% block content %}
-    <h1>Dashboard</h1>
-    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mb-4">
-        <div class="col">
-            <div class="card h-100 border-0 shadow-sm">
-                <div class="card-body d-flex flex-column">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h5 class="card-title mb-0">Borrowers</h5>
-                        <span class="text-muted small">Tracked</span>
-                    </div>
-                    <p class="display-5 fw-bold mb-1">{{ borrower_count }}</p>
-                    <p class="text-muted mb-3 flex-grow-1">Registered borrowers actively tracked by the team.</p>
-                    <a href="{% url 'borrower_list' %}" class="btn btn-primary mt-auto align-self-start">View Borrowers</a>
-                </div>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">Dashboard</h1>
+        <div class="d-flex align-items-center gap-3">
+            <div class="text-muted small">
+                <i class="bi bi-clock me-1"></i>
+                Last updated: {% now "jS F Y, H:i" %}
             </div>
-        </div>
-        <div class="col">
-            <div class="card h-100 border-0 shadow-sm">
-                <div class="card-body d-flex flex-column">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h5 class="card-title mb-0">Accounts</h5>
-                        <span class="text-muted small">Live</span>
-                    </div>
-                    <p class="display-5 fw-bold mb-1">{{ account_count }}</p>
-                    <p class="text-muted mb-3 flex-grow-1">Loan accounts currently managed on the platform.</p>
-                    <a href="{% url 'account_list' %}" class="btn btn-primary mt-auto align-self-start">View Accounts</a>
-                </div>
-            </div>
-        </div>
-        <div class="col">
-            <div class="card h-100 border-0 shadow-sm">
-                <div class="card-body d-flex flex-column">
-                    <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h5 class="card-title mb-0">Compromise Agreements</h5>
-                        <span class="badge bg-info text-dark">Total</span>
-                    </div>
-                    <p class="display-5 fw-bold mb-1">{{ compromise_agreement_count }}</p>
-                    <p class="text-muted mb-3 flex-grow-1">Captures every compromise agreement ever created.</p>
-                    <a href="{% url 'compromise_agreement_list' %}" class="btn btn-outline-primary mt-auto align-self-start">See agreements</a>
-                </div>
-            </div>
+            <!-- Alert Badge in Header -->
+            {% if alert_counts.total > 0 %}
+                {% include 'partials/_alert_badge.html' with count=alert_counts.total color='danger' show_pulse=True icon='bi-bell' %}
+            {% endif %}
         </div>
     </div>
 
-    <div class="mt-4">
-        <h2>Recent Collection Activities</h2>
-        {% render_table activity_table %}
+    <!-- Financial KPIs -->
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4 mb-4">
+        <div class="col">
+            {% include 'partials/_kpi_card.html' with title="Portfolio Exposure" value=kpis.total_portfolio_exposure icon="bi-graph-up" icon_color="primary" detail_url="#" description="Total outstanding principal across all accounts" %}
+        </div>
+        <div class="col">
+            {% include 'partials/_kpi_card.html' with title="NPL Ratio" value=kpis.npl_ratio unit="%" icon="bi-exclamation-triangle" icon_color="warning" detail_url="#" description="Non-performing loans ratio" %}
+        </div>
+        <div class="col">
+            {% include 'partials/_kpi_card.html' with title="Recovery Rate" value=kpis.recovery_rate unit="%" icon="bi-currency-exchange" icon_color="success" detail_url="#" description="Recovered amount vs exposure" %}
+        </div>
+        <div class="col">
+            {% include 'partials/_kpi_card.html' with title="Provision Coverage" value=kpis.provision_coverage unit="%" icon="bi-shield-check" icon_color="info" detail_url="#" description="Coverage ratio for NPLs" %}
+        </div>
     </div>
+
+    <!-- Alert Summary Widget -->
+    {% if alert_counts.total > 0 %}
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">
+                <i class="bi bi-exclamation-triangle text-warning me-2"></i>
+                Active Alerts
+            </h5>
+            <a href="{% url 'alert_list' %}" class="btn btn-sm btn-outline-primary">View All Alerts</a>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <span class="badge bg-danger rounded-pill p-2">
+                                <i class="bi bi-exclamation-triangle-fill"></i>
+                            </span>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-0">{{ alert_counts.total_critical|default:0 }}</h6>
+                            <small class="text-muted">Critical Alerts</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <span class="badge bg-warning rounded-pill p-2">
+                                <i class="bi bi-exclamation-circle-fill"></i>
+                            </span>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-0">{{ alert_counts.total_warning|default:0 }}</h6>
+                            <small class="text-muted">Warning Alerts</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <span class="badge bg-info rounded-pill p-2">
+                                <i class="bi bi-info-circle-fill"></i>
+                            </span>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-0">{{ alert_counts.total_info|default:0 }}</h6>
+                            <small class="text-muted">Info Alerts</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <span class="badge bg-secondary rounded-pill p-2">
+                                <i class="bi bi-clock"></i>
+                            </span>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="mb-0">{{ alert_counts.total_overdue|default:0 }}</h6>
+                            <small class="text-muted">Overdue Actions</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Alerts Preview -->
+            {% if active_alerts %}
+            <div class="mt-3">
+                <h6 class="text-muted small mb-2">Recent Alerts</h6>
+                {% for alert in active_alerts|slice:":3" %}
+                    <div class="alert alert-light d-flex align-items-center mb-2 p-2" role="alert">
+                        {% if alert.alert_type == 'CRITICAL' %}
+                            <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>
+                        {% elif alert.alert_type == 'WARNING' %}
+                            <i class="bi bi-exclamation-circle-fill text-warning me-2"></i>
+                        {% elif alert.alert_type == 'INFO' %}
+                            <i class="bi bi-info-circle-fill text-info me-2"></i>
+                        {% elif alert.alert_type == 'SUCCESS' %}
+                            <i class="bi bi-check-circle-fill text-success me-2"></i>
+                        {% else %}
+                            <i class="bi bi-bell-fill text-secondary me-2"></i>
+                        {% endif %}
+                        <div class="flex-grow-1">
+                            <div class="fw-bold small">{{ alert.title|truncatechars:40 }}</div>
+                            <div class="small text-muted">{{ alert.message|truncatechars:60 }}</div>
+                        </div>
+                        <a href="{{ alert.get_entity_url|default:'#' }}" class="btn btn-sm btn-link">View</a>
+                    </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Operational KPIs -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white">
+            <h5 class="card-title mb-0">Operational Overview</h5>
+        </div>
+        <div class="card-body">
+            {% include 'partials/_kpi_item.html' with value=kpis.total_borrowers label="Total Borrowers" icon="bi-people" icon_color="primary" detail_url="/borrowers/" description="Borrowers actively tracked" %}
+            {% include 'partials/_kpi_item.html' with value=kpis.total_accounts label="Total Accounts" icon="bi-briefcase" icon_color="primary" detail_url="/accounts/" description="Loan accounts managed" %}
+            {% include 'partials/_kpi_item.html' with value=kpis.active_compromise_agreements label="Active Agreements" icon="bi-file-earmark-text" icon_color="success" detail_url="/compromise/" description="Compromise agreements in progress" %}
+            {% include 'partials/_kpi_item.html' with value=kpis.recent_activities label="Recent Activities" icon="bi-activity" icon_color="info" detail_url="#" description="Activities in last 7 days" %}
+        </div>
+    </div>
+
+    <!-- Recent Activities Timeline -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            {% now "Y-m-d" as today %}
+            {% now "Y-m-d" as yesterday %}{% comment %}This will be adjusted with a template filter{% endcomment %}
+            
+            {% include 'partials/_timeline.html' with activities=activities today=today yesterday=yesterday %}
+        </div>
+    </div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Alert Panel -->
+{% include 'partials/_alert_panel.html' with alert_counts=alert_counts alerts=active_alerts is_expanded=True %}
+
+<script>
+// Auto-refresh alerts every 30 seconds
+setInterval(function() {
+    fetch('/api/alerts/refresh/', {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Update alert badge
+        const badge = document.querySelector('.alert-badge .badge');
+        if (badge && data.total_alerts) {
+            if (data.total_alerts > 0) {
+                badge.textContent = data.total_alerts;
+                badge.style.display = 'block';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+        
+        // Update alert counts in summary widget
+        const criticalCount = document.querySelector('.badge.bg-danger').parentNode.parentNode.querySelector('h6');
+        if (criticalCount && data.critical_count !== undefined) {
+            criticalCount.textContent = data.critical_count;
+        }
+    })
+    .catch(error => {
+        console.error('Error refreshing alerts:', error);
+    });
+}, 30000); // 30 seconds
+</script>
 {% endblock %}

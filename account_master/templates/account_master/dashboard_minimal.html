@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container">
+    <h1>Dashboard Minimal Test</h1>
+    
+    <!-- Test only one include to isolate the issue -->
+    {% include '../partials/_alert_badge.html' with 
+        count=5 
+        color='danger' 
+        show_pulse=True 
+        icon='bi-bell'
+    %}
+    
+    <p>If you see the alert badge above, the include is working.</p>
+</div>
+{% endblock %}

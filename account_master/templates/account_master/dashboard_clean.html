@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% load render_table from django_tables2 %}
+
+{% block content %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">Dashboard</h1>
+        <div class="d-flex align-items-center gap-3">
+            <div class="text-muted small">
+                <i class="bi bi-clock me-1"></i>
+                Last updated: {% now "jS F Y, H:i" %}
+            </div>
+            <!-- Alert Badge in Header -->
+            {% if alert_counts.total > 0 %}
+                {% include 'partials/_alert_badge.html' with count=alert_counts.total color='danger' show_pulse=True icon='bi-bell' %}
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Financial KPIs -->
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4 mb-4">
+        <div class="col">
+            {% include 'partials/_kpi_card.html' with title="Portfolio Exposure" value=kpis.total_portfolio_exposure|floatformat:2 icon="bi-graph-up" icon_color="primary" detail_url="#" description="Total exposure across all accounts" %}
+        </div>
+        <div class="col">
+            {% include 'partials/_kpi_card.html' with title="NPL Ratio" value=kpis.npl_ratio unit="%" icon="bi-exclamation-triangle" icon_color="warning" detail_url="#" description="Non-performing loans ratio" %}
+        </div>
+        <div class="col">
+            {% include 'partials/_kpi_card.html' with title="Recovery Rate" value=kpis.recovery_rate unit="%" icon="bi-currency-exchange" icon_color="success" detail_url="#" description="Recovered amount vs exposure" %}
+        </div>
+        <div class="col">
+            {% include 'partials/_kpi_card.html' with title="Provision Coverage" value=kpis.provision_coverage unit="%" icon="bi-shield-check" icon_color="info" detail_url="#" description="Coverage ratio for NPLs" %}
+        </div>
+    </div>
+{% endblock %}

@@ -1,19 +1,29 @@
 from django.shortcuts import render
-from account_master.models import Borrower, LoanAccount, CollectionActivityLog
-from compromise_agreement.models import CompromiseAgreement
-from account_master.tables import DashboardCollectionActivityTable
+from django.utils import timezone
+from django.contrib.auth import get_user_model
+from account_master.services.dashboard_service import DashboardService
+from account_master.services.activity_service import ActivityService
+from account_master.services.alert_service import AlertService
 
 
 def dashboard(request):
-    borrower_count = Borrower.objects.count()
-    account_count = LoanAccount.objects.count()
-    compromise_agreement_count = CompromiseAgreement.objects.count()
-    recent_activities = CollectionActivityLog.objects.order_by("-activity_date")[:10]
-    activity_table = DashboardCollectionActivityTable(recent_activities)
+    # Get portfolio KPIs from DashboardService
+    kpis = DashboardService.get_portfolio_kpis()
+
+    # Get recent activities using ActivityService
+    recent_activities = ActivityService.get_recent_activities(limit=20)
+
+    # Get alert counts from AlertService
+    alert_counts = AlertService.get_alert_counts(request.user)
+    active_alerts = AlertService.get_active_alerts(request.user, limit=10)
+
     context = {
-        "borrower_count": borrower_count,
-        "account_count": account_count,
-        "compromise_agreement_count": compromise_agreement_count,
-        "activity_table": activity_table,
+        "kpis": kpis,
+        "activities": recent_activities,
+        "alert_counts": alert_counts,
+        "active_alerts": active_alerts,
+        "today": timezone.now().date(),
+        "yesterday": (timezone.now() - timezone.timedelta(days=1)).date(),
+        "breadcrumbs": [{"title": "Dashboard", "url": None}],
     }
     return render(request, "account_master/dashboard.html", context)

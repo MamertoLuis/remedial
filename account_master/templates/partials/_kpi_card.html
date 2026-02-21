@@ -1,0 +1,64 @@
+{% load static %}
+{% load humanize %}
+
+<div class="card h-100 border-0 shadow-sm">
+    <div class="card-body">
+        <!-- KPI Title -->
+        {% if title %}
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5 class="card-title mb-0">{{ title }}</h5>
+                {% if icon %}
+                    <span class="text-{{ icon_color|default:'muted' }}">
+                        <i class="bi {{ icon }}"></i>
+                    </span>
+                {% endif %}
+            </div>
+        {% endif %}
+        
+        <!-- KPI Value -->
+        <div class="display-6 fw-bold mb-2">
+            {% if value %}
+                {{ value|default:"-"|floatformat:2|intcomma }}
+                {% if unit %}<span class="text-muted small ms-1">{{ unit }}</span>{% endif %}
+            {% else %}
+                <span class="text-muted">-</span>
+            {% endif %}
+        </div>
+        
+        <!-- KPI Description -->
+        {% if description %}
+            <div class="text-muted small mb-3">{{ description }}</div>
+        {% endif %}
+        
+        <!-- KPI Trend Indicator -->
+        {% if trend %}
+            <div class="kpi-trend mt-2">
+                {% if trend > 0 %}
+                    <span class="text-success">
+                        <i class="bi bi-arrow-up"></i>
+                        +{{ trend|floatformat:1 }}%
+                    </span>
+                {% elif trend < 0 %}
+                    <span class="text-danger">
+                        <i class="bi bi-arrow-down"></i>
+                        {{ trend|floatformat:1 }}%
+                    </span>
+                {% else %}
+                    <span class="text-muted">
+                        <i class="bi bi-dash"></i>
+                        0.0%
+                    </span>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- KPI Footer with Action Link -->
+    {% if detail_url %}
+        <div class="card-footer bg-transparent border-top-0">
+            <a href="{{ detail_url }}" class="btn btn-sm btn-link text-decoration-none p-0">
+                View Details <i class="bi bi-arrow-right"></i>
+            </a>
+        </div>
+    {% endif %}
+</div>

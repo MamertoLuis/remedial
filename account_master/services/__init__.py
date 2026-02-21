@@ -8,3 +8,8 @@ from .core import (
     create_remedial_strategy,
     take_snapshot,
 )
+from .ecl_service import (
+    _get_provision_rate_for_classification,
+    update_ecl_provision,
+    update_ecl_provision_for_account,
+)

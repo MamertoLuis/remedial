@@ -1,0 +1,8 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container">
+    <h1>Dashboard with Base Template</h1>
+    <p>This tests the base template extension.</p>
+    <p>Alert counts: {{ alert_counts.total|default:0 }}</p>
+</div>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% load static %}
+
+<div class="decision-card">
+    <div class="card-title">{{ title }}</div>
+    <div class="card-content">
+        {% block content %}{% endblock %}
+    </div>
+    {% if edit_url or show_edit %}
+        <div class="card-actions">
+            <button class="btn btn-outline-primary btn-sm" data-bs-toggle="collapse" data-bs-target="#{{ collapse_id }}">
+                <i class="bi bi-pencil"></i> Edit
+            </button>
+        </div>
+        
+        <div class="collapse mt-3" id="{{ collapse_id }}">
+            <div class="card card-body bg-light">
+                {% block edit_form %}{% endblock %}
+            </div>
+        </div>
+    {% endif %}
+</div>

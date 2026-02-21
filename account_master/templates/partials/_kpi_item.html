@@ -1,0 +1,25 @@
+{% load static %}
+
+<div class="row align-items-center py-2 border-bottom">
+    <div class="col">
+        <div class="d-flex align-items-center">
+            {% if icon %}
+                <i class="bi {{ icon }} text-{{ icon_color }} me-3"></i>
+            {% endif %}
+            <div>
+                <div class="fw-bold">{{ value }}</div>
+                <div class="text-muted small">{{ label }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-auto">
+        {% if detail_url and detail_url != "#" %}
+            <a href="{{ detail_url }}" class="btn btn-sm btn-outline-primary">View</a>
+        {% endif %}
+    </div>
+    {% if description %}
+        <div class="col-12">
+            <div class="text-muted small mt-1">{{ description }}</div>
+        </div>
+    {% endif %}
+</div>

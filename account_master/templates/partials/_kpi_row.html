@@ -1,0 +1,22 @@
+{% load static %}
+
+<div class="kpi-row">
+    {% for kpi in kpis %}
+        <div class="kpi-item">
+            <div class="kpi-label text-muted small">{{ kpi.label }}</div>
+            <div class="kpi-value fw-bold">{{ kpi.value|default:"-" }}</div>
+            {% if kpi.trend %}
+                <div class="kpi-trend small">
+                    {% if kpi.trend > 0 %}
+                        <span class="text-success">↑</span>
+                    {% elif kpi.trend < 0 %}
+                        <span class="text-danger">↓</span>
+                    {% else %}
+                        <span class="text-muted">→</span>
+                    {% endif %}
+                    {{ kpi.trend|abs|floatformat:1 }}%
+                </div>
+            {% endif %}
+        </div>
+    {% endfor %}
+</div>

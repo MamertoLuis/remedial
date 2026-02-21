@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container">
+    <h1>Dashboard Test with Include</h1>
+    
+    <!-- Test single include -->
+    {% include '../partials/_kpi_card.html' with 
+        title="Test KPI" 
+        value="123.45" 
+        icon="bi-graph-up"
+        icon_color="primary"
+        detail_url="#"
+        description="Test description"
+    %}
+</div>
+{% endblock %}

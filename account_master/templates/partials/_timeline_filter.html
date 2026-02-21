@@ -1,0 +1,217 @@
+{% load static %}
+
+<div class="timeline-filters">
+    <!-- Activity Type Filters -->
+    <div class="dropdown">
+        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-funnel me-1"></i>
+            Filter by Type
+        </button>
+        <ul class="dropdown-menu">
+            <li>
+                <a class="dropdown-item {% if not selected_types or selected_types|length == 5 %}active{% endif %}" 
+                   href="#" data-activity-type="all">
+                    <i class="bi bi-check-all me-2"></i>All Activities
+                </a>
+            </li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+                <a class="dropdown-item {% if 'collection' in selected_types %}active{% endif %}" 
+                   href="#" data-activity-type="collection">
+                    <i class="bi bi-telephone text-info me-2"></i>Collection Activities
+                </a>
+            </li>
+            <li>
+                <a class="dropdown-item {% if 'compromise' in selected_types %}active{% endif %}" 
+                   href="#" data-activity-type="compromise">
+                    <i class="bi bi-handshake text-success me-2"></i>Compromise Agreements
+                </a>
+            </li>
+            <li>
+                <a class="dropdown-item {% if 'strategy' in selected_types %}active{% endif %}" 
+                   href="#" data-activity-type="strategy">
+                    <i class="bi bi-gear text-primary me-2"></i>Remedial Strategies
+                </a>
+            </li>
+            <li>
+                <a class="dropdown-item {% if 'delinquency' in selected_types %}active{% endif %}" 
+                   href="#" data-activity-type="delinquency">
+                    <i class="bi bi-exclamation-triangle text-warning me-2"></i>Delinquency Changes
+                </a>
+            </li>
+            <li>
+                <a class="dropdown-item {% if 'exposure' in selected_types %}active{% endif %}" 
+                   href="#" data-activity-type="exposure">
+                    <i class="bi bi-graph-up text-secondary me-2"></i>Exposure Snapshots
+                </a>
+            </li>
+        </ul>
+    </div>
+    
+    <!-- Date Range Filter -->
+    <div class="dropdown ms-2">
+        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="bi bi-calendar me-1"></i>
+            Date Range
+        </button>
+        <ul class="dropdown-menu">
+            <li>
+                <a class="dropdown-item {% if date_range == 'today' %}active{% endif %}" 
+                   href="#" data-date-range="today">
+                    Today
+                </a>
+            </li>
+            <li>
+                <a class="dropdown-item {% if date_range == 'week' %}active{% endif %}" 
+                   href="#" data-date-range="week">
+                    This Week
+                </a>
+            </li>
+            <li>
+                <a class="dropdown-item {% if date_range == 'month' %}active{% endif %}" 
+                   href="#" data-date-range="month">
+                    This Month
+                </a>
+            </li>
+            <li><hr class="dropdown-divider"></li>
+            <li>
+                <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#customDateRangeModal">
+                    <i class="bi bi-calendar-range me-2"></i>Custom Range
+                </a>
+            </li>
+        </ul>
+    </div>
+    
+    <!-- User Filter -->
+    {% if user.is_authenticated %}
+    <div class="form-check form-switch ms-3">
+        <input class="form-check-input" type="checkbox" id="userActivitiesOnly" 
+               {% if user_only %}checked{% endif %}>
+        <label class="form-check-label small" for="userActivitiesOnly">
+            My activities only
+        </label>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Custom Date Range Modal -->
+<div class="modal fade" id="customDateRangeModal" tabindex="-1" aria-labelledby="customDateRangeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="customDateRangeModalLabel">Custom Date Range</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="customDateRangeForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="startDate" class="form-label">Start Date</label>
+                            <input type="date" class="form-control" id="startDate" name="start_date" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="endDate" class="form-label">End Date</label>
+                            <input type="date" class="form-control" id="endDate" name="end_date" required>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="applyDateRange">Apply</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Activity type filter handlers
+    document.querySelectorAll('[data-activity-type]').forEach(function(element) {
+        element.addEventListener('click', function(e) {
+            e.preventDefault();
+            const activityType = this.dataset.activityType;
+            
+            // Update active state
+            document.querySelectorAll('[data-activity-type]').forEach(el => {
+                el.classList.remove('active');
+            });
+            this.classList.add('active');
+            
+            // Here you would typically make an AJAX call to filter activities
+            // For now, we'll just log the selection
+            console.log('Filter by activity type:', activityType);
+        });
+    });
+    
+    // Date range filter handlers
+    document.querySelectorAll('[data-date-range]').forEach(function(element) {
+        element.addEventListener('click', function(e) {
+            e.preventDefault();
+            const dateRange = this.dataset.dateRange;
+            
+            // Update active state
+            document.querySelectorAll('[data-date-range]').forEach(el => {
+                el.classList.remove('active');
+            });
+            this.classList.add('active');
+            
+            console.log('Filter by date range:', dateRange);
+        });
+    });
+    
+    // User activities toggle
+    const userActivitiesToggle = document.getElementById('userActivitiesOnly');
+    if (userActivitiesToggle) {
+        userActivitiesToggle.addEventListener('change', function() {
+            console.log('User activities only:', this.checked);
+        });
+    }
+    
+    // Custom date range form
+    const applyDateRangeBtn = document.getElementById('applyDateRange');
+    if (applyDateRangeBtn) {
+        applyDateRangeBtn.addEventListener('click', function() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            
+            if (startDate && endDate) {
+                console.log('Custom date range:', startDate, 'to', endDate);
+                // Close modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('customDateRangeModal'));
+                modal.hide();
+            }
+        });
+    }
+});
+</script>
+
+<style>
+.timeline-filters {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.timeline-filters .dropdown-item.active {
+    background-color: #0d6efd;
+    color: white;
+}
+
+.timeline-filters .dropdown-item.active i {
+    color: white !important;
+}
+
+@media (max-width: 768px) {
+    .timeline-filters {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .timeline-filters .dropdown,
+    .timeline-filters .form-check {
+        width: 100%;
+    }
+}
+</style>

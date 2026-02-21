@@ -1,0 +1,123 @@
+{% load static %}
+
+<div class="context-header">
+    <div class="container-fluid">
+        <div class="row align-items-center">
+            <!-- Entity Identifier Section -->
+            <div class="col-md-4">
+                {% if entity_type == 'borrower' %}
+                    <div class="entity-identifier">
+                        <i class="bi bi-person"></i> {{ borrower.full_name }}
+                    </div>
+                    <div class="entity-subtitle">
+                        Borrower ID: {{ borrower.borrower_id }}
+                    </div>
+                {% elif entity_type == 'loan' %}
+                    <div class="entity-identifier">
+                        <i class="bi bi-file-earmark-text"></i> {{ loan.loan_id }}
+                    </div>
+                    <div class="entity-subtitle">
+                        Borrower: {{ loan.borrower.full_name }}
+                    </div>
+                {% elif entity_type == 'compromise' %}
+                    <div class="entity-identifier">
+                        <i class="bi bi-handshake"></i> Compromise Agreement
+                    </div>
+                    <div class="entity-subtitle">
+                        Agreement No: {{ agreement.agreement_no }}
+                    </div>
+                {% endif %}
+                
+                <!-- Status Badges -->
+                <div class="status-badges">
+                    {% if entity_type == 'borrower' %}
+                        <span class="badge bg-info">{{ borrower.borrower_type }}</span>
+                        {% if borrower.total_loans %}
+                            <span class="badge bg-secondary">{{ borrower.total_loans }} Loan{{ borrower.total_loans|pluralize }}</span>
+                        {% endif %}
+                    {% elif entity_type == 'loan' %}
+                        {% if loan.current_delinquency %}
+                            {% include 'partials/_status_badge.html' with status=loan.current_delinquency.classification %}
+                            <span class="badge bg-warning">{{ loan.current_delinquency.days_past_due }} DPD</span>
+                        {% else %}
+                            <span class="badge bg-secondary">NO STATUS</span>
+                        {% endif %}
+                        {% if loan.current_strategy %}
+                            <span class="badge bg-info">{{ loan.current_strategy.strategy_type }}</span>
+                        {% endif %}
+                    {% elif entity_type == 'compromise' %}
+                        <span class="badge bg-{% if agreement.status == 'ACTIVE' %}success{% elif agreement.status == 'COMPLETED' %}info{% else %}secondary{% endif %}">
+                            {{ agreement.status }}
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Key Metrics Section -->
+            <div class="col-md-4 text-center">
+                <div class="row g-2">
+                    {% if entity_type == 'borrower' %}
+                        {% if borrower.total_exposure %}
+                            <div class="col-6">
+                                <small class="text-muted d-block">Total Exposure</small>
+                                <div class="fw-bold">{{ borrower.total_exposure|floatformat:2 }}</div>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted d-block">Active Loans</small>
+                                <div class="fw-bold">{{ borrower.total_loans }}</div>
+                            </div>
+                        {% endif %}
+                    {% elif entity_type == 'loan' %}
+                        <div class="col-6">
+                            <small class="text-muted d-block">Balance</small>
+                            <div class="fw-bold">{{ loan.outstanding_balance|default:loan.principal_amount|floatformat:2 }}</div>
+                        </div>
+                        {% if loan.current_delinquency %}
+                            <div class="col-6">
+                                <small class="text-muted d-block">Provision</small>
+                                <div class="fw-bold">{{ loan.current_delinquency.provision_percentage }}%</div>
+                            </div>
+                        {% endif %}
+                    {% elif entity_type == 'compromise' %}
+                        <div class="col-6">
+                            <small class="text-muted d-block">Original Amount</small>
+                            <div class="fw-bold">{{ agreement.original_amount|floatformat:2 }}</div>
+                        </div>
+                        <div class="col-6">
+                            <small class="text-muted d-block">Discounted</small>
+                            <div class="fw-bold">{{ agreement.discounted_amount|floatformat:2 }}</div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Primary Actions Section -->
+            <div class="col-md-4 text-end">
+                <div class="primary-actions">
+                    {% if entity_type == 'borrower' %}
+                        <a href="{{ borrower.get_edit_url }}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-pencil"></i> Edit
+                        </a>
+                        <a href="{% url 'create_account_for_borrower' borrower.borrower_id %}" class="btn btn-success btn-sm">
+                            <i class="bi bi-plus-circle"></i> Add Loan
+                        </a>
+                    {% elif entity_type == 'loan' %}
+                        <a href="{{ loan.get_edit_url }}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-pencil"></i> Edit
+                        </a>
+                        <a href="{% url 'create_collection_activity' loan.loan_id %}" class="btn btn-success btn-sm">
+                            <i class="bi bi-telephone-plus"></i> Add Activity
+                        </a>
+                    {% elif entity_type == 'compromise' %}
+                        <a href="{{ agreement.get_edit_url }}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-pencil"></i> Edit
+                        </a>
+                        <a href="#" class="btn btn-outline-info btn-sm" onclick="window.print()">
+                            <i class="bi bi-printer"></i> Print
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

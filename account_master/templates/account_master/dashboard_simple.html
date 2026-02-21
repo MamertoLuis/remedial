@@ -1,0 +1,29 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="container">
+    <h1>Dashboard Test</h1>
+    <p>This is a simple test to check if templates are working.</p>
+    {% if kpis %}
+        <div class="card">
+            <div class="card-body">
+                <h5>Portfolio KPIs</h5>
+                <p>Total Borrowers: {{ kpis.total_borrowers|default:"N/A" }}</p>
+                <p>Total Accounts: {{ kpis.total_accounts|default:"N/A" }}</p>
+                <p>Portfolio Exposure: {{ kpis.total_portfolio_exposure|default:"N/A" }}</p>
+            </div>
+        </div>
+    {% endif %}
+    
+    {% if alert_counts %}
+        <div class="card mt-3">
+            <div class="card-body">
+                <h5>Alert Status</h5>
+                <p>Total Alerts: {{ alert_counts.total|default:0 }}</p>
+                <p>Critical: {{ alert_counts.critical|default:0 }}</p>
+                <p>Warning: {{ alert_counts.warning|default:0 }}</p>
+                <p>Info: {{ alert_counts.info|default:0 }}</p>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

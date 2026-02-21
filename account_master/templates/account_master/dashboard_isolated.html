@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% load render_table from django_tables2 %}
+
+{% block content %}
+<div class="container">
+    <h1>Dashboard Isolated Test</h1>
+    
+    <!-- Test single include -->
+    {% include 'partials/_alert_badge.html' with 
+        count=5 
+        color='danger' 
+        show_pulse=True 
+        icon='bi-bell'
+    %}
+    
+    <p>If you see the alert badge above, this single include works.</p>
+    
+    <!-- Test KPI card -->
+    {% include 'partials/_kpi_card.html' with 
+        title="Test KPI" 
+        value=123.45 
+        icon="bi-graph-up"
+        icon_color="primary"
+        detail_url="#"
+        description="Test description"
+    %}
+</div>
+{% endblock %}

@@ -1,4 +1,7 @@
 from django.db import models
+from django.utils import timezone
+from django.core.exceptions import ValidationError
+from django.utils.translation import gettext_lazy as _
 from django.contrib.auth import get_user_model
 
 
@@ -315,3 +318,483 @@ class ECLProvisionHistory(AuditableModel):
 
     def __str__(self):
         return f"ECL {self.provision_amount} for {self.exposure.account.loan_id} as of {self.as_of_date}"
+
+
+# ============================================================================
+# ALERT SYSTEM MODELS
+# ============================================================================
+
+
+class Alert(AuditableModel):
+    """
+    Alert model for tracking notifications and important events
+    in the loan remedial management system.
+    """
+
+    class AlertType(models.TextChoices):
+        CRITICAL = "CRITICAL", _("Critical")
+        WARNING = "WARNING", _("Warning")
+        INFO = "INFO", _("Info")
+        SUCCESS = "SUCCESS", _("Success")
+
+    class Severity(models.TextChoices):
+        HIGH = "HIGH", _("High")
+        MEDIUM = "MEDIUM", _("Medium")
+        LOW = "LOW", _("Low")
+
+    class Status(models.TextChoices):
+        NEW = "NEW", _("New")
+        ACKNOWLEDGED = "ACKNOWLEDGED", _("Acknowledged")
+        RESOLVED = "RESOLVED", _("Resolved")
+        DISMISSED = "DISMISSED", _("Dismissed")
+
+    class EntityType(models.TextChoices):
+        ACCOUNT = "ACCOUNT", _("Loan Account")
+        BORROWER = "BORROWER", _("Borrower")
+        COMPROMISE_AGREEMENT = "COMPROMISE_AGREEMENT", _("Compromise Agreement")
+        DELINQUENCY_STATUS = "DELINQUENCY_STATUS", _("Delinquency Status")
+        REMEDIAL_STRATEGY = "REMEDIAl_STRATEGY", _("Remedial Strategy")
+        EXPOSURE = "EXPOSURE", _("Exposure")
+        SYSTEM = "SYSTEM", _("System")
+
+    alert_id = models.AutoField(primary_key=True)
+    alert_type = models.CharField(
+        max_length=20,
+        choices=AlertType.choices,
+        default=AlertType.INFO,
+        help_text=_("Type of alert"),
+    )
+
+    title = models.CharField(max_length=200, help_text=_("Short alert headline"))
+
+    message = models.TextField(help_text=_("Detailed alert description"))
+
+    entity_type = models.CharField(
+        max_length=30, choices=EntityType.choices, help_text=_("Type of related entity")
+    )
+
+    entity_id = models.CharField(
+        max_length=50, blank=True, null=True, help_text=_("ID of related entity")
+    )
+
+    severity = models.CharField(
+        max_length=10,
+        choices=Severity.choices,
+        default=Severity.MEDIUM,
+        help_text=_("Priority level of alert"),
+    )
+
+    status = models.CharField(
+        max_length=15,
+        choices=Status.choices,
+        default=Status.NEW,
+        help_text=_("Current status of alert"),
+    )
+
+    due_date = models.DateField(
+        blank=True, null=True, help_text=_("Optional deadline for action")
+    )
+
+    created_by = models.ForeignKey(
+        "users.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="alerts_created",
+        help_text=_("User who created or triggered the alert"),
+    )
+
+    assigned_to = models.ForeignKey(
+        "users.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="alerts_assigned",
+        help_text=_("User responsible for addressing the alert"),
+    )
+
+    metadata = models.JSONField(
+        default=dict, blank=True, help_text=_("Additional alert data stored as JSON")
+    )
+
+    is_read = models.BooleanField(
+        default=False,
+        help_text=_("Whether the alert has been read by the assigned user"),
+    )
+
+    expires_at = models.DateTimeField(
+        blank=True, null=True, help_text=_("Optional expiration time for the alert")
+    )
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["status", "severity"]),
+            models.Index(fields=["created_by"]),
+            models.Index(fields=["assigned_to"]),
+            models.Index(fields=["entity_type", "entity_id"]),
+            models.Index(fields=["due_date"]),
+            models.Index(fields=["expires_at"]),
+        ]
+
+    def __str__(self):
+        return f"{self.get_alert_type_display()}: {self.title}"
+
+    def get_entity_url(self):
+        """Get URL for the related entity."""
+        if not self.entity_type or not self.entity_id:
+            return None
+
+        url_mapping = {
+            self.EntityType.ACCOUNT: f"/account/{self.entity_id}/",
+            self.EntityType.BORROWER: f"/borrower/{self.entity_id}/",
+            self.EntityType.COMPROMISE_AGREEMENT: f"/compromise/{self.entity_id}/",
+            self.EntityType.DELINQUENCY_STATUS: f"/account/{self.entity_id}/#delinquency",
+            self.EntityType.REMEDIAL_STRATEGY: f"/account/{self.entity_id}/#strategy",
+            self.EntityType.EXPOSURE: f"/account/{self.entity_id}/#exposure",
+            self.EntityType.SYSTEM: "#",
+        }
+
+        return url_mapping.get(self.entity_type)
+
+    def is_overdue(self):
+        """Check if alert is overdue."""
+        if not self.due_date or self.status in [
+            self.Status.RESOLVED,
+            self.Status.DISMISSED,
+        ]:
+            return False
+        return self.due_date < timezone.now().date()
+
+    def is_expired(self):
+        """Check if alert has expired."""
+        if not self.expires_at:
+            return False
+        return self.expires_at < timezone.now()
+
+    def acknowledge(self, user=None):
+        """Mark alert as acknowledged."""
+        if self.status != self.Status.NEW:
+            return False
+
+        self.status = self.Status.ACKNOWLEDGED
+        self.save()
+
+        # Log the action
+        AlertLog.objects.create(
+            alert=self,
+            action_taken=_("Alert acknowledged"),
+            performed_by=user,
+            previous_status=self.Status.NEW,
+            new_status=self.Status.ACKNOWLEDGED,
+        )
+        return True
+
+    def resolve(self, user=None, resolution_notes=""):
+        """Mark alert as resolved."""
+        if self.status in [self.Status.RESOLVED, self.Status.DISMISSED]:
+            return False
+
+        previous_status = self.status
+        self.status = self.Status.RESOLVED
+        self.save()
+
+        # Log the action
+        AlertLog.objects.create(
+            alert=self,
+            action_taken=_("Alert resolved")
+            + (f": {resolution_notes}" if resolution_notes else ""),
+            performed_by=user,
+            previous_status=previous_status,
+            new_status=self.Status.RESOLVED,
+        )
+        return True
+
+    def dismiss(self, user=None, reason=""):
+        """Dismiss alert."""
+        if self.status in [self.Status.RESOLVED, self.Status.DISMISSED]:
+            return False
+
+        previous_status = self.status
+        self.status = self.Status.DISMISSED
+        self.save()
+
+        # Log the action
+        AlertLog.objects.create(
+            alert=self,
+            action_taken=_("Alert dismissed") + (f": {reason}" if reason else ""),
+            performed_by=user,
+            previous_status=previous_status,
+            new_status=self.Status.DISMISSED,
+        )
+        return True
+
+    @property
+    def urgency_class(self):
+        """Get Bootstrap class based on severity."""
+        class_mapping = {
+            self.Severity.HIGH: "danger",
+            self.Severity.MEDIUM: "warning",
+            self.Severity.LOW: "info",
+        }
+        return class_mapping.get(self.severity, "secondary")
+
+    @property
+    def type_icon(self):
+        """Get Bootstrap icon based on alert type."""
+        icon_mapping = {
+            self.AlertType.CRITICAL: "bi-exclamation-triangle-fill",
+            self.AlertType.WARNING: "bi-exclamation-circle-fill",
+            self.AlertType.INFO: "bi-info-circle-fill",
+            self.AlertType.SUCCESS: "bi-check-circle-fill",
+        }
+        return icon_mapping.get(self.alert_type, "bi-bell-fill")
+
+
+class AlertRule(AuditableModel):
+    """
+    Alert rule model for automated alert generation.
+    """
+
+    class RuleType(models.TextChoices):
+        DPD_THRESHOLD = "DPD_THRESHOLD", _("DPD Threshold")
+        EXPOSURE_LIMIT = "EXPOSURE_LIMIT", _("Exposure Limit")
+        STATUS_CHANGE = "STATUS_CHANGE", _("Status Change")
+        AGREEMENT_DEADLINE = "AGREEMENT_DEADLINE", _("Agreement Deadline")
+        COLLECTION_INACTIVITY = "COLLECTION_INACTIVITY", _("Collection Inactivity")
+        NPL_RATIO = "NPL_RATIO", _("NPL Ratio")
+        PROVISION_COVERAGE = "PROVISION_COVERAGE", _("Provision Coverage")
+
+    class ComparisonOperator(models.TextChoices):
+        GREATER_THAN = ">", _("Greater than")
+        LESS_THAN = "<", _("Less than")
+        GREATER_EQUAL = ">=", _("Greater than or equal")
+        LESS_EQUAL = "<=", _("Less than or equal")
+        EQUAL = "==", _("Equal")
+        NOT_EQUAL = "!=", _("Not equal")
+
+    rule_id = models.AutoField(primary_key=True)
+    name = models.CharField(max_length=100, unique=True, help_text=_("Rule identifier"))
+
+    description = models.TextField(help_text=_("Description of the rule's purpose"))
+
+    rule_type = models.CharField(
+        max_length=30,
+        choices=RuleType.choices,
+        help_text=_("Type of condition to check"),
+    )
+
+    condition_value = models.DecimalField(
+        max_digits=15,
+        decimal_places=2,
+        help_text=_("Threshold value for the condition"),
+    )
+
+    comparison_operator = models.CharField(
+        max_length=2,
+        choices=ComparisonOperator.choices,
+        default=ComparisonOperator.GREATER_EQUAL,
+        help_text=_("Comparison operator for the condition"),
+    )
+
+    is_active = models.BooleanField(
+        default=True, help_text=_("Whether the rule is active")
+    )
+
+    alert_type = models.CharField(
+        max_length=20,
+        choices=Alert.AlertType.choices,
+        default=Alert.AlertType.WARNING,
+        help_text=_("Type of alert to generate when triggered"),
+    )
+
+    severity = models.CharField(
+        max_length=10,
+        choices=Alert.Severity.choices,
+        default=Alert.Severity.MEDIUM,
+        help_text=_("Severity level for generated alerts"),
+    )
+
+    notification_channels = models.JSONField(
+        default=list,
+        blank=True,
+        help_text=_("List of notification channels (['in_app', 'email', 'sms'])"),
+    )
+
+    recipients = models.ManyToManyField(
+        "users.User",
+        blank=True,
+        related_name="alert_rules",
+        help_text=_("Users to notify when rule triggers"),
+    )
+
+    metadata = models.JSONField(
+        default=dict, blank=True, help_text=_("Additional rule configuration")
+    )
+
+    last_triggered = models.DateTimeField(
+        blank=True, null=True, help_text=_("When the rule was last triggered")
+    )
+
+    trigger_count = models.PositiveIntegerField(
+        default=0, help_text=_("Number of times this rule has been triggered")
+    )
+
+    class Meta:
+        ordering = ["name"]
+        indexes = [
+            models.Index(fields=["rule_type", "is_active"]),
+            models.Index(fields=["last_triggered"]),
+        ]
+
+    def __str__(self):
+        return f"{self.name} ({self.get_rule_type_display()})"
+
+    def evaluate_condition(self, value):
+        """Evaluate if the condition is met."""
+        condition_value = float(self.condition_value)
+        test_value = float(value) if value is not None else 0
+
+        operator_mapping = {
+            self.ComparisonOperator.GREATER_THAN: lambda x, y: x > y,
+            self.ComparisonOperator.LESS_THAN: lambda x, y: x < y,
+            self.ComparisonOperator.GREATER_EQUAL: lambda x, y: x >= y,
+            self.ComparisonOperator.LESS_EQUAL: lambda x, y: x <= y,
+            self.ComparisonOperator.EQUAL: lambda x, y: x == y,
+            self.ComparisonOperator.NOT_EQUAL: lambda x, y: x != y,
+        }
+
+        operator_func = operator_mapping.get(self.comparison_operator)
+        if not operator_func:
+            return False
+
+        return operator_func(test_value, condition_value)
+
+    def trigger_alert(self, entity_type, entity_id, title, message, metadata=None):
+        """Create an alert when rule is triggered."""
+        if not self.is_active:
+            return None
+
+        alert = Alert.objects.create(
+            alert_type=self.alert_type,
+            title=title,
+            message=message,
+            entity_type=entity_type,
+            entity_id=entity_id,
+            severity=self.severity,
+            metadata=metadata or {},
+        )
+
+        # Assign to recipients
+        if self.recipients.exists():
+            alert.assigned_to.set(self.recipients.all())
+
+        # Update rule stats
+        self.last_triggered = timezone.now()
+        self.trigger_count += 1
+        self.save()
+
+        return alert
+
+
+class AlertLog(AuditableModel):
+    """
+    Log model for tracking alert history and actions.
+    """
+
+    log_id = models.AutoField(primary_key=True)
+    alert = models.ForeignKey(
+        Alert,
+        on_delete=models.CASCADE,
+        related_name="logs",
+        help_text=_("Related alert"),
+    )
+
+    action_taken = models.CharField(
+        max_length=200, help_text=_("Description of action taken")
+    )
+
+    performed_by = models.ForeignKey(
+        "users.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="alert_actions",
+        help_text=_("User who performed the action"),
+    )
+
+    timestamp = models.DateTimeField(
+        auto_now_add=True, help_text=_("When the action was performed")
+    )
+
+    previous_status = models.CharField(
+        max_length=15,
+        blank=True,
+        null=True,
+        help_text=_("Alert status before the action"),
+    )
+
+    new_status = models.CharField(
+        max_length=15,
+        blank=True,
+        null=True,
+        help_text=_("Alert status after the action"),
+    )
+
+    notes = models.TextField(
+        blank=True, null=True, help_text=_("Additional notes about the action")
+    )
+
+    class Meta:
+        ordering = ["-timestamp"]
+        indexes = [
+            models.Index(fields=["alert", "timestamp"]),
+            models.Index(fields=["performed_by"]),
+        ]
+
+    def __str__(self):
+        return f"{self.alert.title} - {self.action_taken}"
+
+
+# Import signals at the end to avoid circular imports
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+
+@receiver(post_save, sender=DelinquencyStatus)
+def update_ecl_provision_on_delinquency_change(sender, instance, created, **kwargs):
+    """
+    Automatically update ECL provision when DelinquencyStatus is created or updated.
+    """
+    try:
+        from .services import update_ecl_provision_for_account
+
+        # Only update if the classification or days_past_due has changed
+        # We'll check by comparing with the current state in the database
+        if not created:  # Only for updates, not initial creation
+            try:
+                # Get the previous version from the database
+                previous = sender.objects.get(pk=instance.pk)
+
+                # Check if classification or DPD changed
+                if (
+                    previous.classification != instance.classification
+                    or previous.days_past_due != instance.days_past_due
+                ):
+                    # Update ECL provisions for this account and date
+                    update_ecl_provision_for_account(
+                        account=instance.account, as_of_date=instance.as_of_date
+                    )
+
+            except sender.DoesNotExist:
+                # This shouldn't happen in a post_save signal, but just in case
+                pass
+
+    except Exception as e:
+        # Log the error but don't raise it to avoid breaking the save operation
+        import logging
+
+        logger = logging.getLogger(__name__)
+        logger.error(
+            f"Error updating ECL provision for delinquency {instance.delinquency_id}: {e}"
+        )

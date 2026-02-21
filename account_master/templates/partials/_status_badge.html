@@ -1,0 +1,19 @@
+{% load static %}
+
+{% if status %}
+    {% if status == "CURRENT" %}
+        <span class="badge bg-secondary">{{ status }}</span>
+    {% elif status == "ESPECIALLY MENTIONED" %}
+        <span class="badge bg-info">{{ status }}</span>
+    {% elif status == "SUBSTANDARD" %}
+        <span class="badge bg-warning text-dark">{{ status }}</span>
+    {% elif status == "DOUBTFUL" %}
+        <span class="badge bg-danger">{{ status }}</span>
+    {% elif status == "LOSS" %}
+        <span class="badge bg-dark">{{ status }}</span>
+    {% else %}
+        <span class="badge bg-secondary">{{ status }}</span>
+    {% endif %}
+{% else %}
+    <span class="badge bg-secondary">UNKNOWN</span>
+{% endif %}

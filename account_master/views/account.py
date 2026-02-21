@@ -1,10 +1,15 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+import json
 from account_master.models import (
     LoanAccount,
     Exposure,
     DelinquencyStatus,
     RemedialStrategy,
     CollectionActivityLog,
+    ECLProvisionHistory,
 )
 from account_master.services import upsert_loan_account
 from account_master.forms import LoanAccountForm
@@ -34,15 +39,17 @@ def account_list(request):
         .order_by("account_officer_id")
     )
 
-    return render(
-        request,
-        "account_master/account_list.html",
-        {
-            "table": table,
-            "account_officers": account_officers,
-            "selected_officer": account_officer,
-        },
-    )
+    context = {
+        "table": table,
+        "account_officers": account_officers,
+        "selected_officer": account_officer,
+        "breadcrumbs": [
+            {"title": "Dashboard", "url": "/"},
+            {"title": "Loan Accounts", "url": None},
+        ],
+    }
+
+    return render(request, "account_master/account_list.html", context)
 
 
 def create_account(request, borrower_id=None):
@@ -78,6 +85,13 @@ def account_detail(request, loan_id):
         .first()
     )
 
+    # Get latest ECL provision
+    latest_ecl_provision = None
+    if latest_exposure:
+        latest_ecl_provision = ECLProvisionHistory.objects.filter(
+            exposure=latest_exposure, is_current=True
+        ).first()
+
     historical_exposures_table = ExposureTable(
         account.exposures.order_by("-as_of_date")
     )
@@ -96,21 +110,78 @@ def account_detail(request, loan_id):
         account.compromise_agreements.order_by("-created_at")
     )
 
-    return render(
-        request,
-        "account_master/account_detail.html",
-        {
-            "account": account,
-            "latest_exposure": latest_exposure,
-            "latest_delinquency": latest_delinquency,
-            "current_strategy": current_strategy,
-            "historical_exposure_table": historical_exposures_table,
-            "historical_delinquency_table": historical_delinquency_table,
-            "historical_strategies_table": historical_strategies_table,
-            "collection_activities_table": collection_activities_table,
-            "compromise_agreements_table": compromise_agreements_table,
-        },
-    )
+    # Calculate formatted ECL provision rate if available
+    formatted_provision_rate = None
+    if latest_ecl_provision:
+        formatted_provision_rate = latest_ecl_provision.provision_rate * 100
+
+    context = {
+        "account": account,
+        "latest_exposure": latest_exposure,
+        "latest_delinquency": latest_delinquency,
+        "current_strategy": current_strategy,
+        "latest_ecl_provision": latest_ecl_provision,
+        "formatted_provision_rate": formatted_provision_rate,
+        "historical_exposure_table": historical_exposures_table,
+        "historical_delinquency_table": historical_delinquency_table,
+        "historical_strategies_table": historical_strategies_table,
+        "collection_activities_table": collection_activities_table,
+        "compromise_agreements_table": compromise_agreements_table,
+        "entity_type": "loan",
+        "breadcrumbs": [
+            {"title": "Dashboard", "url": ""},
+            {"title": "Loan Accounts", "url": ""},
+            {"title": f"Loan {account.loan_id}", "url": None},
+        ],
+    }
+
+    return render(request, "account_master/account_detail.html", context)
+
+
+@csrf_exempt
+def generate_ecl_provision(request, loan_id):
+    """
+    Generate ECL provision for a loan account based on latest exposure and delinquency data.
+    Returns JSON response for AJAX calls.
+    """
+    if request.method != "POST":
+        return JsonResponse({"success": False, "error": "POST request required"})
+
+    try:
+        account = get_object_or_404(LoanAccount, loan_id=loan_id)
+
+        # Get latest exposure and delinquency
+        latest_exposure = account.exposures.order_by("-as_of_date").first()
+        latest_delinquency = account.delinquency_statuses.order_by(
+            "-as_of_date"
+        ).first()
+
+        if not latest_exposure:
+            return JsonResponse({"success": False, "error": "No exposure data found"})
+
+        if not latest_delinquency:
+            return JsonResponse(
+                {"success": False, "error": "No delinquency data found"}
+            )
+
+        # Import the ECL service function
+        from account_master.services.ecl_service import update_ecl_provision
+
+        # Generate ECL provision
+        ecl_provision = update_ecl_provision(latest_exposure, latest_delinquency)
+
+        return JsonResponse(
+            {
+                "success": True,
+                "provision_amount": float(ecl_provision.provision_amount),
+                "provision_rate": float(ecl_provision.provision_rate),
+                "classification": ecl_provision.classification,
+                "as_of_date": ecl_provision.as_of_date.isoformat(),
+            }
+        )
+
+    except Exception as e:
+        return JsonResponse({"success": False, "error": str(e)})
 
 
 def update_account(request, loan_id):

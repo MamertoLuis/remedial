@@ -1,0 +1,106 @@
+{% load static %}
+
+<div class="timeline-item position-relative mb-4">
+    <!-- Timeline Dot -->
+    <div class="timeline-dot">
+        <span class="activity-icon bg-{{ activity.color }} text-white">
+            <i class="bi {{ activity.icon }}"></i>
+        </span>
+    </div>
+    
+    <!-- Activity Card -->
+    <div class="timeline-content ms-3">
+        <div class="card border-0 shadow-sm">
+            <div class="card-body">
+                <!-- Activity Header -->
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                        <span class="badge bg-{{ activity.color }} bg-opacity-10 text-{{ activity.color }} mb-1">
+                            {{ activity.type_display }}
+                        </span>
+                        <h6 class="mb-1">{{ activity.title }}</h6>
+                    </div>
+                    <small class="text-muted">
+                        {% if activity.timestamp|date:"Y-m-d" == today|date:"Y-m-d" %}
+                            {{ activity.timestamp|time:"g:i A" }}
+                        {% elif activity.timestamp|date:"Y-m-d" == yesterday|date:"Y-m-d" %}
+                            Yesterday
+                        {% else %}
+                            {{ activity.timestamp|date:"M j, Y" }}
+                        {% endif %}
+                    </small>
+                </div>
+                
+                <!-- Activity Description -->
+                <p class="text-muted small mb-2">{{ activity.description }}</p>
+                
+                <!-- Activity Details -->
+                {% if activity.loan_id or activity.borrower_name %}
+                    <div class="activity-details small">
+                        {% if activity.borrower_name %}
+                            <i class="bi bi-person me-1"></i>
+                            <span class="text-muted">{{ activity.borrower_name }}</span>
+                        {% endif %}
+                        {% if activity.loan_id %}
+                            <br>
+                            <i class="bi bi-folder me-1"></i>
+                            <span class="text-muted">Loan: {{ activity.loan_id }}</span>
+                        {% endif %}
+                    </div>
+                {% endif %}
+                
+                <!-- Activity Footer -->
+                {% if activity.url %}
+                    <div class="mt-2">
+                        <a href="{{ activity.url }}" class="btn btn-sm btn-link text-decoration-none p-0">
+                            View Details <i class="bi bi-arrow-right"></i>
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.timeline-dot {
+    position: absolute;
+    left: -22px;
+    top: 10px;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+    border: 2px solid #e9ecef;
+}
+
+.activity-icon {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+}
+
+.timeline-content {
+    position: relative;
+}
+
+@media (max-width: 768px) {
+    .timeline-dot {
+        left: -15px;
+    }
+    
+    .activity-icon {
+        width: 12px;
+        height: 12px;
+        font-size: 0.6rem;
+    }
+}
+</style>

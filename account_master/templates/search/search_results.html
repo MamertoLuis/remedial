@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Search Results{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumb-custom">
+    <div class="container-fluid">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                <li class="breadcrumb-item active">Search</li>
+            </ol>
+        </nav>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">
+                        <i class="bi bi-search"></i> Search Results
+                        {% if query %}
+                            <span class="text-muted">for "{{ query }}"</span>
+                        {% endif %}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    {% if query %}
+                        {% if search_results %}
+                            <p class="text-muted">Found {{ total_results }} result{{ total_results|pluralize }}</p>
+                            
+                            <div class="list-group">
+                                {% for result in search_results %}
+                                    <a href="{{ result.url }}" class="list-group-item list-group-item-action">
+                                        <div class="d-flex w-100 justify-content-between">
+                                            <h6 class="mb-1">
+                                                {% if result.type == 'borrower' %}
+                                                    <i class="bi bi-person"></i>
+                                                {% elif result.type == 'loan' %}
+                                                    <i class="bi bi-file-earmark-text"></i>
+                                                {% endif %}
+                                                {{ result.title|safe }}
+                                            </h6>
+                                            <small class="search-result-type">{{ result.type|title }}</small>
+                                        </div>
+                                        <p class="mb-1 text-muted small">{{ result.subtitle }}</p>
+                                    </a>
+                                {% endfor %}
+                            </div>
+                            
+                            {% if total_results >= 20 %}
+                                <div class="text-center mt-3">
+                                    <small class="text-muted">Showing first 20 results. Refine your search for more specific results.</small>
+                                </div>
+                            {% endif %}
+                        {% else %}
+                            <div class="text-center py-5">
+                                <i class="bi bi-search fs-1 text-muted"></i>
+                                <h5 class="mt-3">No results found</h5>
+                                <p class="text-muted">No borrowers or loan accounts match your search query: "{{ query }}"</p>
+                                <div class="mt-3">
+                                    <a href="{% url 'dashboard' %}" class="btn btn-primary">
+                                        <i class="bi bi-house-door"></i> Back to Dashboard
+                                    </a>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="bi bi-search fs-1 text-muted"></i>
+                            <h5 class="mt-3">Search</h5>
+                            <p class="text-muted">Enter a search term to find borrowers or loan accounts.</p>
+                            <form method="get" action="{% url 'search' %}" class="mt-3">
+                                <div class="row justify-content-center">
+                                    <div class="col-md-6">
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" name="q" 
+                                                   placeholder="Search by name, ID..." required>
+                                            <button class="btn btn-primary" type="submit">
+                                                <i class="bi bi-search"></i> Search
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

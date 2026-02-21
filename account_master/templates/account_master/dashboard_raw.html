@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard Raw Test</title>
+</head>
+<body>
+    <h1>Dashboard Raw Test</h1>
+    <p>This is a raw HTML test without any Django template tags.</p>
+    <p>Alert counts: {{ alert_counts.total|default:0 }}</p>
+    <p>Total borrowers: {{ kpis.total_borrowers|default:0 }}</p>
+</body>
+</html>

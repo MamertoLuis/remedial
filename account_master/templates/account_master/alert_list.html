@@ -1,0 +1,646 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% load static %}
+
+{% block title %}Alerts - Remedial System{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3">Alerts Management</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                    <li class="breadcrumb-item active">Alerts</li>
+                </ol>
+            </nav>
+        </div>
+        <div>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createRuleModal">
+                <i class="bi bi-plus-circle"></i> Create Alert Rule
+            </button>
+        </div>
+    </div>
+
+    <!-- Alert Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Total Alerts</h6>
+                            <h3 class="mb-0">{{ alert_counts.total }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-bell-fill fs-2"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Critical</h6>
+                            <h3 class="mb-0">{{ alert_counts.critical }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-exclamation-triangle-fill fs-2"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Warning</h6>
+                            <h3 class="mb-0">{{ alert_counts.warning }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-exclamation-circle-fill fs-2"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Info</h6>
+                            <h3 class="mb-0">{{ alert_counts.info }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-info-circle-fill fs-2"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-secondary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">New</h6>
+                            <h3 class="mb-0">{{ alert_counts.new }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-plus-circle-fill fs-2"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-2">
+            <div class="card bg-dark text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="card-title">Overdue</h6>
+                            <h3 class="mb-0">{{ alert_counts.total_overdue }}</h3>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="bi bi-clock-fill fs-2"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Filter Alerts</h5>
+        </div>
+        <div class="card-body">
+            <form method="get" id="filterForm">
+                <div class="row">
+                    <div class="col-md-3">
+                        <label for="alert_type" class="form-label">Alert Type</label>
+                        <select name="alert_type" id="alert_type" class="form-select">
+                            <option value="">All Types</option>
+                            <option value="CRITICAL" {% if request.GET.alert_type == 'CRITICAL' %}selected{% endif %}>Critical</option>
+                            <option value="WARNING" {% if request.GET.alert_type == 'WARNING' %}selected{% endif %}>Warning</option>
+                            <option value="INFO" {% if request.GET.alert_type == 'INFO' %}selected{% endif %}>Info</option>
+                            <option value="SUCCESS" {% if request.GET.alert_type == 'SUCCESS' %}selected{% endif %}>Success</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="severity" class="form-label">Severity</label>
+                        <select name="severity" id="severity" class="form-select">
+                            <option value="">All Severities</option>
+                            <option value="HIGH" {% if request.GET.severity == 'HIGH' %}selected{% endif %}>High</option>
+                            <option value="MEDIUM" {% if request.GET.severity == 'MEDIUM' %}selected{% endif %}>Medium</option>
+                            <option value="LOW" {% if request.GET.severity == 'LOW' %}selected{% endif %}>Low</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="status" class="form-label">Status</label>
+                        <select name="status" id="status" class="form-select">
+                            <option value="">All Statuses</option>
+                            <option value="NEW" {% if request.GET.status == 'NEW' %}selected{% endif %}>New</option>
+                            <option value="ACKNOWLEDGED" {% if request.GET.status == 'ACKNOWLEDGED' %}selected{% endif %}>Acknowledged</option>
+                            <option value="RESOLVED" {% if request.GET.status == 'RESOLVED' %}selected{% endif %}>Resolved</option>
+                            <option value="DISMISSED" {% if request.GET.status == 'DISMISSED' %}selected{% endif %}>Dismissed</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="entity_type" class="form-label">Entity Type</label>
+                        <select name="entity_type" id="entity_type" class="form-select">
+                            <option value="">All Entities</option>
+                            <option value="ACCOUNT" {% if request.GET.entity_type == 'ACCOUNT' %}selected{% endif %}>Loan Account</option>
+                            <option value="BORROWER" {% if request.GET.entity_type == 'BORROWER' %}selected{% endif %}>Borrower</option>
+                            <option value="COMPROMISE_AGREEMENT" {% if request.GET.entity_type == 'COMPROMISE_AGREEMENT' %}selected{% endif %}>Compromise Agreement</option>
+                            <option value="SYSTEM" {% if request.GET.entity_type == 'SYSTEM' %}selected{% endif %}>System</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-funnel"></i> Apply Filters
+                        </button>
+                        <a href="{% url 'alert_list' %}" class="btn btn-secondary">
+                            <i class="bi bi-x-circle"></i> Clear Filters
+                        </a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Alert Actions Bar -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <span class="text-muted">Showing {{ page_obj.start_index }}-{{ page_obj.end_index }} of {{ page_obj.paginator.count }} alerts</span>
+        </div>
+        <div class="btn-group" role="group">
+            <button type="button" class="btn btn-outline-primary" onclick="bulkAction('acknowledge')">
+                <i class="bi bi-check-circle"></i> Acknowledge Selected
+            </button>
+            <button type="button" class="btn btn-outline-success" onclick="bulkAction('resolve')">
+                <i class="bi bi-check-all"></i> Resolve Selected
+            </button>
+            <button type="button" class="btn btn-outline-warning" onclick="bulkAction('dismiss')">
+                <i class="bi bi-x-circle"></i> Dismiss Selected
+            </button>
+        </div>
+    </div>
+
+    <!-- Alerts Table -->
+    <div class="card">
+        <div class="card-body">
+            {% if alerts %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>
+                                <input type="checkbox" id="selectAll" onchange="toggleAll()">
+                            </th>
+                            <th>Type</th>
+                            <th>Severity</th>
+                            <th>Title</th>
+                            <th>Entity</th>
+                            <th>Status</th>
+                            <th>Assigned To</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for alert in alerts %}
+                        <tr>
+                            <td>
+                                <input type="checkbox" class="alert-checkbox" value="{{ alert.alert_id }}">
+                            </td>
+                            <td>
+                                <span class="badge bg-{% if alert.alert_type == 'CRITICAL' %}danger{% elif alert.alert_type == 'WARNING' %}warning{% elif alert.alert_type == 'INFO' %}info{% elif alert.alert_type == 'SUCCESS' %}success{% else %}secondary{% endif %}">
+                                    {{ alert.get_alert_type_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge bg-{% if alert.severity == 'HIGH' %}danger{% elif alert.severity == 'MEDIUM' %}warning{% else %}secondary{% endif %}">
+                                    {{ alert.get_severity_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="#" onclick="showAlertDetail({{ alert.alert_id }})">{{ alert.title }}</a>
+                                {% if alert.is_overdue %}
+                                <i class="bi bi-clock-fill text-danger" title="Overdue"></i>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if alert.entity_type and alert.entity_id %}
+                                <a href="{{ alert.get_entity_url }}" class="text-decoration-none">
+                                    {{ alert.get_entity_type_display }} {{ alert.entity_id }}
+                                </a>
+                                {% else %}
+                                <span class="text-muted">System</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-{% if alert.status == 'NEW' %}primary{% elif alert.status == 'ACKNOWLEDGED' %}info{% elif alert.status == 'RESOLVED' %}success{% elif alert.status == 'DISMISSED' %}secondary{% else %}dark{% endif %}">
+                                    {{ alert.get_status_display }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if alert.assigned_to %}
+                                {{ alert.assigned_to.get_full_name|default:alert.assigned_to.username }}
+                                {% else %}
+                                <span class="text-muted">Unassigned</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small class="text-muted">{{ alert.created_at|date:"M d, Y H:i" }}</small>
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    {% if alert.status == 'NEW' %}
+                                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="alertAction({{ alert.alert_id }}, 'acknowledge')" title="Acknowledge">
+                                        <i class="bi bi-check-circle"></i>
+                                    </button>
+                                    {% endif %}
+                                    {% if alert.status in 'NEW ACKNOWLEDGED' %}
+                                    <button type="button" class="btn btn-sm btn-outline-success" onclick="alertAction({{ alert.alert_id }}, 'resolve')" title="Resolve">
+                                        <i class="bi bi-check-all"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-warning" onclick="alertAction({{ alert.alert_id }}, 'dismiss')" title="Dismiss">
+                                        <i class="bi bi-x-circle"></i>
+                                    </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if page_obj.has_other_pages %}
+            <nav aria-label="Alert pagination">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Previous</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">Previous</span>
+                    </li>
+                    {% endif %}
+
+                    {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a>
+                    </li>
+                    {% endif %}
+                    {% endfor %}
+
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Next</a>
+                    </li>
+                    {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link">Next</span>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-bell-slash display-1 text-muted"></i>
+                <h5 class="text-muted mt-3">No alerts found</h5>
+                <p class="text-muted">Adjust your filters or create alert rules to start monitoring your portfolio.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Create Alert Rule Modal -->
+<div class="modal fade" id="createRuleModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create Alert Rule</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createRuleForm">
+                    {% csrf_token %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="ruleName" class="form-label">Rule Name</label>
+                                <input type="text" class="form-control" id="ruleName" name="name" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="ruleType" class="form-label">Rule Type</label>
+                                <select class="form-select" id="ruleType" name="rule_type" required>
+                                    <option value="">Select Rule Type</option>
+                                    <option value="DPD_THRESHOLD">DPD Threshold</option>
+                                    <option value="EXPOSURE_LIMIT">Exposure Limit</option>
+                                    <option value="STATUS_CHANGE">Status Change</option>
+                                    <option value="AGREEMENT_DEADLINE">Agreement Deadline</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="alertType" class="form-label">Alert Type</label>
+                                <select class="form-select" id="alertType" name="alert_type" required>
+                                    <option value="">Select Alert Type</option>
+                                    <option value="CRITICAL">Critical</option>
+                                    <option value="WARNING">Warning</option>
+                                    <option value="INFO">Info</option>
+                                    <option value="SUCCESS">Success</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="severity" class="form-label">Severity</label>
+                                <select class="form-select" id="severity" name="severity" required>
+                                    <option value="">Select Severity</option>
+                                    <option value="HIGH">High</option>
+                                    <option value="MEDIUM">Medium</option>
+                                    <option value="LOW">Low</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="conditionValue" class="form-label">Condition Value</label>
+                                <input type="number" class="form-control" id="conditionValue" name="condition_value" step="0.01" required>
+                                <div class="form-text">Example: 60 for DPD days, 100000 for exposure amount</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="comparisonOperator" class="form-label">Comparison Operator</label>
+                                <select class="form-select" id="comparisonOperator" name="comparison_operator" required>
+                                    <option value="">Select Operator</option>
+                                    <option value="GREATER_THAN">Greater Than</option>
+                                    <option value="LESS_THAN">Less Than</option>
+                                    <option value="EQUAL">Equal To</option>
+                                    <option value="NOT_EQUAL">Not Equal To</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="isActive" name="is_active" checked>
+                            <label class="form-check-label" for="isActive">
+                                Activate rule immediately
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="createAlertRule()">Create Rule</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Alert Detail Modal -->
+<div class="modal fade" id="alertDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Alert Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="alertDetailContent">
+                <!-- Alert details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Action Confirmation Modal -->
+<div class="modal fade" id="actionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="actionModalTitle">Confirm Action</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="actionModalMessage">Are you sure you want to perform this action?</p>
+                <div class="mb-3" id="actionReasonField" style="display: none;">
+                    <label for="actionReason" class="form-label">Reason</label>
+                    <textarea class="form-control" id="actionReason" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="confirmActionBtn" onclick="confirmAction()">Confirm</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentAction = null;
+let currentAlertIds = [];
+
+function toggleAll() {
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.alert-checkbox');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAll.checked;
+    });
+}
+
+function bulkAction(action) {
+    const checkboxes = document.querySelectorAll('.alert-checkbox:checked');
+    if (checkboxes.length === 0) {
+        alert('Please select alerts to perform this action on.');
+        return;
+    }
+    
+    currentAlertIds = Array.from(checkboxes).map(cb => cb.value);
+    showActionModal(action, currentAlertIds.length);
+}
+
+function alertAction(alertId, action) {
+    currentAlertIds = [alertId];
+    showActionModal(action, 1);
+}
+
+function showActionModal(action, count) {
+    const modal = new bootstrap.Modal(document.getElementById('actionModal'));
+    const title = document.getElementById('actionModalTitle');
+    const message = document.getElementById('actionModalMessage');
+    const reasonField = document.getElementById('actionReasonField');
+    const confirmBtn = document.getElementById('confirmActionBtn');
+    
+    currentAction = action;
+    
+    const actionTitles = {
+        'acknowledge': 'Acknowledge Alerts',
+        'resolve': 'Resolve Alerts', 
+        'dismiss': 'Dismiss Alerts'
+    };
+    
+    const actionMessages = {
+        'acknowledge': `Are you sure you want to acknowledge ${count} alert(s)?`,
+        'resolve': `Are you sure you want to resolve ${count} alert(s)?`,
+        'dismiss': `Are you sure you want to dismiss ${count} alert(s)?`
+    };
+    
+    title.textContent = actionTitles[action];
+    message.textContent = actionMessages[action];
+    
+    // Show reason field for resolve and dismiss actions
+    reasonField.style.display = (action === 'resolve' || action === 'dismiss') ? 'block' : 'none';
+    
+    // Update button text
+    confirmBtn.textContent = action.charAt(0).toUpperCase() + action.slice(1);
+    
+    modal.show();
+}
+
+function confirmAction() {
+    const reason = document.getElementById('actionReason').value;
+    const formData = new FormData();
+    
+    currentAlertIds.forEach(alertId => {
+        formData.append('alert_ids[]', alertId);
+    });
+    
+    if (reason) {
+        formData.append('reason', reason);
+    }
+    
+    fetch(`/api/alerts/${currentAction}/`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Reload the page to show updated alerts
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while performing the action.');
+    });
+}
+
+function showAlertDetail(alertId) {
+    fetch(`/api/alerts/detail/${alertId}/`)
+    .then(response => response.json())
+    .then(data => {
+        const content = document.getElementById('alertDetailContent');
+        content.innerHTML = `
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Type:</strong> <span class="badge bg-${data.type_color}">${data.type}</span></p>
+                    <p><strong>Severity:</strong> <span class="badge bg-${data.severity_color}">${data.severity}</span></p>
+                    <p><strong>Status:</strong> <span class="badge bg-${data.status_color}">${data.status}</span></p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Created:</strong> ${data.created_at}</p>
+                    <p><strong>Assigned To:</strong> ${data.assigned_to || 'Unassigned'}</p>
+                    <p><strong>Created By:</strong> ${data.created_by}</p>
+                </div>
+            </div>
+            <hr>
+            <h6>Title</h6>
+            <p>${data.title}</p>
+            <h6>Message</h6>
+            <p>${data.message}</p>
+            ${data.entity_type ? `
+                <h6>Related Entity</h6>
+                <p><a href="${data.entity_url}">${data.entity_type} ${data.entity_id}</a></p>
+            ` : ''}
+            ${data.due_date ? `
+                <h6>Due Date</h6>
+                <p>${data.due_date}</p>
+            ` : ''}
+        `;
+        
+        const modal = new bootstrap.Modal(document.getElementById('alertDetailModal'));
+        modal.show();
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while loading alert details.');
+    });
+}
+
+function createAlertRule() {
+    const form = document.getElementById('createRuleForm');
+    const formData = new FormData(form);
+    
+    fetch('/api/alerts/rules/create/', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Close modal and reload page
+            bootstrap.Modal.getInstance(document.getElementById('createRuleModal')).hide();
+            location.reload();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while creating the alert rule.');
+    });
+}
+</script>
+{% endblock %}

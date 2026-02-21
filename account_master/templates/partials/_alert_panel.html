@@ -1,0 +1,238 @@
+{% load static %}
+
+<div class="alert-panel {{ position_class|default:'position-fixed' }}" style="{{ style|default:'top: 80px; right: 20px; z-index: 1030;' }}">
+    <div class="card shadow-sm" style="width: 300px; max-height: 400px;">
+        <!-- Panel Header -->
+        <div class="card-header bg-white d-flex justify-content-between align-items-center py-2">
+            <h6 class="mb-0">
+                {% include 'partials/_alert_badge.html' with count=alert_counts.total color='danger' show_pulse=True icon='bi-bell' %}
+                <span class="ms-2">Alerts</span>
+            </h6>
+            <div class="d-flex gap-1">
+                <!-- Refresh Button -->
+                {% if show_refresh %}
+                <button class="btn btn-sm btn-light p-1 refresh-panel-btn" title="Refresh">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </button>
+                {% endif %}
+                
+                <!-- Toggle Button -->
+                <button class="btn btn-sm btn-light p-1 toggle-panel-btn" title="{{ is_expanded|yesno:'Collapse,Expand' }}">
+                    <i class="bi bi-chevron-{{ is_expanded|yesno:'up,down' }}"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Panel Content -->
+        <div class="card-body p-0 {% if not is_expanded %}d-none{% endif %}" id="alertPanelContent">
+            <!-- Quick Stats -->
+            {% if alert_counts and show_stats %}
+            <div class="p-3 border-bottom">
+                <div class="row g-2 text-center">
+                    <div class="col-4">
+                        <div class="small text-danger fw-bold">{{ alert_counts.total_critical|default:0 }}</div>
+                        <div class="small text-muted">Critical</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="small text-warning fw-bold">{{ alert_counts.total_warning|default:0 }}</div>
+                        <div class="small text-muted">Warning</div>
+                    </div>
+                    <div class="col-4">
+                        <div class="small text-info fw-bold">{{ alert_counts.total_info|default:0 }}</div>
+                        <div class="small text-muted">Info</div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Alert List -->
+            <div class="alert-list-container" style="max-height: 250px; overflow-y: auto;">
+                {% if alerts %}
+                    {% for alert in alerts|slice:":5" %}  <!-- Show max 5 alerts in panel -->
+                        <div class="alert-item border-bottom p-2" data-alert-id="{{ alert.alert_id }}">
+                            <!-- Alert Icon and Type -->
+                            <div class="d-flex align-items-start">
+                                <i class="bi {{ alert.type_icon }} text-{{ alert.urgency_class }} me-2 mt-1"></i>
+                                <div class="flex-grow-1">
+                                    <!-- Alert Title -->
+                                    <div class="fw-bold small">{{ alert.title|truncatechars:30 }}</div>
+                                    
+                                    <!-- Alert Message -->
+                                    <div class="text-muted small" style="font-size: 0.75rem;">
+                                        {{ alert.message|truncatechars:50 }}
+                                    </div>
+                                    
+                                    <!-- Alert Time -->
+                                    <div class="text-muted small" style="font-size: 0.7rem;">
+                                        {{ alert.created_at|timesince }} ago
+                                    </div>
+                                    
+                                    <!-- Quick Actions -->
+                                    {% if alert.status == 'NEW' %}
+                                    <div class="mt-1">
+                                        <button class="btn btn-xs btn-outline-primary acknowledge-panel-btn" data-alert-id="{{ alert.alert_id }}">
+                                            <i class="bi bi-check"></i>
+                                        </button>
+                                        {% if alert.get_entity_url %}
+                                        <a href="{{ alert.get_entity_url }}" class="btn btn-xs btn-outline-secondary ms-1" target="_blank">
+                                            <i class="bi bi-box-arrow-up-right"></i>
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                    
+                    <!-- View All Link -->
+                    {% if alerts|length > 5 or view_all_url %}
+                    <div class="p-2 text-center">
+                        <a href="{{ view_all_url|default:'#' }}" class="btn btn-sm btn-link text-decoration-none">
+                            View All <i class="bi bi-arrow-right"></i>
+                        </a>
+                    </div>
+                    {% endif %}
+                {% else %}
+                    <!-- Empty State -->
+                    <div class="text-center py-3">
+                        <i class="bi bi-check-circle text-success" style="font-size: 1.5rem;"></i>
+                        <div class="text-muted small mt-1">All caught up!</div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Minimized State -->
+    {% if not is_expanded %}
+    <div class="card-body p-2 text-center" id="alertPanelMinimized">
+        {% if alert_counts and alert_counts.total > 0 %}
+            <div class="d-flex justify-content-around text-center">
+                <div>
+                    <div class="small text-danger fw-bold">{{ alert_counts.total_critical|default:0 }}</div>
+                </div>
+                <div>
+                    <div class="small text-warning fw-bold">{{ alert_counts.total_warning|default:0 }}</div>
+                </div>
+                <div>
+                    <div class="small text-info fw-bold">{{ alert_counts.total_info|default:0 }}</div>
+                </div>
+            </div>
+        {% else %}
+            <div class="text-muted small">0 alerts</div>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle panel expansion
+    const toggleBtn = document.querySelector('.toggle-panel-btn');
+    const panelContent = document.getElementById('alertPanelContent');
+    const panelMinimized = document.getElementById('alertPanelMinimized');
+    
+    if (toggleBtn && panelContent) {
+        toggleBtn.addEventListener('click', function() {
+            const isExpanded = !panelContent.classList.contains('d-none');
+            
+            if (isExpanded) {
+                panelContent.classList.add('d-none');
+                if (panelMinimized) panelMinimized.classList.remove('d-none');
+                this.innerHTML = '<i class="bi bi-chevron-up"></i>';
+                this.title = 'Expand';
+            } else {
+                panelContent.classList.remove('d-none');
+                if (panelMinimized) panelMinimized.classList.add('d-none');
+                this.innerHTML = '<i class="bi bi-chevron-down"></i>';
+                this.title = 'Collapse';
+            }
+        });
+    }
+    
+    // Refresh panel
+    const refreshBtn = document.querySelector('.refresh-panel-btn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', function() {
+            const icon = this.querySelector('i');
+            icon.classList.add('spin-animation');
+            
+            // Here you would typically make an AJAX call to refresh alerts
+            console.log('Refreshing alert panel...');
+            
+            setTimeout(() => {
+                icon.classList.remove('spin-animation');
+            }, 1000);
+        });
+    }
+    
+    // Acknowledge alerts from panel
+    const acknowledgeBtns = document.querySelectorAll('.acknowledge-panel-btn');
+    acknowledgeBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const alertId = this.dataset.alertId;
+            const alertItem = this.closest('.alert-item');
+            
+            // Here you would typically make an AJAX call to acknowledge the alert
+            console.log('Acknowledge alert from panel:', alertId);
+            
+            // Update UI
+            if (alertItem) {
+                alertItem.style.opacity = '0.6';
+                this.disabled = true;
+                this.innerHTML = '<i class="bi bi-check-circle"></i>';
+                
+                // Update badge count
+                const badge = document.querySelector('.alert-badge .badge');
+                if (badge && badge.textContent) {
+                    const currentCount = parseInt(badge.textContent);
+                    if (currentCount > 1) {
+                        badge.textContent = currentCount - 1;
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                }
+            }
+        });
+    });
+});
+
+// Add CSS for button extra small size
+const style = document.createElement('style');
+style.textContent = `
+    .btn-xs {
+        padding: 0.125rem 0.25rem;
+        font-size: 0.75rem;
+        line-height: 1;
+        border-radius: 0.2rem;
+    }
+    
+    .alert-list-container::-webkit-scrollbar {
+        width: 4px;
+    }
+    
+    .alert-list-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+    }
+    
+    .alert-list-container::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 2px;
+    }
+    
+    .alert-list-container::-webkit-scrollbar-thumb:hover {
+        background: #a1a1a1;
+    }
+    
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+    
+    .spin-animation {
+        animation: spin 1s linear infinite;
+    }
+`;
+document.head.appendChild(style);
+</script>

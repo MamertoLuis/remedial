@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% load render_table from django_tables2 %}
+
+{% block content %}
+<div class="container">
+    <h1>Single Alert Badge Test</h1>
+    
+    <!-- Test single alert badge -->
+    {% if True %}
+        {% include 'partials/_alert_badge.html' with count=5 color='danger' show_pulse=True icon='bi-bell' %}
+    {% endif %}
+    
+    <p>If this works, the issue is fixed.</p>
+</div>
+{% endblock %}

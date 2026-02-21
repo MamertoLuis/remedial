@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <h1>Minimal Include Test</h1>
+    
+    <!-- Test simplest possible include -->
+    {% include 'partials/_alert_badge.html' %}
+    
+    <p>If you see raw template tags above, includes are broken.</p>
+</div>
+{% endblock %}

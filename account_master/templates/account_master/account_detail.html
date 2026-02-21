@@ -143,6 +143,39 @@
              {% endif %}
         </div>
     </div>
+    <div class="col-md-4">
+        <!-- ECL Provision Card -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">ECL Provision</h5>
+                <span class="badge bg-info" title="Expected Credit Loss (based on principal only)">ECL</span>
+            </div>
+            {% if latest_ecl_provision %}
+            <div class="card-body">
+                <p class="card-text"><strong>As of:</strong> {{ latest_ecl_provision.as_of_date|date:"M d, Y" }}</p>
+                <h5 class="card-title text-danger">₱{{ latest_ecl_provision.provision_amount|intcomma }}</h5>
+                <small class="text-muted">Based on principal only</small>
+                <p class="card-text text-muted mb-1">Provision Rate: {{ formatted_provision_rate|floatformat:1 }}%</p>
+                <p class="card-text text-muted mb-1">Classification: {{ latest_ecl_provision.classification }}</p>
+                <p class="card-text text-muted mb-1">Days Past Due: {{ latest_ecl_provision.days_past_due }}</p>
+                <p class="card-text text-muted">Method: {{ latest_ecl_provision.get_method_display }}</p>
+                {% if latest_ecl_provision.remarks %}
+                <hr>
+                <small class="text-muted">{{ latest_ecl_provision.remarks }}</small>
+                {% endif %}
+            </div>
+            {% else %}
+            <div class="card-body">
+                <p class="text-muted">No ECL provision data available.</p>
+                {% if latest_exposure and latest_delinquency %}
+                <button class="btn btn-sm btn-primary" onclick="updateECLProvision()">
+                    Generate ECL Provision
+                </button>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
 </div>
 
 
@@ -216,6 +249,35 @@
     </div>
 </div>
 
-
+{% if latest_exposure and latest_delinquency and not latest_ecl_provision %}
+<script>
+function updateECLProvision() {
+    if (confirm('Generate ECL provision based on current exposure and delinquency data?')) {
+        // Make an AJAX call to generate ECL provision
+        fetch(`{% url 'generate_ecl_provision' account.loan_id %}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Reload the page to show the new ECL provision
+                location.reload();
+            } else {
+                alert('Error generating ECL provision: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error generating ECL provision. Please try again.');
+        });
+    }
+}
+</script>
+{% endif %}
 
 {% endblock %}

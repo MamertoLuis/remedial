@@ -10,22 +10,32 @@ def borrower_list(request):
     borrowers = Borrower.objects.all()
     filter = BorrowerFilter(request.GET, queryset=borrowers)
     table = BorrowerTable(filter.qs)
-    return render(
-        request,
-        "account_master/borrower_list.html",
-        {"table": table, "filter": filter},
-    )
+    context = {
+        "table": table,
+        "filter": filter,
+        "breadcrumbs": [
+            {"title": "Dashboard", "url": "/"},
+            {"title": "Borrowers", "url": None},
+        ],
+    }
+    return render(request, "account_master/borrower_list.html", context)
 
 
 def borrower_detail(request, borrower_id):
     borrower = get_object_or_404(Borrower, borrower_id=borrower_id)
     accounts = LoanAccount.objects.filter(borrower=borrower)
     table = BorrowerAccountTable(accounts)
-    return render(
-        request,
-        "account_master/borrower_detail.html",
-        {"borrower": borrower, "table": table},
-    )
+    context = {
+        "borrower": borrower,
+        "table": table,
+        "entity_type": "borrower",
+        "breadcrumbs": [
+            {"title": "Dashboard", "url": ""},
+            {"title": "Borrowers", "url": ""},
+            {"title": borrower.full_name, "url": None},
+        ],
+    }
+    return render(request, "account_master/borrower_detail.html", context)
 
 
 def create_borrower(request):
