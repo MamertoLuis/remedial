@@ -30,6 +30,14 @@ def account_list(request):
     if account_officer and account_officer != "":
         accounts = accounts.filter(account_officer_id=account_officer)
 
+    status = request.GET.get("status")
+    if status and status != "":
+        accounts = accounts.filter(status=status)
+
+    security = request.GET.get("security")
+    if security and security != "":
+        accounts = accounts.filter(loan_security=security)
+
     table = LoanAccountTable(accounts, user=request.user)
 
     account_officers = (
@@ -43,6 +51,10 @@ def account_list(request):
         "table": table,
         "account_officers": account_officers,
         "selected_officer": account_officer,
+        "selected_status": status,
+        "selected_security": security,
+        "status_choices": LoanAccount.LOAN_STATUS_CHOICES,
+        "security_choices": LoanAccount.LOAN_SECURITY_CHOICES,
         "breadcrumbs": [
             {"title": "Dashboard", "url": "/"},
             {"title": "Loan Accounts", "url": None},

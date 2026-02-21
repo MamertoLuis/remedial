@@ -101,7 +101,7 @@ class RemedialStrategyForm(forms.ModelForm):
         model = RemedialStrategy
         exclude = ["created_by", "updated_by"]
 
-        widgets = {
+        lswidgets = {
             "strategy_start_date": forms.DateInput(attrs={"type": "date"}),
         }
 

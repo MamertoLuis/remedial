@@ -4,28 +4,76 @@
 {% block title %}Account List{% endblock %}
 
 {% block content %}
-    <h1>Account List</h1>
-    
-    <div class="mb-3">
-        <form method="get" class="row g-3">
-            <div class="col-auto">
-                <select name="account_officer" class="form-select" onchange="this.form.submit()">
-                    <option value="" {% if not selected_officer %}selected{% endif %}>All Account Officers</option>
-                    {% for officer in account_officers %}
-                        <option value="{{ officer }}" {% if selected_officer == officer %}selected{% endif %}>
-                            {{ officer }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="col-auto">
-                <a href="{% url 'account_list' %}" class="btn btn-secondary">Clear Filter</a>
-            </div>
-            <div class="col-auto">
-                <a href="{% url 'create_account' %}" class="btn btn-primary">Create New Account</a>
-            </div>
-        </form>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">Account List</h1>
+        <a href="{% url 'create_account' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle me-1"></i> Create New Account
+        </a>
     </div>
     
-    {% render_table table %}
+    <div class="row">
+        <!-- Filter Panel (Left Sidebar) -->
+        <div class="col-md-3 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light">
+                    <h5 class="card-title mb-0"><i class="bi bi-funnel me-2"></i>Filters</h5>
+                </div>
+                <div class="card-body">
+                    <form method="get">
+                        <!-- Account Officer Filter -->
+                        <div class="mb-3">
+                            <label for="account_officer" class="form-label fw-bold text-muted small text-uppercase">Account Officer</label>
+                            <select name="account_officer" id="account_officer" class="form-select" onchange="this.form.submit()">
+                                <option value="" {% if not selected_officer %}selected{% endif %}>All Officers</option>
+                                {% for officer in account_officers %}
+                                    <option value="{{ officer }}" {% if selected_officer == officer %}selected{% endif %}>
+                                        {{ officer }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Loan Status Filter -->
+                        <div class="mb-3">
+                            <label for="status" class="form-label fw-bold text-muted small text-uppercase">Loan Status</label>
+                            <select name="status" id="status" class="form-select" onchange="this.form.submit()">
+                                <option value="" {% if not selected_status %}selected{% endif %}>All Statuses</option>
+                                {% for value, label in status_choices %}
+                                    <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- Security Filter -->
+                        <div class="mb-4">
+                            <label for="security" class="form-label fw-bold text-muted small text-uppercase">Security</label>
+                            <select name="security" id="security" class="form-select" onchange="this.form.submit()">
+                                <option value="" {% if not selected_security %}selected{% endif %}>All Types</option>
+                                {% for value, label in security_choices %}
+                                    <option value="{{ value }}" {% if selected_security == value %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="d-grid">
+                            <a href="{% url 'account_list' %}" class="btn btn-outline-secondary">Clear All Filters</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Table Area -->
+        <div class="col-md-9">
+            <div class="card shadow-sm">
+                <div class="card-body p-0">
+                    {% render_table table %}
+                </div>
+            </div>
+        </div>
+    </div>
 {% endblock %}

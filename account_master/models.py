@@ -769,26 +769,10 @@ def update_ecl_provision_on_delinquency_change(sender, instance, created, **kwar
     try:
         from .services import update_ecl_provision_for_account
 
-        # Only update if the classification or days_past_due has changed
-        # We'll check by comparing with the current state in the database
-        if not created:  # Only for updates, not initial creation
-            try:
-                # Get the previous version from the database
-                previous = sender.objects.get(pk=instance.pk)
-
-                # Check if classification or DPD changed
-                if (
-                    previous.classification != instance.classification
-                    or previous.days_past_due != instance.days_past_due
-                ):
-                    # Update ECL provisions for this account and date
-                    update_ecl_provision_for_account(
-                        account=instance.account, as_of_date=instance.as_of_date
-                    )
-
-            except sender.DoesNotExist:
-                # This shouldn't happen in a post_save signal, but just in case
-                pass
+        # Always update ECL provisions for this account and date when delinquency changes
+        update_ecl_provision_for_account(
+            account=instance.account, as_of_date=instance.as_of_date
+        )
 
     except Exception as e:
         # Log the error but don't raise it to avoid breaking the save operation
