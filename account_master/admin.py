@@ -25,6 +25,10 @@ class ExposureAdmin(admin.ModelAdmin):
             account=obj.account, as_of_date=obj.as_of_date, defaults=exposure_data
         )
 
+    
+
+    
+
 
 @admin.register(DelinquencyStatus)
 class DelinquencyStatusAdmin(admin.ModelAdmin):

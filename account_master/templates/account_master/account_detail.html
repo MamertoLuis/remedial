@@ -72,6 +72,7 @@
                 <p class="card-text text-muted mb-1">Principal: ₱{{ latest_exposure.principal_outstanding|intcomma }}</p>
                 <p class="card-text text-muted mb-1">Interest: ₱{{ latest_exposure.accrued_interest|intcomma }}</p>
                 <p class="card-text text-muted">Penalty: ₱{{ latest_exposure.accrued_penalty|intcomma }}</p>
+                <p class="card-text text-muted">Days Pastdue: {{ latest_exposure.days_past_due }}</p>
             </div>
             {% else %}
             <div class="card-body">

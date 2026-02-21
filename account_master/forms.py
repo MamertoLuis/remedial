@@ -76,11 +76,17 @@ class DelinquencyStatusForm(forms.ModelForm):
         model = DelinquencyStatus
         fields = "__all__"
 
+        widgets = {
+            "as_of_date": forms.DateInput(attrs={"type": "date"}),
+        }
+
 
 class RemedialStrategyForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         account = kwargs.pop("account", None)
         super().__init__(*args, **kwargs)
+
+
 
         if account:
             # Filter out Foreclosure option for unsecured loans
@@ -93,7 +99,11 @@ class RemedialStrategyForm(forms.ModelForm):
 
     class Meta:
         model = RemedialStrategy
-        fields = "__all__"
+        exclude = ["created_by", "updated_by"]
+
+        widgets = {
+            "strategy_start_date": forms.DateInput(attrs={"type": "date"}),
+        }
 
 
 class CollectionActivityLogForm(forms.ModelForm):

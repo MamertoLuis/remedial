@@ -1,0 +1,6 @@
+{% if record.status == 'UNPAID' %}
+    <a href="{% url 'compromise_installment_update' record.pk %}" class="btn btn-sm btn-warning">Update</a>
+    <a href="{% url 'mark_installment_paid' record.pk %}" class="btn btn-sm btn-success">Paid</a>
+{% else %}
+    <a href="{% url 'compromise_installment_update' record.pk %}" class="btn btn-sm btn-warning">Update</a>
+{% endif %}

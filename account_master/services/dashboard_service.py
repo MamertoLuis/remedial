@@ -88,35 +88,19 @@ class DashboardService:
     def get_npl_ratio(cls):
         """
         Calculate NPL ratio (Non-Performing Loans ratio).
-        NPL = Accounts with DPD >= 90 days or classification DOUBTFUL/LOSS
-
-        Returns:
-            float: NPL ratio as percentage
+        NPL = Accounts with status 'NPL'.
         """
         cache_key = cls.get_cache_key("npl_ratio")
         result = cache.get(cache_key)
 
         if result is None:
             try:
-                total_accounts = LoanAccount.objects.count()
+                total_accounts = LoanAccount.objects.exclude(status="CLOSED").count()
 
                 if total_accounts == 0:
                     return 0.0
 
-                # Get latest delinquency status for each account
-                npl_accounts = (
-                    LoanAccount.objects.filter(
-                        Q(delinquency_statuses__days_past_due__gte=90)
-                        | Q(
-                            delinquency_statuses__classification__in=[
-                                "D",  # Doubtful
-                                "L",  # Loss
-                            ]
-                        )
-                    )
-                    .distinct()
-                    .count()
-                )
+                npl_accounts = LoanAccount.objects.filter(status="NPL").count()
 
                 npl_ratio = (npl_accounts / total_accounts) * 100
                 result = round(float(npl_ratio), 2)
@@ -132,6 +116,7 @@ class DashboardService:
     def get_recovery_rate(cls):
         """
         Calculate recovery rate (recovered amount vs total exposure).
+        Uses actual paid amounts from compromise installments.
 
         Returns:
             float: Recovery rate as percentage
@@ -146,11 +131,10 @@ class DashboardService:
                 if total_exposure == 0:
                     return 0.0
 
-                # Calculate recovered amounts (this would need business logic definition)
-                # For now, we'll use compromise agreement payments as recovered amounts
-                total_recovered = CompromiseAgreement.objects.filter(
-                    status="COMPLETED"
-                ).aggregate(total_recovered=Sum("discount_amount"))[
+                # Calculate recovered amounts using actual paid installments
+                total_recovered = CompromiseInstallment.objects.filter(
+                    status="PAID"
+                ).aggregate(total_recovered=Sum("amount_paid"))[
                     "total_recovered"
                 ] or Decimal("0.00")
 
@@ -177,33 +161,24 @@ class DashboardService:
 
         if result is None:
             try:
-                # Get NPL exposure (exposure of NPL accounts)
-                npl_exposure = Exposure.objects.filter(
-                    account_id__in=Subquery(
-                        LoanAccount.objects.filter(
-                            Q(delinquency_statuses__days_past_due__gte=90)
-                            | Q(
-                                delinquency_statuses__classification__in=[
-                                    "D",  # Doubtful
-                                    "L",  # Loss
-                                ]
-                            )
-                        )
-                        .distinct()
-                        .values("loan_id")
-                    )
-                ).aggregate(total_npl_exposure=Sum("principal_outstanding"))[
-                    "total_npl_exposure"
-                ] or Decimal("0.00")
+                # Get NPL accounts
+                npl_accounts = LoanAccount.objects.filter(status="NPL")
+                npl_exposure = Decimal("0.00")
+
+                # Calculate total exposure for NPL accounts from their latest snapshot
+                for account in npl_accounts:
+                    latest_exposure = account.exposures.order_by("-as_of_date").first()
+                    if latest_exposure:
+                        npl_exposure += latest_exposure.principal_outstanding
 
                 if npl_exposure == 0:
                     return 0.0
 
-                # Get total provisions from ECL history
+                # Get total provisions from ECL history for currently NPL accounts
                 from ..models import ECLProvisionHistory
 
                 total_provisions = ECLProvisionHistory.objects.filter(
-                    classification__in=["D", "L"], is_current=True
+                    exposure__account__in=npl_accounts, is_current=True
                 ).aggregate(total_provisions=Sum("provision_amount"))[
                     "total_provisions"
                 ] or Decimal("0.00")

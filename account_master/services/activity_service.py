@@ -1,6 +1,6 @@
 from django.db.models import Q, F
 from django.utils import timezone
-from datetime import timedelta
+from datetime import timedelta, datetime
 import logging
 
 from ..models import (
@@ -86,13 +86,15 @@ class ActivityService:
                 "id": f"collection_{activity.id}",
                 "type": "collection",
                 "type_display": cls.ACTIVITY_TYPES["collection"],
-                "title": f"{activity.get_activity_type_display()} - {activity.loan.loan_id}",
+                "title": f"{activity.get_activity_type_display()} - {activity.account.loan_id}",
                 "description": activity.remarks or "No remarks",
-                "timestamp": activity.activity_date,
+                "timestamp": timezone.make_aware(
+                    datetime.combine(activity.activity_date, datetime.min.time())
+                ),
                 "created_by": activity.created_by,
-                "loan_id": activity.loan.loan_id,
-                "borrower_name": activity.loan.borrower.full_name,
-                "url": f"/account/{activity.loan.loan_id}/#collection",
+                "loan_id": activity.account.loan_id,
+                "borrower_name": activity.account.borrower.full_name,
+                "url": f"/account/{activity.account.loan_id}/#collection",
                 "icon": "bi-telephone",
                 "color": "info",
             }
@@ -114,16 +116,16 @@ class ActivityService:
         for agreement in agreements:
             activities.append(
                 {
-                    "id": f"compromise_{agreement.id}_created",
+                    "id": f"compromise_{agreement.compromise_id}_created",
                     "type": "compromise",
                     "type_display": cls.ACTIVITY_TYPES["compromise"],
-                    "title": f"Compromise Agreement Created - {agreement.agreement_no}",
-                    "description": f"Amount: {agreement.discounted_amount}",
+                    "title": f"Compromise Agreement Created - {agreement.compromise_id}",
+                    "description": f"Amount: {agreement.discount_amount}",
                     "timestamp": agreement.created_at,
                     "created_by": agreement.created_by,
-                    "loan_id": agreement.loan.loan_id,
-                    "borrower_name": agreement.loan.borrower.full_name,
-                    "url": f"/compromise/{agreement.id}/",
+                    "loan_id": agreement.account.loan_id,
+                    "borrower_name": agreement.account.borrower.full_name,
+                    "url": f"/compromise/{agreement.compromise_id}/",
                     "icon": "bi-handshake",
                     "color": "success",
                 }
@@ -146,16 +148,16 @@ class ActivityService:
         for strategy in strategies:
             activities.append(
                 {
-                    "id": f"strategy_{strategy.id}_created",
+                    "id": f"strategy_{strategy.strategy_id}_created",
                     "type": "strategy",
                     "type_display": cls.ACTIVITY_TYPES["strategy"],
-                    "title": f"{strategy.get_strategy_type_display()} Strategy - {strategy.loan.loan_id}",
+                    "title": f"{strategy.get_strategy_type_display()} Strategy - {strategy.account.loan_id} - {strategy.strategy_status.lower}",
                     "description": f"Strategy {strategy.strategy_status}",
                     "timestamp": strategy.created_at,
                     "created_by": strategy.created_by,
-                    "loan_id": strategy.loan.loan_id,
-                    "borrower_name": strategy.loan.borrower.full_name,
-                    "url": f"/account/{strategy.loan.loan_id}/#strategy",
+                    "loan_id": strategy.account.loan_id,
+                    "borrower_name": strategy.account.borrower.full_name,
+                    "url": f"/account/{strategy.account.loan_id}/#strategy",
                     "icon": "bi-gear",
                     "color": "primary",
                 }
@@ -188,7 +190,11 @@ class ActivityService:
                         "type_display": cls.ACTIVITY_TYPES["delinquency"],
                         "title": f"Classification Change - {delinquency.account.loan_id}",
                         "description": f"{delinquency.classification} ({delinquency.days_past_due} DPD)",
-                        "timestamp": delinquency.as_of_date,
+                        "timestamp": timezone.make_aware(
+                            datetime.combine(
+                                delinquency.as_of_date, datetime.min.time()
+                            )
+                        ),
                         "created_by": delinquency.created_by,
                         "loan_id": delinquency.account.loan_id,
                         "borrower_name": delinquency.account.borrower.full_name,
@@ -233,7 +239,9 @@ class ActivityService:
                         "type_display": cls.ACTIVITY_TYPES["exposure"],
                         "title": f"Exposure Snapshot - {exposure.account.loan_id}",
                         "description": f"Total: {total_exposure:,.2f}",
-                        "timestamp": exposure.as_of_date,
+                        "timestamp": timezone.make_aware(
+                            datetime.combine(exposure.as_of_date, datetime.min.time())
+                        ),
                         "created_by": exposure.created_by,
                         "loan_id": exposure.account.loan_id,
                         "borrower_name": exposure.account.borrower.full_name,
