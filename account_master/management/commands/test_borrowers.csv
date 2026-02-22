@@ -1,0 +1,4 @@
+borrower_id,full_name,borrower_type,primary_address,mobile
+BR001,John Doe,PERSON,123 Main St,09171234567
+BR002,Jane Smith,PERSON,456 Elm St,09178901234
+BR003,ABC Corp,CORP,789 Business Ave,

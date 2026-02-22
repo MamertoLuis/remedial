@@ -2,5 +2,6 @@
     "terminal.explorerKind": "both",
     "terminal.integrated.automationProfile.linux": {
         
-    }
+    },
+    "python-envs.pythonProjects": []
 }

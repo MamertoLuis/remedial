@@ -14,6 +14,7 @@ from account_master.models import (
 )
 from account_master.services import upsert_loan_account
 from account_master.forms import LoanAccountForm
+from django_tables2 import RequestConfig
 from account_master.tables import (
     LoanAccountTable,
     ExposureTable,
@@ -48,6 +49,8 @@ def account_list(request):
         accounts = accounts.filter(loan_security=security)
 
     table = LoanAccountTable(accounts, user=request.user)
+    RequestConfig(request).configure(table)
+    table.paginate(page=request.GET.get("page", 1), per_page=25)
 
     account_officers = (
         LoanAccount.objects.exclude(account_officer_id="")
@@ -114,21 +117,46 @@ def account_detail(request, loan_id):
         ).first()
 
     historical_exposures_table = ExposureTable(
-        account.exposures.order_by("-as_of_date")
+        account.exposures.order_by("-as_of_date"), prefix="exp-"
     )
+    RequestConfig(request).configure(historical_exposures_table)
+    historical_exposures_table.paginate(
+        page=request.GET.get("exp-page", 1), per_page=10
+    )
+
     historical_delinquency_table = DelinquencyStatusTable(
-        account.delinquency_statuses.order_by("-as_of_date")
+        account.delinquency_statuses.order_by("-as_of_date"), prefix="del-"
     )
+    RequestConfig(request).configure(historical_delinquency_table)
+    historical_delinquency_table.paginate(
+        page=request.GET.get("del-page", 1), per_page=10
+    )
+
     historical_strategies_table = RemedialStrategyTable(
         account.remedial_strategies.exclude(strategy_status="ACTIVE").order_by(
             "-strategy_start_date"
-        )
+        ),
+        prefix="strat-",
     )
+    RequestConfig(request).configure(historical_strategies_table)
+    historical_strategies_table.paginate(
+        page=request.GET.get("strat-page", 1), per_page=10
+    )
+
     collection_activities_table = CollectionActivityLogTable(
-        account.collection_activities.order_by("-activity_date")
+        account.collection_activities.order_by("-activity_date"), prefix="col-"
     )
+    RequestConfig(request).configure(collection_activities_table)
+    collection_activities_table.paginate(
+        page=request.GET.get("col-page", 1), per_page=10
+    )
+
     compromise_agreements_table = CompromiseAgreementTable(
-        account.compromise_agreements.order_by("-created_at")
+        account.compromise_agreements.order_by("-created_at"), prefix="comp-"
+    )
+    RequestConfig(request).configure(compromise_agreements_table)
+    compromise_agreements_table.paginate(
+        page=request.GET.get("comp-page", 1), per_page=10
     )
 
     # Calculate formatted ECL provision rate if available

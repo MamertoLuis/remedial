@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from django_tables2 import RequestConfig
 from account_master.models import LoanAccount, CollectionActivityLog
 from account_master.services import create_collection_activity
 from account_master.forms import CollectionActivityLogForm
@@ -12,6 +13,8 @@ def collection_activity_list(request, loan_id):
         "-activity_date"
     )
     table = CollectionActivityLogTable(activities)
+    RequestConfig(request).configure(table)
+    table.paginate(page=request.GET.get("page", 1), per_page=25)
     return render(
         request,
         "account_master/collection_activity_list.html",

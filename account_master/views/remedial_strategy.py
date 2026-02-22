@@ -1,5 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
+from django_tables2 import RequestConfig
 from account_master.models import LoanAccount, RemedialStrategy
 from account_master.forms import RemedialStrategyForm
 from compromise_agreement.tables import CompromiseAgreementTable
@@ -59,6 +60,8 @@ def remedial_strategy_detail(request, loan_id, strategy_id):
     compromise_agreements_table = CompromiseAgreementTable(
         strategy.compromise_agreements.order_by("-created_at")
     )
+    RequestConfig(request).configure(compromise_agreements_table)
+    compromise_agreements_table.paginate(page=request.GET.get("page", 1), per_page=25)
 
     context = {
         "account": account,

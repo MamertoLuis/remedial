@@ -198,7 +198,16 @@ def _update_loan_account_status(account: LoanAccount, classification: str) -> No
     """
     Update LoanAccount.status based on delinquency classification.
     """
-    if classification in ["C"]:
+    latest_exposure = account.exposures.order_by("-as_of_date").first()
+    outstanding_balance = (
+        latest_exposure.principal_outstanding if latest_exposure else None
+    )
+
+    if outstanding_balance == Decimal("1.00"):
+        new_status = "WRITEOFF"
+    elif outstanding_balance == Decimal("0.00"):
+        new_status = "CLOSED"
+    elif classification in ["C"]:
         new_status = "PERFORMING"
     elif classification in ["SM"]:
         new_status = "PAST_DUE"

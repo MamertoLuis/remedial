@@ -24,7 +24,9 @@ class LoanAccountTable(tables.Table):
         accessor="borrower.full_name", order_by="borrower__full_name"
     )
     account_officer_id = tables.Column()
-    outstanding_balance = tables.Column(verbose_name="Outstanding Balance")
+    outstanding_balance = tables.Column(
+        verbose_name="Outstanding Balance", order_by="outstanding_balance"
+    )
 
     class Meta:
         model = LoanAccount

@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django_tables2 import RequestConfig
 from account_master.models import Borrower, LoanAccount
 from account_master.services import upsert_borrower
 from account_master.forms import BorrowerForm
@@ -10,6 +11,8 @@ def borrower_list(request):
     borrowers = Borrower.objects.all()
     filter = BorrowerFilter(request.GET, queryset=borrowers)
     table = BorrowerTable(filter.qs)
+    RequestConfig(request).configure(table)
+    table.paginate(page=request.GET.get("page", 1), per_page=25)
     context = {
         "table": table,
         "filter": filter,
@@ -25,6 +28,8 @@ def borrower_detail(request, borrower_id):
     borrower = get_object_or_404(Borrower, borrower_id=borrower_id)
     accounts = LoanAccount.objects.filter(borrower=borrower)
     table = BorrowerAccountTable(accounts)
+    RequestConfig(request).configure(table)
+    table.paginate(page=request.GET.get("page", 1), per_page=25)
     context = {
         "borrower": borrower,
         "table": table,
