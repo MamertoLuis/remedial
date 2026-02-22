@@ -3,6 +3,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 import json
+from django.db.models import OuterRef, Subquery
 from account_master.models import (
     LoanAccount,
     Exposure,
@@ -24,7 +25,15 @@ from compromise_agreement.tables import CompromiseAgreementTable
 
 
 def account_list(request):
-    accounts = LoanAccount.objects.all()
+    latest_exposure = Exposure.objects.filter(account=OuterRef("pk")).order_by(
+        "-as_of_date"
+    )
+
+    accounts = LoanAccount.objects.annotate(
+        outstanding_balance=Subquery(
+            latest_exposure.values("principal_outstanding")[:1]
+        )
+    )
 
     account_officer = request.GET.get("account_officer")
     if account_officer and account_officer != "":

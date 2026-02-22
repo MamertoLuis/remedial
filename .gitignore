@@ -1,5 +1,7 @@
 db.sqlite3
 .venv/
+*.md
+doc/*.md
 **/migrations/*.py
 !**/migrations/__init__.py
 **/__pycache__/

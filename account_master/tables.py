@@ -20,12 +20,28 @@ class BorrowerTable(tables.Table):
 
 class LoanAccountTable(tables.Table):
     loan_id = tables.LinkColumn("account_detail", args=[tables.A("loan_id")])
+    borrower = tables.Column(
+        accessor="borrower.full_name", order_by="borrower__full_name"
+    )
     account_officer_id = tables.Column()
+    outstanding_balance = tables.Column(verbose_name="Outstanding Balance")
 
     class Meta:
         model = LoanAccount
-        fields = ("loan_id", "borrower", "loan_type", "status", "account_officer_id")
+        fields = (
+            "loan_id",
+            "borrower",
+            "loan_type",
+            "status",
+            "account_officer_id",
+            "outstanding_balance",
+        )
         attrs = {"class": "table table-striped"}
+
+    def render_outstanding_balance(self, value):
+        if value is not None:
+            return f"₱{value:,.2f}"
+        return "₱0.00"
 
     def __init__(self, data, user=None, **kwargs):
         super().__init__(data, **kwargs)

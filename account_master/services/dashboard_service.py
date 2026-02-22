@@ -8,6 +8,7 @@ from django.db.models import (
     DecimalField,
     Max,
     Subquery,
+    OuterRef,
 )
 from django.db.models.functions import TruncMonth, TruncDay
 from django.core.cache import cache
@@ -57,20 +58,13 @@ class DashboardService:
         if result is None:
             try:
                 # Get the latest exposure for each account
-                latest_exposures = (
-                    Exposure.objects.filter(as_of_date__isnull=False)
-                    .values("account_id")
-                    .annotate(latest_date=Max("as_of_date"))
-                )
+                latest_exposures = Exposure.objects.filter(
+                    account=OuterRef("account")
+                ).order_by("-as_of_date")
 
                 # Sum the latest exposure amounts (principal outstanding only)
                 total_exposure = Exposure.objects.filter(
-                    exposure_id__in=Subquery(
-                        Exposure.objects.filter(as_of_date__isnull=False)
-                        .values("account_id")
-                        .annotate(latest_date=Max("as_of_date"))
-                        .values("exposure_id")
-                    )
+                    pk=Subquery(latest_exposures.values("pk")[:1])
                 ).aggregate(total_exposure=Sum("principal_outstanding"))[
                     "total_exposure"
                 ] or Decimal("0.00")
@@ -328,7 +322,17 @@ class DashboardService:
     @classmethod
     def clear_cache(cls):
         """Clear all dashboard cache."""
-        cache_pattern = f"{cls.CACHE_PREFIX}*"
-        keys = cache.keys(cache_pattern)
-        cache.delete_many(keys)
-        logger.info(f"Cleared {len(keys)} dashboard cache entries")
+        try:
+            if hasattr(cache, "keys"):
+                cache_pattern = f"{cls.CACHE_PREFIX}*"
+                keys = cache.keys(cache_pattern)
+                if keys:
+                    cache.delete_many(keys)
+                    logger.info(f"Cleared {len(keys)} dashboard cache entries")
+            else:
+                cache.clear()
+                logger.info(
+                    "Cleared all cache entries (backend doesn't support keys())"
+                )
+        except Exception as e:
+            logger.error(f"Error clearing cache: {e}")
