@@ -303,6 +303,11 @@ class Command(BaseCommand):
                             status = self._clean_value(
                                 row.get("status", ""), "status", required=False
                             )
+                            loan_security = self._clean_value(
+                                row.get("loan_security", ""),
+                                "loan_security",
+                                required=False,
+                            )
 
                             if dry_run:
                                 if verbose:
@@ -338,6 +343,7 @@ class Command(BaseCommand):
                                         "original_principal": original_principal,
                                         "interest_rate": interest_rate,
                                         "loan_type": loan_type,
+                                        "loan_security": loan_security or "UNSECURED",
                                         "account_officer_id": account_officer_id,
                                         "status": status or "PERFORMING",
                                     },

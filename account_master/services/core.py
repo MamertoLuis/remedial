@@ -44,6 +44,7 @@ def upsert_loan_account(*, loan_id: str, defaults: dict) -> tuple[LoanAccount, b
     loan_type = defaults.get("loan_type")
     account_officer_id = defaults.get("account_officer_id")
     status = defaults.get("status", "PERFORMING")
+    loan_security = defaults.get("loan_security", "UNSECURED")
 
     obj, created = LoanAccount.objects.update_or_create(
         loan_id=loan_id,
@@ -54,6 +55,7 @@ def upsert_loan_account(*, loan_id: str, defaults: dict) -> tuple[LoanAccount, b
             "original_principal": original_principal,
             "interest_rate": interest_rate,
             "loan_type": loan_type,
+            "loan_security": loan_security,
             "account_officer_id": account_officer_id,
             "status": status,
         },
