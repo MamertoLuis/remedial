@@ -31,10 +31,16 @@ SECRET_KEY = env.str(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env.bool("DEBUG", default=False)
 
-ALLOWED_HOSTS = env.list(
-    "ALLOWED_HOSTS",
-    default=["127.0.0.1", "0.0.0.0", "192.168.100.112", "localhost", "testserver"],
-)
+try:
+    ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
+except environ.ImproperlyConfigured:
+    ALLOWED_HOSTS = [
+        "127.0.0.1",
+        "0.0.0.0",
+        "192.168.100.112",
+        "localhost",
+        "testserver",
+    ]
 
 CRISPY_ALLOWED_TEMPLATE_PACKS = "bootstrap5"
 CRISPY_TEMPLATE_PACK = "bootstrap5"
@@ -114,9 +120,10 @@ WSGI_APPLICATION = "remedial.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-DATABASES = {
-    "default": env.db("DATABASE_URL", default=f"sqlite:///{BASE_DIR / 'db.sqlite3'}")
-}
+try:
+    DATABASES = {"default": env.db("DATABASE_URL")}
+except environ.ImproperlyConfigured:
+    DATABASES = {"default": env.db_url_config(f"sqlite:///{BASE_DIR / 'db.sqlite3'}")}
 
 
 # Password validation
