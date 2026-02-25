@@ -10,7 +10,7 @@ from account_master.services import upsert_loan_account
 
 
 class Command(BaseCommand):
-    help = "Imports loan account data from a CSV file."
+    help = "Enhanced import of loan account data with detailed debugging and error reporting."
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -20,6 +20,16 @@ class Command(BaseCommand):
             "--dry-run",
             action="store_true",
             help="Show what would be imported without actually importing.",
+        )
+        parser.add_argument(
+            "--verbose",
+            action="store_true",
+            help="Show detailed processing information for each row.",
+        )
+        parser.add_argument(
+            "--skip-errors",
+            action="store_true",
+            help="Continue processing even if some rows have errors.",
         )
 
     def _find_similar_borrower_ids(self, borrower_id, max_suggestions=5):
@@ -100,10 +110,12 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         csv_file_path = options["csv_file"]
         dry_run = options["dry_run"]
+        verbose = options["verbose"]
+        skip_errors = options["skip_errors"]
 
         self.stdout.write(
             self.style.SUCCESS(
-                f"Attempting to import loan account data from {csv_file_path}..."
+                f"Enhanced import of loan account data from {csv_file_path}..."
             )
         )
 
@@ -121,6 +133,16 @@ class Command(BaseCommand):
                     dialect = "excel"  # Default to comma
 
                 reader = csv.DictReader(file, dialect=dialect)
+
+                # Print CSV info
+                total_rows = sum(1 for row in reader)
+                file.seek(0)
+                reader = csv.DictReader(file, dialect=dialect)
+
+                self.stdout.write(f"CSV Info:")
+                self.stdout.write(f"  Headers: {reader.fieldnames}")
+                self.stdout.write(f"  Total rows: {total_rows}")
+
                 if not reader.fieldnames:
                     raise CommandError("CSV file is empty or has no headers.")
 
@@ -148,10 +170,84 @@ class Command(BaseCommand):
                         f"Required: {', '.join(required_headers)}. Found: {', '.join(reader.fieldnames)}"
                     )
 
+                # Analyze borrower_ids in CSV vs database
+                csv_borrower_ids = set()
+                for row in reader:
+                    borrower_id = row.get("borrower_id", "").strip()
+                    if borrower_id:
+                        csv_borrower_ids.add(borrower_id)
+                file.seek(0)
+                reader = csv.DictReader(file, dialect=dialect)
+
+                db_borrower_ids = set(
+                    Borrower.objects.values_list("borrower_id", flat=True)
+                )
+
+                self.stdout.write(f"\nBorrower Analysis:")
+                self.stdout.write(
+                    f"  Unique borrower_ids in CSV: {len(csv_borrower_ids)}"
+                )
+                self.stdout.write(
+                    f"  Unique borrower_ids in database: {len(db_borrower_ids)}"
+                )
+
+                missing_borrowers = csv_borrower_ids - db_borrower_ids
+                if missing_borrowers:
+                    self.stdout.write(
+                        self.style.ERROR(
+                            f"  Missing borrowers in database: {len(missing_borrowers)}"
+                        )
+                    )
+                    if len(missing_borrowers) <= 10:
+                        self.stdout.write(
+                            f"    Missing: {', '.join(sorted(missing_borrowers))}"
+                        )
+                    else:
+                        self.stdout.write(
+                            f"    First 10 missing: {', '.join(sorted(list(missing_borrowers)[:10]))}..."
+                        )
+                else:
+                    self.stdout.write(
+                        self.style.SUCCESS(f"  All borrower_ids found in database!")
+                    )
+
+                # Check for duplicate loan_ids
+                csv_loan_ids = []
+                for row in reader:
+                    loan_id = row.get("loan_id", "").strip()
+                    if loan_id:
+                        csv_loan_ids.append(loan_id)
+                file.seek(0)
+                reader = csv.DictReader(file, dialect=dialect)
+
+                from collections import Counter
+
+                loan_id_counter = Counter(csv_loan_ids)
+                duplicate_loan_ids = [
+                    loan_id for loan_id, count in loan_id_counter.items() if count > 1
+                ]
+
+                if duplicate_loan_ids:
+                    self.stdout.write(
+                        self.style.WARNING(
+                            f"  Duplicate loan_ids found: {len(duplicate_loan_ids)}"
+                        )
+                    )
+                    if len(duplicate_loan_ids) <= 10:
+                        self.stdout.write(
+                            f"    Duplicates: {', '.join(duplicate_loan_ids)}"
+                        )
+                    else:
+                        self.stdout.write(
+                            f"    First 10 duplicates: {', '.join(duplicate_loan_ids[:10])}..."
+                        )
+
                 imported_count = 0
                 updated_count = 0
+                skipped_count = 0
                 errors = []
 
+                self.stdout.write(f"\nProcessing {total_rows} rows...")
                 for row_num, row in enumerate(reader, 1):
                     try:
                         with transaction.atomic():
@@ -161,20 +257,25 @@ class Command(BaseCommand):
                                 row["borrower_id"], "borrower_id"
                             )
 
+                            # Check if borrower exists
                             try:
                                 borrower = Borrower.objects.get(borrower_id=borrower_id)
                             except Borrower.DoesNotExist:
-                                # Provide more helpful error information
-                                similar_ids = self._find_similar_borrower_ids(
-                                    borrower_id
-                                )
-                                similar_msg = ""
-                                if similar_ids:
-                                    similar_msg = f" Similar borrower IDs found: {', '.join(similar_ids)}"
-
+                                if verbose:
+                                    similar_ids = self._find_similar_borrower_ids(
+                                        borrower_id
+                                    )
+                                    similar_msg = ""
+                                    if similar_ids:
+                                        similar_msg = (
+                                            f" Similar: {', '.join(similar_ids)}"
+                                        )
+                                    self.stdout.write(
+                                        f"Row {row_num}: Borrower '{borrower_id}' not found{similar_msg}"
+                                    )
                                 raise ValueError(
                                     f"Borrower with borrower_id '{borrower_id}' does not exist."
-                                    f"{similar_msg} Make sure the borrower_id exists in the database and matches exactly (case-sensitive, no extra spaces)."
+                                    f" Please import the borrower first."
                                 )
 
                             booking_date = self._parse_date(row["booking_date"])
@@ -202,11 +303,18 @@ class Command(BaseCommand):
                             status = self._clean_value(
                                 row.get("status", ""), "status", required=False
                             )
+                            loan_security = self._clean_value(
+                                row.get("loan_security", ""),
+                                "loan_security",
+                                required=False,
+                            )
 
                             if dry_run:
-                                self.stdout.write(
-                                    f"Row {row_num}: Would process loan account '{loan_id}' for borrower '{borrower.full_name}'"
-                                )
+                                if verbose:
+                                    self.stdout.write(
+                                        f"Row {row_num}: Processing loan '{loan_id}' for borrower '{borrower.full_name}'"
+                                    )
+
                                 # Check if loan account exists without actually creating/updating
                                 from account_master.models import LoanAccount
 
@@ -214,62 +322,115 @@ class Command(BaseCommand):
                                     loan_id=loan_id
                                 ).exists()
                                 if existing:
-                                    self.stdout.write(
-                                        f"  -> Would UPDATE existing loan account"
-                                    )
+                                    if verbose:
+                                        self.stdout.write(
+                                            f"  -> Would UPDATE existing loan account"
+                                        )
+                                    updated_count += 1
                                 else:
-                                    self.stdout.write(
-                                        f"  -> Would CREATE new loan account"
-                                    )
-                                continue
-
-                            _, created = upsert_loan_account(
-                                loan_id=loan_id,
-                                defaults={
-                                    "borrower": borrower,
-                                    "booking_date": booking_date,
-                                    "maturity_date": maturity_date,
-                                    "original_principal": original_principal,
-                                    "interest_rate": interest_rate,
-                                    "loan_type": loan_type,
-                                    "account_officer_id": account_officer_id,
-                                    "status": status or "PERFORMING",
-                                },
-                            )
-
-                            if created:
-                                imported_count += 1
+                                    if verbose:
+                                        self.stdout.write(
+                                            f"  -> Would CREATE new loan account"
+                                        )
+                                    imported_count += 1
                             else:
-                                updated_count += 1
+                                _, created = upsert_loan_account(
+                                    loan_id=loan_id,
+                                    defaults={
+                                        "borrower": borrower,
+                                        "booking_date": booking_date,
+                                        "maturity_date": maturity_date,
+                                        "original_principal": original_principal,
+                                        "interest_rate": interest_rate,
+                                        "loan_type": loan_type,
+                                        "loan_security": loan_security or "UNSECURED",
+                                        "account_officer_id": account_officer_id,
+                                        "status": status or "PERFORMING",
+                                    },
+                                )
+
+                                if created:
+                                    imported_count += 1
+                                    if verbose:
+                                        self.stdout.write(
+                                            f"Row {row_num}: CREATED loan account '{loan_id}'"
+                                        )
+                                else:
+                                    updated_count += 1
+                                    if verbose:
+                                        self.stdout.write(
+                                            f"Row {row_num}: UPDATED loan account '{loan_id}'"
+                                        )
 
                     except (ValueError, InvalidOperation) as e:
-                        errors.append(f"Row {row_num}: Data conversion error - {e}")
+                        error_msg = f"Row {row_num}: Data conversion error - {e}"
+                        errors.append(error_msg)
+                        if skip_errors:
+                            self.stderr.write(self.style.ERROR(error_msg))
+                            skipped_count += 1
+                            continue
+                        else:
+                            raise
                     except KeyError as e:
-                        errors.append(
+                        error_msg = (
                             f"Row {row_num}: Missing data for expected field - {e}"
                         )
+                        errors.append(error_msg)
+                        if skip_errors:
+                            self.stderr.write(self.style.ERROR(error_msg))
+                            skipped_count += 1
+                            continue
+                        else:
+                            raise
                     except Exception as e:
-                        errors.append(
-                            f"Row {row_num}: An unexpected error occurred - {e}"
-                        )
+                        error_msg = f"Row {row_num}: An unexpected error occurred - {e}"
+                        errors.append(error_msg)
+                        if skip_errors:
+                            self.stderr.write(self.style.ERROR(error_msg))
+                            skipped_count += 1
+                            continue
+                        else:
+                            raise
+
+                # Summary report
+                self.stdout.write("\n" + "=" * 50)
+                self.stdout.write("IMPORT SUMMARY")
+                self.stdout.write("=" * 50)
+                self.stdout.write(f"Total rows in CSV: {total_rows}")
+                self.stdout.write(f"Rows processed: {imported_count + updated_count}")
+                self.stdout.write(f"Rows with errors: {len(errors)}")
+                if skip_errors:
+                    self.stdout.write(f"Rows skipped: {skipped_count}")
+                self.stdout.write(f"  - New accounts imported: {imported_count}")
+                self.stdout.write(f"  - Existing accounts updated: {updated_count}")
 
                 if errors:
-                    for error in errors:
-                        self.stderr.write(self.style.ERROR(error))
-                    raise CommandError(
-                        f"Finished with {len(errors)} errors. See above for details."
+                    self.stdout.write(
+                        self.style.ERROR(f"\nFound {len(errors)} errors:")
                     )
+                    for error in errors[:10]:  # Show first 10 errors
+                        self.stderr.write(self.style.ERROR(f"  {error}"))
+                    if len(errors) > 10:
+                        self.stderr.write(
+                            self.style.ERROR(
+                                f"  ... and {len(errors) - 10} more errors"
+                            )
+                        )
+                    if not skip_errors:
+                        raise CommandError(
+                            f"Import failed with {len(errors)} errors. Use --skip-errors to continue processing."
+                        )
                 else:
                     if dry_run:
                         self.stdout.write(
                             self.style.SUCCESS(
-                                f"DRY RUN COMPLETE: Would import {imported_count} new loan accounts and update {updated_count} existing accounts."
+                                f"\nDRY RUN COMPLETE: Would import {imported_count} new loan accounts and update {updated_count} existing accounts."
                             )
                         )
                     else:
                         self.stdout.write(
                             self.style.SUCCESS(
-                                f"Successfully imported {imported_count} new loan accounts and updated {updated_count} existing accounts."
+                                f"\nSuccessfully imported {imported_count} new loan accounts and updated {updated_count} existing accounts."
                             )
                         )
 
