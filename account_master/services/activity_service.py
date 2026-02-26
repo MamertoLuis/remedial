@@ -83,7 +83,7 @@ class ActivityService:
 
         return [
             {
-                "id": f"collection_{activity.id}",
+                "id": f"collection_{activity.activity_id}",
                 "type": "collection",
                 "type_display": cls.ACTIVITY_TYPES["collection"],
                 "title": f"{activity.get_activity_type_display()} - {activity.account.loan_id}",

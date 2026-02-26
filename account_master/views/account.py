@@ -98,6 +98,10 @@ def create_account(request, borrower_id=None):
     return render(request, "account_master/create_account.html", {"form": form})
 
 
+from django.contrib.auth.decorators import login_required
+
+
+@login_required
 def account_detail(request, loan_id):
     account = get_object_or_404(LoanAccount, loan_id=loan_id)
 

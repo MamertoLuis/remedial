@@ -1,3 +1,4 @@
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.utils import timezone
 from django.contrib.auth import get_user_model
@@ -6,6 +7,7 @@ from account_master.services.activity_service import ActivityService
 from account_master.services.alert_service import AlertService
 
 
+@login_required
 def dashboard(request):
     # Get portfolio KPIs from DashboardService
     kpis = DashboardService.get_portfolio_kpis()

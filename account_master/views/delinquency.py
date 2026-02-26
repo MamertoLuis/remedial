@@ -66,3 +66,13 @@ def update_delinquency_status(request, loan_id, delinquency_id):
         "account_master/update_delinquency_status.html",
         {"form": form, "account": account, "delinquency_status": delinquency_status},
     )
+
+@login_required
+def delinquency_list(request, loan_id):
+    account = get_object_or_404(LoanAccount, loan_id=loan_id)
+    delinquencies = DelinquencyStatus.objects.filter(account=account).order_by("-as_of_date")
+    return render(
+        request,
+        "account_master/delinquency_list.html",
+        {"account": account, "delinquencies": delinquencies},
+    )

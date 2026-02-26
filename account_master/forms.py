@@ -101,7 +101,7 @@ class RemedialStrategyForm(forms.ModelForm):
         model = RemedialStrategy
         exclude = ["created_by", "updated_by"]
 
-        lswidgets = {
+        widgets = {
             "strategy_start_date": forms.DateInput(attrs={"type": "date"}),
         }
 
@@ -109,4 +109,18 @@ class RemedialStrategyForm(forms.ModelForm):
 class CollectionActivityLogForm(forms.ModelForm):
     class Meta:
         model = CollectionActivityLog
-        fields = "__all__"
+        fields = [
+            "account",
+            "activity_date",
+            "activity_type",
+            "promise_to_pay_amount",
+            "promise_to_pay_date",
+            "staff_assigned",
+            "next_action_date",
+            "remarks",
+        ]
+        widgets = {
+            "activity_date": forms.DateInput(attrs={"type": "date"}),
+            "promise_to_pay_date": forms.DateInput(attrs={"type": "date"}),
+            "next_action_date": forms.DateInput(attrs={"type": "date"}),
+        }   

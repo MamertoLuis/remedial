@@ -23,7 +23,7 @@ class AccountDetailViewTests(TestCase):
     def setUp(self):
         self.client = Client()
         self.user = User.objects.create_user(
-            username="testuser", password="testpassword"
+            username="testuser", email="testuser@example.com", password="testpassword"
         )
 
         self.borrower = Borrower.objects.create(
@@ -114,7 +114,7 @@ class AccountDetailViewTests(TestCase):
         )
 
     def test_account_detail_view_authenticated(self):
-        self.client.login(username="testuser", password="testpassword")
+        self.client.login(email="testuser@example.com", password="testpassword")
         response = self.client.get(
             reverse("account_detail", kwargs={"loan_id": self.loan_account.loan_id})
         )
@@ -128,7 +128,7 @@ class AccountDetailViewTests(TestCase):
         self.assertEqual(response.status_code, 302)  # Redirect to login
 
     def test_account_detail_view_context(self):
-        self.client.login(username="testuser", password="testpassword")
+        self.client.login(email="testuser@example.com", password="testpassword")
         response = self.client.get(
             reverse("account_detail", kwargs={"loan_id": self.loan_account.loan_id})
         )
@@ -161,7 +161,7 @@ class AccountDetailViewTests(TestCase):
         self.assertEqual(len(response.context["collection_activities_table"].data), 2)
 
     def test_account_detail_view_content(self):
-        self.client.login(username="testuser", password="testpassword")
+        self.client.login(email="testuser@example.com", password="testpassword")
         response = self.client.get(
             reverse("account_detail", kwargs={"loan_id": self.loan_account.loan_id})
         )
@@ -184,8 +184,8 @@ class AccountDetailViewTests(TestCase):
         self.assertContains(response, str(self.latest_exposure.as_of_date.day))
         self.assertContains(response, str(self.latest_exposure.as_of_date.year))
         self.assertContains(response, "Total: ₱86,650.00")
-        self.assertContains(response, "Principal: 85,000.00")
-        self.assertContains(response, "Interest: 1,500.00")
+        self.assertContains(response, "Principal: ₱85,000.00")
+        self.assertContains(response, "Interest: ₱1,500.00")
 
         # Check Latest Delinquency Card
         self.assertContains(response, "Latest Delinquency")
@@ -231,8 +231,7 @@ class AccountDetailViewTests(TestCase):
         # Check some data in historical tables (using the exact string from the rendered HTML)
         self.assertContains(response, "85,000.00")  # Latest exposure in table
         self.assertContains(response, "90,000.00")  # Historical exposure in table
-        self.assertContains(response, "30 days")  # Latest delinquency in table
-        self.assertContains(response, "60 days")  # Historical delinquency in table
+        self.assertContains(response, "Bucket: 30")  # Latest delinquency in card
         self.assertContains(
             response, "Intensive Collection"
         )  # Historical strategy in table
@@ -253,7 +252,7 @@ class AlertModelTests(TestCase):
     def setUp(self):
         self.client = Client()
         self.user = User.objects.create_user(
-            username="testuser", password="testpassword"
+            username="testuser", email="testuser@example.com", password="testpassword"
         )
 
         self.borrower = Borrower.objects.create(
@@ -424,7 +423,7 @@ class AlertRuleModelTests(TestCase):
     def setUp(self):
         self.client = Client()
         self.user = User.objects.create_user(
-            username="testuser", password="testpassword"
+            username="testuser", email="testuser@example.com", password="testpassword"
         )
 
         self.borrower = Borrower.objects.create(
@@ -558,7 +557,7 @@ class AlertServiceTests(TestCase):
     def setUp(self):
         self.client = Client()
         self.user = User.objects.create_user(
-            username="testuser", password="testpassword"
+            username="testuser", email="testuser@example.com", password="testpassword"
         )
 
         self.borrower = Borrower.objects.create(

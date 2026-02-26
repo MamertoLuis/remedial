@@ -45,6 +45,10 @@ class Borrower(AuditableModel):
     def __str__(self):
         return self.full_name
 
+    def get_absolute_url(self):
+        from django.urls import reverse
+        return reverse('borrower_detail', args=[str(self.borrower_id)])
+
 
 class LoanAccount(AuditableModel):
     LOAN_STATUS_CHOICES = [
@@ -77,6 +81,10 @@ class LoanAccount(AuditableModel):
 
     def __str__(self):
         return self.loan_id
+
+    def get_absolute_url(self):
+        from django.urls import reverse
+        return reverse('account_detail', args=[str(self.loan_id)])
 
 
 class CollectionActivityLog(AuditableModel):

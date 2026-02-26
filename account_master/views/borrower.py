@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
 from django_tables2 import RequestConfig
 from account_master.models import Borrower, LoanAccount
 from account_master.services import upsert_borrower
@@ -7,6 +8,7 @@ from account_master.tables import BorrowerTable, BorrowerAccountTable
 from account_master.filters import BorrowerFilter
 
 
+@login_required
 def borrower_list(request):
     borrowers = Borrower.objects.all()
     filter = BorrowerFilter(request.GET, queryset=borrowers)
@@ -24,6 +26,7 @@ def borrower_list(request):
     return render(request, "account_master/borrower_list.html", context)
 
 
+@login_required
 def borrower_detail(request, borrower_id):
     borrower = get_object_or_404(Borrower, borrower_id=borrower_id)
     accounts = LoanAccount.objects.filter(borrower=borrower)
@@ -43,6 +46,7 @@ def borrower_detail(request, borrower_id):
     return render(request, "account_master/borrower_detail.html", context)
 
 
+@login_required
 def create_borrower(request):
     if request.method == "POST":
         form = BorrowerForm(request.POST)
@@ -57,6 +61,7 @@ def create_borrower(request):
     return render(request, "account_master/create_borrower.html", {"form": form})
 
 
+@login_required
 def update_borrower(request, borrower_id):
     borrower = get_object_or_404(Borrower, borrower_id=borrower_id)
     if request.method == "POST":
@@ -70,6 +75,7 @@ def update_borrower(request, borrower_id):
     return render(request, "account_master/update_borrower.html", {"form": form})
 
 
+@login_required
 def delete_borrower(request, borrower_id):
     borrower = get_object_or_404(Borrower, borrower_id=borrower_id)
     if request.method == "POST":

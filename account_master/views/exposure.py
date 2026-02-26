@@ -54,3 +54,13 @@ def update_exposure(request, loan_id, exposure_id):
         "account_master/update_exposure.html",
         {"form": form, "account": account, "exposure": exposure},
     )
+
+@login_required
+def exposure_list(request, loan_id):
+    account = get_object_or_404(LoanAccount, loan_id=loan_id)
+    exposures = Exposure.objects.filter(account=account).order_by("-as_of_date")
+    return render(
+        request,
+        "account_master/exposure_list.html",
+        {"account": account, "exposures": exposures},
+    )
