@@ -29,6 +29,7 @@ class BorrowerForm(forms.ModelForm):
             "full_name",
             "primary_address",
             "mobile",
+            "borrower_group",
         ]
 
 
@@ -86,8 +87,6 @@ class RemedialStrategyForm(forms.ModelForm):
         account = kwargs.pop("account", None)
         super().__init__(*args, **kwargs)
 
-
-
         if account:
             # Filter out Foreclosure option for unsecured loans
             if account.loan_security == "UNSECURED":
@@ -123,4 +122,4 @@ class CollectionActivityLogForm(forms.ModelForm):
             "activity_date": forms.DateInput(attrs={"type": "date"}),
             "promise_to_pay_date": forms.DateInput(attrs={"type": "date"}),
             "next_action_date": forms.DateInput(attrs={"type": "date"}),
-        }   
+        }

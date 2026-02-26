@@ -34,6 +34,10 @@
                         <th>Mobile</th>
                         <td>{{ borrower.mobile }}</td>
                     </tr>
+                    <tr>
+                        <th>Borrower Group</th>
+                        <td>{{ borrower.borrower_group|default:"N/A" }}</td>
+                    </tr>
 
                 </tbody>
             </table>

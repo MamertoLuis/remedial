@@ -41,13 +41,17 @@ class Borrower(AuditableModel):
     full_name = models.CharField(max_length=200)
     primary_address = models.CharField(max_length=300)
     mobile = models.CharField(max_length=20, blank=True)
+    borrower_group = models.CharField(
+        max_length=100, default=None, null=True, blank=True
+    )
 
     def __str__(self):
         return self.full_name
 
     def get_absolute_url(self):
         from django.urls import reverse
-        return reverse('borrower_detail', args=[str(self.borrower_id)])
+
+        return reverse("borrower_detail", args=[str(self.borrower_id)])
 
 
 class LoanAccount(AuditableModel):
@@ -84,7 +88,8 @@ class LoanAccount(AuditableModel):
 
     def get_absolute_url(self):
         from django.urls import reverse
-        return reverse('account_detail', args=[str(self.loan_id)])
+
+        return reverse("account_detail", args=[str(self.loan_id)])
 
 
 class CollectionActivityLog(AuditableModel):

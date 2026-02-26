@@ -109,6 +109,7 @@ class Command(BaseCommand):
                     "borrower_type",
                     "primary_address",
                     "mobile",
+                    "borrower_group",
                 ]
 
                 if not all(header in reader.fieldnames for header in required_headers):
@@ -171,6 +172,11 @@ class Command(BaseCommand):
                             mobile = self._clean_value(
                                 row.get("mobile", ""), "mobile", required=False
                             )
+                            borrower_group = self._clean_value(
+                                row.get("borrower_group", ""),
+                                "borrower_group",
+                                required=False,
+                            )
 
                             if dry_run:
                                 self.stdout.write(
@@ -215,6 +221,7 @@ class Command(BaseCommand):
                                     "full_name": full_name,
                                     "primary_address": primary_address,
                                     "mobile": mobile,
+                                    "borrower_group": borrower_group or None,
                                 },
                             )
 

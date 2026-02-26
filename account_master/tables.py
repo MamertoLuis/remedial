@@ -14,7 +14,13 @@ class BorrowerTable(tables.Table):
 
     class Meta:
         model = Borrower
-        fields = ("borrower_id", "full_name", "borrower_type", "mobile")
+        fields = (
+            "borrower_id",
+            "full_name",
+            "borrower_type",
+            "mobile",
+            "borrower_group",
+        )
         attrs = {"class": "table table-striped"}
 
 

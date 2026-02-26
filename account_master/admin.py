@@ -17,9 +17,15 @@ from .services.provision_service import create_provision_entry
 
 @admin.register(Borrower)
 class BorrowerAdmin(admin.ModelAdmin):
-    list_display = ("borrower_id", "full_name", "borrower_type", "mobile")
-    search_fields = ("borrower_id", "full_name", "mobile")
-    list_filter = ("borrower_type",)
+    list_display = (
+        "borrower_id",
+        "full_name",
+        "borrower_type",
+        "mobile",
+        "borrower_group",
+    )
+    search_fields = ("borrower_id", "full_name", "mobile", "borrower_group")
+    list_filter = ("borrower_type", "borrower_group")
 
 
 @admin.register(LoanAccount)

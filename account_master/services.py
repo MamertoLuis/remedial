@@ -29,6 +29,7 @@ def upsert_borrower(*, borrower_id: str, defaults: dict) -> tuple[Borrower, bool
     full_name = defaults.get("full_name")
     primary_address = defaults.get("primary_address")
     mobile = defaults.get("mobile")
+    borrower_group = defaults.get("borrower_group")
 
     obj, created = Borrower.objects.update_or_create(
         borrower_id=borrower_id,
@@ -37,6 +38,7 @@ def upsert_borrower(*, borrower_id: str, defaults: dict) -> tuple[Borrower, bool
             "full_name": full_name,
             "primary_address": primary_address,
             "mobile": mobile,
+            "borrower_group": borrower_group,
         },
     )
     return obj, created
