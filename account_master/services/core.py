@@ -19,15 +19,19 @@ def upsert_borrower(*, borrower_id: str, defaults: dict) -> tuple[Borrower, bool
     full_name = defaults.get("full_name")
     primary_address = defaults.get("primary_address")
     mobile = defaults.get("mobile")
+    borrower_group = defaults.get("borrower_group")
+    update_fields = {
+        "borrower_type": borrower_type,
+        "full_name": full_name,
+        "primary_address": primary_address,
+        "mobile": mobile,
+    }
+    if "borrower_group" in defaults:
+        update_fields["borrower_group"] = borrower_group
 
     obj, created = Borrower.objects.update_or_create(
         borrower_id=borrower_id,
-        defaults={
-            "borrower_type": borrower_type,
-            "full_name": full_name,
-            "primary_address": primary_address,
-            "mobile": mobile,
-        },
+        defaults=update_fields,
     )
     return obj, created
 

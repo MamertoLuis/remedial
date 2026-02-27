@@ -1,9 +1,11 @@
 from django.urls import path
 from account_master import views
+from account_master.views.debug import debug_meta
 from account_master.views import alerts_api
 from account_master.views import alert_list
 
 urlpatterns = [
+    path("debug-meta/", debug_meta),
     path("", views.dashboard, name="dashboard"),
     path("accounts/", views.account_list, name="account_list"),
     path("create/", views.create_account, name="create_account"),
@@ -123,5 +125,5 @@ urlpatterns = [
         "account/<str:loan_id>/ecl-provision/generate/",
         views.generate_ecl_provision,
         name="generate_ecl_provision",
-    ),
+    )
 ]

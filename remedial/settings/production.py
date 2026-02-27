@@ -13,8 +13,9 @@ except environ.ImproperlyConfigured:
     CSRF_TRUSTED_ORIGINS = []
 
 # Security settings
+USE_X_FORWARDED_HOST = True
 SECURE_BROWSER_XSS_FILTER = env.bool("SECURE_BROWSER_XSS_FILTER", default=True)
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "http")
 SECURE_HSTS_SECONDS = env.int("SECURE_HSTS_SECONDS", default=31536000)
 SECURE_HSTS_INCLUDE_SUBDOMAINS = env.bool(
     "SECURE_HSTS_INCLUDE_SUBDOMAINS", default=True
@@ -41,3 +42,10 @@ DEFAULT_FROM_EMAIL = env.str("DEFAULT_FROM_EMAIL", default=EMAIL_HOST_USER)
 ACCOUNT_DEFAULT_HTTP_PROTOCOL = env.str(
     "ACCOUNT_DEFAULT_HTTP_PROTOCOL", default="https"
 )
+
+# ACCOUNT_RATE_LIMITS = False
+
+ACCOUNT_ADAPTER = "account_master.adapter.CustomAccountAdapter"
+
+
+print("🔥 USING PRODUCTION SETTINGS 🔥")

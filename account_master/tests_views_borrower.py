@@ -123,3 +123,24 @@ class BorrowerViewsTests(TestCase):
         )
         self.borrower.refresh_from_db()
         self.assertEqual(self.borrower.full_name, "John Doe Updated")
+
+    def test_update_borrower_updates_group(self):
+        self.client.force_login(self.user)
+        self.borrower.borrower_group = "Initial Group"
+        self.borrower.save(update_fields=["borrower_group"])
+        data = {
+            "borrower_id": self.borrower.borrower_id,
+            "borrower_type": "PERSON",
+            "full_name": "John Doe Updated",
+            "primary_address": "123 Main St",
+            "mobile": "1234567890",
+            "borrower_group": "Updated Group",
+        }
+        response = self.client.post(
+            reverse("update_borrower", args=[self.borrower.borrower_id]), data
+        )
+        self.assertRedirects(
+            response, reverse("borrower_detail", args=[self.borrower.borrower_id])
+        )
+        self.borrower.refresh_from_db()
+        self.assertEqual(self.borrower.borrower_group, "Updated Group")
