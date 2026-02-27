@@ -8,7 +8,7 @@ from account_master.models import (
     CollectionActivityLog,
     RemedialStrategy,
 )
-from account_master.services.core import (
+from account_master.services import (
     create_collection_activity,
     create_remedial_strategy,
 )

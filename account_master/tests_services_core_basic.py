@@ -2,7 +2,7 @@ from datetime import date
 from decimal import Decimal
 from django.test import TestCase
 from account_master.models import Borrower, LoanAccount, Exposure
-from account_master.services.core import (
+from account_master.services import (
     upsert_borrower,
     upsert_loan_account,
     _update_loan_account_status,

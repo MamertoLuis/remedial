@@ -1,5 +1,6 @@
 from datetime import date
 from decimal import Decimal
+from typing import Optional
 from django.db import transaction
 from ..models import (
     Borrower,
@@ -8,7 +9,9 @@ from ..models import (
     DelinquencyStatus,
     CollectionActivityLog,
     RemedialStrategy,
+    ECLProvisionHistory,
 )
+from .ecl_service import update_ecl_provision
 
 
 def upsert_borrower(*, borrower_id: str, defaults: dict) -> tuple[Borrower, bool]:
@@ -19,6 +22,7 @@ def upsert_borrower(*, borrower_id: str, defaults: dict) -> tuple[Borrower, bool
     full_name = defaults.get("full_name")
     primary_address = defaults.get("primary_address")
     mobile = defaults.get("mobile")
+    borrower_group = defaults.get("borrower_group")
 
     obj, created = Borrower.objects.update_or_create(
         borrower_id=borrower_id,
@@ -27,6 +31,7 @@ def upsert_borrower(*, borrower_id: str, defaults: dict) -> tuple[Borrower, bool
             "full_name": full_name,
             "primary_address": primary_address,
             "mobile": mobile,
+            "borrower_group": borrower_group,
         },
     )
     return obj, created
@@ -268,7 +273,11 @@ def take_snapshot(
     """
     Atomically create or update Exposure and DelinquencyStatus records for a given account and date.
     """
-    upsert_exposure(account=account, as_of_date=as_of_date, defaults=exposure_data)
-    upsert_delinquency_status(
+    exposure, _ = upsert_exposure(
+        account=account, as_of_date=as_of_date, defaults=exposure_data
+    )
+    delinquency, _ = upsert_delinquency_status(
         account=account, as_of_date=as_of_date, defaults=delinquency_data
     )
+
+    update_ecl_provision(exposure, delinquency)
