@@ -12,3 +12,5 @@ DEBUG = True
 # EMAIL_USE_TLS = True
 # EMAIL_HOST_USER = 'marty.manguerra@gmail.com'
 # EMAIL_HOST_PASSWORD = 'sckglyikfghbulqe'
+
+ACCOUNT_ADAPTER = "account_master.adapter.CustomAccountAdapter"

@@ -68,6 +68,12 @@ def update_borrower(request, borrower_id):
         form = BorrowerForm(request.POST, instance=borrower)
         if form.is_valid():
             borrower_data = form.cleaned_data
+            if "borrower_group" in request.POST:
+                borrower_data["borrower_group"] = request.POST["borrower_group"]
+                # print(f"form post has {request.POST['borrower_group']} .")
+            else:
+                borrower_data["borrower_group"] = borrower.borrower_group
+                # print(f"borrower group is: {borrower.borrower_group}")
             upsert_borrower(borrower_id=borrower_id, defaults=borrower_data)
             return redirect("borrower_detail", borrower_id=borrower.borrower_id)
     else:

@@ -30,19 +30,23 @@ def account_list(request):
         "-as_of_date"
     )
 
+    status = request.GET.get("status")
+
     accounts = LoanAccount.objects.annotate(
         outstanding_balance=Subquery(
             latest_exposure.values("principal_outstanding")[:1]
         )
     )
 
+    if status not in ["CLOSED", "WRITEOFF"]:
+        accounts = accounts.exclude(status__in=["CLOSED", "WRITEOFF"])
+
+    if status and status != "":
+        accounts = accounts.filter(status=status)
+
     account_officer = request.GET.get("account_officer")
     if account_officer and account_officer != "":
         accounts = accounts.filter(account_officer_id=account_officer)
-
-    status = request.GET.get("status")
-    if status and status != "":
-        accounts = accounts.filter(status=status)
 
     security = request.GET.get("security")
     if security and security != "":
