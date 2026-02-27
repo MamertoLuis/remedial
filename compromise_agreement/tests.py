@@ -12,7 +12,7 @@ User = get_user_model()
 class CompromiseAgreementTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(
-            username="testuser", password="testpassword"
+            username="testuser", email="testuser@example.com", password="testpassword"
         )
         self.borrower = Borrower.objects.create(
             borrower_id=f"B001_{self._testMethodName}",
@@ -56,7 +56,7 @@ class CompromiseAgreementTests(TestCase):
         )
 
     def test_compromise_agreement_list_view(self):
-        self.client.login(username="testuser", password="testpassword")
+        self.client.login(email="testuser@example.com", password="testpassword")
         response = self.client.get(reverse("compromise_agreement_list"))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(
@@ -69,9 +69,10 @@ class CompromiseAgreementTests(TestCase):
         self.assertEqual(response.status_code, 302)  # Redirect to login
 
     def test_compromise_agreement_create_view(self):
-        self.client.login(username="testuser", password="testpassword")
+        self.client.login(email="testuser@example.com", password="testpassword")
         create_url = reverse(
-            "compromise_agreement_create", kwargs={"loan_id": self.loan_account.loan_id}
+            "compromise_agreement_create",
+            kwargs={"strategy_id": self.strategy.strategy_id},
         )
         response = self.client.get(create_url)
         self.assertEqual(response.status_code, 200)
@@ -101,7 +102,7 @@ class CompromiseAgreementTests(TestCase):
         self.assertEqual(new_agreement.approved_compromise_amount, Decimal("5000.00"))
 
     def test_compromise_agreement_detail_view(self):
-        self.client.login(username="testuser", password="testpassword")
+        self.client.login(email="testuser@example.com", password="testpassword")
         response = self.client.get(
             reverse(
                 "compromise_agreement_detail",
@@ -125,7 +126,7 @@ class CompromiseAgreementTests(TestCase):
         self.assertEqual(response.status_code, 302)  # Redirect to login
 
     def test_compromise_agreement_update_view(self):
-        self.client.login(username="testuser", password="testpassword")
+        self.client.login(email="testuser@example.com", password="testpassword")
         update_url = reverse(
             "compromise_agreement_update", kwargs={"pk": self.compromise_agreement.pk}
         )
@@ -165,7 +166,7 @@ class CompromiseAgreementTests(TestCase):
         self.assertEqual(response.status_code, 302)  # Redirect to login
 
     def test_compromise_installment_create_view(self):
-        self.client.login(username="testuser", password="testpassword")
+        self.client.login(email="testuser@example.com", password="testpassword")
         create_url = reverse(
             "compromise_installment_create",
             kwargs={"agreement_pk": self.compromise_agreement.pk},
@@ -205,7 +206,7 @@ class CompromiseAgreementTests(TestCase):
         self.assertEqual(response.status_code, 302)  # Redirect to login
 
     def test_compromise_installment_update_view(self):
-        self.client.login(username="testuser", password="testpassword")
+        self.client.login(email="testuser@example.com", password="testpassword")
         update_url = reverse(
             "compromise_installment_update",
             kwargs={"pk": self.compromise_installment.pk},
