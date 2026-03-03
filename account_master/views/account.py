@@ -6,6 +6,7 @@ import json
 from django.db.models import OuterRef, Subquery
 from account_master.models import (
     LoanAccount,
+    Borrower,
     Exposure,
     DelinquencyStatus,
     RemedialStrategy,
@@ -52,6 +53,13 @@ def account_list(request):
     if security and security != "":
         accounts = accounts.filter(loan_security=security)
 
+    borrower_group = request.GET.get("borrower_group")
+    if borrower_group and borrower_group != "":
+        if borrower_group == "blank":
+            accounts = accounts.filter(borrower__borrower_group__isnull=True)
+        else:
+            accounts = accounts.filter(borrower__borrower_group=borrower_group)
+
     table = LoanAccountTable(accounts, user=request.user)
     RequestConfig(request).configure(table)
     table.paginate(page=request.GET.get("page", 1), per_page=25)
@@ -63,12 +71,22 @@ def account_list(request):
         .order_by("account_officer_id")
     )
 
+    borrower_groups = (
+        Borrower.objects.exclude(borrower_group__isnull=True)
+        .exclude(borrower_group="")
+        .values_list("borrower_group", flat=True)
+        .distinct()
+        .order_by("borrower_group")
+    )
+
     context = {
         "table": table,
         "account_officers": account_officers,
         "selected_officer": account_officer,
         "selected_status": status,
         "selected_security": security,
+        "selected_borrower_group": borrower_group,
+        "borrower_groups": borrower_groups,
         "status_choices": LoanAccount.LOAN_STATUS_CHOICES,
         "security_choices": LoanAccount.LOAN_SECURITY_CHOICES,
         "breadcrumbs": [

@@ -59,6 +59,20 @@
                             </select>
                         </div>
 
+                        <!-- Borrower Group Filter -->
+                        <div class="mb-4">
+                            <label for="borrower_group" class="form-label fw-bold text-muted small text-uppercase">Borrower Group</label>
+                            <select name="borrower_group" id="borrower_group" class="form-select" onchange="this.form.submit()">
+                                <option value="" {% if not selected_borrower_group %}selected{% endif %}>All Groups</option>
+                                <option value="blank" {% if selected_borrower_group == "blank" %}selected{% endif %}>(Blank)</option>
+                                {% for group in borrower_groups %}
+                                    <option value="{{ group }}" {% if selected_borrower_group == group %}selected{% endif %}>
+                                        {{ group }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
                         <div class="d-grid">
                             <a href="{% url 'account_list' %}" class="btn btn-outline-secondary">Clear All Filters</a>
                         </div>
