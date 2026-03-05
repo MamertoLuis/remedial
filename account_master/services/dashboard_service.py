@@ -39,6 +39,14 @@ class DashboardService:
     CACHE_PREFIX = "dashboard_"
     CACHE_TIMEOUT = 300  # 5 minutes
 
+    LOAN_TYPE_MAPPING = {
+        "Agriculture Loan": "Agricultural",
+        "Commercial Loan": "Commercial",
+        "Salary Loans": "Salary Loans",
+        "Small Scale Loan": "Microfinance",
+        "Medium Scale Loan": "Microfinance",
+    }
+
     @classmethod
     def get_cache_key(cls, method_name, *args):
         """Generate cache key for method calls."""
@@ -80,37 +88,24 @@ class DashboardService:
 
     @classmethod
     def get_total_past_due_loans(cls):
-        """
-        Calculate total past due loans amount.
-
-        Returns:
-            Decimal: Total principal outstanding for past due loans
-        """
         cache_key = cls.get_cache_key("total_past_due_loans")
         result = cache.get(cache_key)
 
         if result is None:
             try:
-                # Get accounts with PAST_DUE status
-                past_due_accounts = LoanAccount.objects.filter(status="PAST_DUE")
+                latest_exposure_subquery = (
+                    Exposure.objects.filter(account_id=OuterRef("pk"))
+                    .order_by("-as_of_date")
+                    .values("principal_outstanding")[:1]
+                )
 
-                if not past_due_accounts.exists():
-                    result = Decimal("0.00")
-                    cache.set(cache_key, result, cls.CACHE_TIMEOUT)
-                    return result
+                accounts_with_principal = LoanAccount.objects.annotate(
+                    principal=Subquery(latest_exposure_subquery)
+                ).exclude(principal__isnull=True)
 
-                # Get the latest exposure for each past due account
-                latest_exposures = Exposure.objects.filter(
-                    account=OuterRef("account")
-                ).order_by("-as_of_date")
-
-                # Sum the latest exposure amounts for past due accounts
-                total_past_due = Exposure.objects.filter(
-                    pk=Subquery(latest_exposures.values("pk")[:1]),
-                    account__status="PAST_DUE",
-                ).aggregate(total_past_due=Sum("principal_outstanding"))[
-                    "total_past_due"
-                ] or Decimal("0.00")
+                total_past_due = accounts_with_principal.filter(
+                    status="PAST_DUE"
+                ).aggregate(total=Sum("principal"))["total"] or Decimal("0.00")
 
                 result = total_past_due
                 cache.set(cache_key, result, cls.CACHE_TIMEOUT)
@@ -123,37 +118,24 @@ class DashboardService:
 
     @classmethod
     def get_total_npl_amount(cls):
-        """
-        Calculate total NPL amount.
-
-        Returns:
-            Decimal: Total principal outstanding for NPL loans
-        """
         cache_key = cls.get_cache_key("total_npl_amount")
         result = cache.get(cache_key)
 
         if result is None:
             try:
-                # Get accounts with NPL status
-                npl_accounts = LoanAccount.objects.filter(status="NPL")
+                latest_exposure_subquery = (
+                    Exposure.objects.filter(account_id=OuterRef("pk"))
+                    .order_by("-as_of_date")
+                    .values("principal_outstanding")[:1]
+                )
 
-                if not npl_accounts.exists():
-                    result = Decimal("0.00")
-                    cache.set(cache_key, result, cls.CACHE_TIMEOUT)
-                    return result
+                accounts_with_principal = LoanAccount.objects.annotate(
+                    principal=Subquery(latest_exposure_subquery)
+                ).exclude(principal__isnull=True)
 
-                # Get the latest exposure for each NPL account
-                latest_exposures = Exposure.objects.filter(
-                    account=OuterRef("account")
-                ).order_by("-as_of_date")
-
-                # Sum the latest exposure amounts for NPL accounts
-                total_npl = Exposure.objects.filter(
-                    pk=Subquery(latest_exposures.values("pk")[:1]),
-                    account__status="NPL",
-                ).aggregate(total_npl=Sum("principal_outstanding"))[
-                    "total_npl"
-                ] or Decimal("0.00")
+                total_npl = accounts_with_principal.filter(status="NPL").aggregate(
+                    total=Sum("principal")
+                )["total"] or Decimal("0.00")
 
                 result = total_npl
                 cache.set(cache_key, result, cls.CACHE_TIMEOUT)
@@ -161,6 +143,69 @@ class DashboardService:
             except Exception as e:
                 logger.error(f"Error calculating total NPL amount: {e}")
                 result = Decimal("0.00")
+
+        return result
+
+    @classmethod
+    def get_portfolio_by_status(cls):
+        """
+        Get portfolio breakdown by loan status.
+
+        Returns:
+            list: List of dicts with status, balance, percentage
+        """
+        cache_key = cls.get_cache_key("portfolio_by_status")
+        result = cache.get(cache_key)
+
+        if result is None:
+            try:
+                latest_exposure_subquery = (
+                    Exposure.objects.filter(account_id=OuterRef("pk"))
+                    .order_by("-as_of_date")
+                    .values("principal_outstanding")[:1]
+                )
+
+                accounts_with_principal = LoanAccount.objects.annotate(
+                    principal=Subquery(latest_exposure_subquery)
+                ).exclude(principal__isnull=True)
+
+                total_portfolio = accounts_with_principal.aggregate(
+                    total=Sum("principal")
+                )["total"] or Decimal("0.00")
+
+                status_display = {
+                    "PERFORMING": "Current",
+                    "PAST_DUE": "Past Due",
+                    "NPL": "NPL",
+                    "WRITEOFF": "Written Off",
+                }
+
+                status_data = {}
+                for status_value, display_name in status_display.items():
+                    status_balance = accounts_with_principal.filter(
+                        status=status_value
+                    ).aggregate(total=Sum("principal"))["total"] or Decimal("0.00")
+                    status_data[display_name] = status_balance
+
+                result = []
+                for display_name in ["Current", "Past Due", "NPL", "Written Off"]:
+                    balance = status_data.get(display_name, Decimal("0.00"))
+                    percentage = (
+                        (balance / total_portfolio * 100) if total_portfolio > 0 else 0
+                    )
+                    result.append(
+                        {
+                            "name": display_name,
+                            "balance": balance,
+                            "percentage": round(float(percentage), 2),
+                        }
+                    )
+
+                cache.set(cache_key, result, cls.CACHE_TIMEOUT)
+
+            except Exception as e:
+                logger.error(f"Error getting portfolio by status: {e}")
+                result = []
 
         return result
 
@@ -420,6 +465,68 @@ class DashboardService:
             except Exception as e:
                 logger.error(f"Error calculating provision coverage: {e}")
                 result = 0.0
+
+        return result
+
+    @classmethod
+    def get_portfolio_by_loan_type(cls):
+        """
+        Get portfolio breakdown by loan type.
+
+        Returns:
+            list: List of dicts with loan_type, balance, percentage
+        """
+        cache_key = cls.get_cache_key("portfolio_by_loan_type")
+        result = cache.get(cache_key)
+
+        if result is None:
+            try:
+                latest_exposure_subquery = (
+                    Exposure.objects.filter(account_id=OuterRef("loan_id"))
+                    .order_by("-as_of_date")
+                    .values("principal_outstanding")[:1]
+                )
+
+                accounts_with_principal = LoanAccount.objects.annotate(
+                    principal=Subquery(latest_exposure_subquery)
+                ).exclude(principal__isnull=True)
+
+                total_portfolio = accounts_with_principal.aggregate(
+                    total=Sum("principal")
+                )["total"] or Decimal("0.00")
+
+                accounts = list(
+                    accounts_with_principal.values("loan_type", "principal")
+                )
+
+                type_data = {}
+                for item in accounts:
+                    original_type = item["loan_type"]
+                    mapped_type = cls.LOAN_TYPE_MAPPING.get(original_type, "Others")
+                    principal = item["principal"]
+
+                    if mapped_type not in type_data:
+                        type_data[mapped_type] = Decimal("0.00")
+                    type_data[mapped_type] += principal
+
+                result = []
+                for loan_type, balance in sorted(type_data.items()):
+                    percentage = (
+                        (balance / total_portfolio * 100) if total_portfolio > 0 else 0
+                    )
+                    result.append(
+                        {
+                            "name": loan_type,
+                            "balance": balance,
+                            "percentage": round(float(percentage), 2),
+                        }
+                    )
+
+                cache.set(cache_key, result, cls.CACHE_TIMEOUT)
+
+            except Exception as e:
+                logger.error(f"Error getting portfolio by loan type: {e}")
+                result = []
 
         return result
 

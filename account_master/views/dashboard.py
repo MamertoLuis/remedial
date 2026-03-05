@@ -7,13 +7,9 @@ from account_master.services.alert_service import AlertService
 
 
 def dashboard(request):
-    # Get portfolio KPIs from DashboardService
     kpis = DashboardService.get_portfolio_kpis()
-
-    # Get recent activities using ActivityService
     recent_activities = ActivityService.get_recent_activities(limit=20)
 
-    # Get alert counts from AlertService (only if user is authenticated)
     if request.user.is_authenticated:
         alert_counts = AlertService.get_alert_counts(request.user)
         active_alerts = AlertService.get_active_alerts(request.user, limit=10)
@@ -37,3 +33,18 @@ def dashboard(request):
         "breadcrumbs": [{"title": "Dashboard", "url": None}],
     }
     return render(request, "account_master/dashboard.html", context)
+
+
+def portfolio_summary(request):
+    kpis = DashboardService.get_portfolio_kpis()
+
+    context = {
+        "kpis": kpis,
+        "portfolio_by_type": DashboardService.get_portfolio_by_loan_type(),
+        "portfolio_by_status": DashboardService.get_portfolio_by_status(),
+        "breadcrumbs": [
+            {"title": "Dashboard", "url": "/"},
+            {"title": "Portfolio Summary", "url": None},
+        ],
+    }
+    return render(request, "account_master/portfolio_summary.html", context)

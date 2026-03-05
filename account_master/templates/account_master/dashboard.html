@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load render_table from django_tables2 %}
+{% load humanize %}
 
 {% block content %}
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -19,26 +20,32 @@
     <!-- Financial KPIs -->
     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4 mb-4">
         <div class="col">
-            {% include 'partials/_kpi_card.html' with title="Total Loan Portfolio" value=kpis.total_loan_portfolio unit="₱" icon="bi-graph-up" icon_color="primary" detail_url="#" description="Total outstanding principal across all accounts" %}
+            {% include 'partials/_kpi_card.html' with title="Total Loan Portfolio" value=kpis.total_loan_portfolio unit="₱" icon="bi-graph-up" icon_color="primary" detail_url="/accounts/" description="Total outstanding principal across all accounts" %}
         </div>
         <div class="col">
-            {% include 'partials/_kpi_card.html' with title="Total Past Due Loans" value=kpis.total_past_due_loans unit="₱" icon="bi-exclamation-circle" icon_color="warning" detail_url="#" description="Total amount of past due loans" %}
+            {% include 'partials/_kpi_card.html' with title="Total Past Due Loans" value=kpis.total_past_due_loans unit="₱" icon="bi-exclamation-circle" icon_color="warning" detail_url="/accounts/?status=PAST_DUE" description="Total amount of past due loans" %}
         </div>
         <div class="col">
-            {% include 'partials/_kpi_card.html' with title="Total NPL" value=kpis.total_npl unit="₱" icon="bi-exclamation-triangle" icon_color="danger" detail_url="#" description="Total amount of non-performing loans" %}
+            {% include 'partials/_kpi_card.html' with title="Total NPL" value=kpis.total_npl unit="₱" icon="bi-exclamation-triangle" icon_color="danger" detail_url="/accounts/?status=NPL" description="Total amount of non-performing loans" %}
         </div>
         <div class="col">
-            {% include 'partials/_kpi_card.html' with title="NPL Ratio" value=kpis.npl_ratio unit="%" icon="bi-percent" icon_color="warning" detail_url="#" description="Non-performing loans ratio" %}
+            {% include 'partials/_kpi_card.html' with title="NPL Ratio" value=kpis.npl_ratio unit="%" icon="bi-percent" icon_color="warning" detail_url="/accounts/?status=NPL" description="Non-performing loans ratio" %}
         </div>
         <div class="col">
-            {% include 'partials/_kpi_card.html' with title="Accounts under Remedial" value=kpis.total_remedial unit="₱" icon="bi-gear" icon_color="info" detail_url="#" description="Total amount under remedial strategies" %}
+            {% include 'partials/_kpi_card.html' with title="Accounts under Remedial" value=kpis.total_remedial unit="₱" icon="bi-gear" icon_color="info" detail_url="/accounts/" description="Total amount under remedial strategies" %}
         </div>
         <div class="col">
-            {% include 'partials/_kpi_card.html' with title="Accounts under Legal" value=kpis.total_legal unit="₱" icon="bi-balance-scale" icon_color="danger" detail_url="#" description="Total amount under legal action" %}
+            {% include 'partials/_kpi_card.html' with title="Accounts under Legal" value=kpis.total_legal unit="₱" icon="bi-balance-scale" icon_color="danger" detail_url="/accounts/" description="Total amount under legal action" %}
         </div>
         <div class="col">
-            {% include 'partials/_kpi_card.html' with title="Accounts Written-off (MTD)" value=kpis.total_written_off_mtd unit="₱" icon="bi-file-x" icon_color="secondary" detail_url="#" description="Written-off amount this month" %}
+            {% include 'partials/_kpi_card.html' with title="Accounts Written-off (MTD)" value=kpis.total_written_off_mtd unit="₱" icon="bi-file-x" icon_color="secondary" detail_url="/accounts/?status=WRITEOFF" description="Written-off amount this month" %}
         </div>
+    </div>
+
+    <div class="text-end mb-4">
+        <a href="{% url 'portfolio_summary' %}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-pie-chart me-1"></i>View Portfolio Summary
+        </a>
     </div>
 
     <!-- Alert Summary Widget -->

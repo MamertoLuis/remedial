@@ -1,0 +1,142 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block content %}
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">Loan Portfolio Summary</h1>
+        <div class="text-muted small">
+            <i class="bi bi-clock me-1"></i>
+            Last updated: {% now "jS F Y, H:i" %}
+        </div>
+    </div>
+
+    <!-- Summary KPIs -->
+    <div class="row row-cols-1 row-cols-md-3 g-4 mb-4">
+        <div class="col">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <h6 class="text-muted mb-2">Total Portfolio</h6>
+                    <h3 class="mb-0">₱{{ kpis.total_loan_portfolio|floatformat:2|intcomma }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <h6 class="text-muted mb-2">Total NPL</h6>
+                    <h3 class="mb-0 text-danger">₱{{ kpis.total_npl|floatformat:2|intcomma }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <h6 class="text-muted mb-2">NPL Ratio</h6>
+                    <h3 class="mb-0 {% if kpis.npl_ratio > 10 %}text-danger{% elif kpis.npl_ratio > 5 %}text-warning{% else %}text-success{% endif %}">
+                        {{ kpis.npl_ratio|floatformat:2 }}%
+                    </h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Portfolio Tables -->
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-pie-chart me-2"></i>
+                        By Loan Type
+                    </h5>
+                    <a href="/accounts/" class="btn btn-sm btn-outline-primary">View Accounts</a>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-4">Loan Type</th>
+                                <th class="text-end">Balance</th>
+                                <th class="text-end pe-4">% of Portfolio</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in portfolio_by_type %}
+                            <tr>
+                                <td class="ps-4">{{ item.name }}</td>
+                                <td class="text-end">₱{{ item.balance|floatformat:2|intcomma }}</td>
+                                <td class="text-end pe-4">{{ item.percentage|floatformat:2 }}%</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted py-4">No data available</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="table-light fw-bold">
+                            <tr>
+                                <td class="ps-4">Total</td>
+                                <td class="text-end">₱{{ kpis.total_loan_portfolio|floatformat:2|intcomma }}</td>
+                                <td class="text-end pe-4">100%</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-bar-chart-steps me-2"></i>
+                        By Status
+                    </h5>
+                    <a href="/accounts/" class="btn btn-sm btn-outline-primary">View Accounts</a>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-4">Status</th>
+                                <th class="text-end">Balance</th>
+                                <th class="text-end pe-4">% of Portfolio</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in portfolio_by_status %}
+                            <tr>
+                                <td class="ps-4">
+                                    {% if item.name == 'Current' %}
+                                        <span class="badge bg-success">Current</span>
+                                    {% elif item.name == 'Past Due' %}
+                                        <span class="badge bg-warning">Past Due</span>
+                                    {% elif item.name == 'NPL' %}
+                                        <span class="badge bg-danger">NPL</span>
+                                    {% elif item.name == 'Written Off' %}
+                                        <span class="badge bg-secondary">Written Off</span>
+                                    {% else %}
+                                        {{ item.name }}
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">₱{{ item.balance|floatformat:2|intcomma }}</td>
+                                <td class="text-end pe-4">{{ item.percentage|floatformat:2 }}%</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted py-4">No data available</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="table-light fw-bold">
+                            <tr>
+                                <td class="ps-4">Total</td>
+                                <td class="text-end">₱{{ kpis.total_loan_portfolio|floatformat:2|intcomma }}</td>
+                                <td class="text-end pe-4">100%</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
