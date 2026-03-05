@@ -45,11 +45,11 @@ class CompromiseAgreementCreateView(LoginRequiredMixin, CreateView):
         )
         if (
             self.strategy.strategy_status != "ACTIVE"
-            or self.strategy.strategy_type not in ["Compromise", "Legal Action"]
+            or self.strategy.strategy_type == "Write-off"
         ):
             messages.error(
                 request,
-                "A compromise agreement can only be created for an active 'Compromise' or 'Legal Action' strategy.",
+                "A compromise agreement cannot be created for a 'Write-off' strategy.",
             )
             return redirect(
                 "remedial_strategy_detail",
