@@ -24,6 +24,7 @@ def collection_activity_list(request, loan_id):
     )
 
 
+@login_required
 def create_collection_activity(request, loan_id):
     account = LoanAccount.objects.get(loan_id=loan_id)
     if request.method == "POST":

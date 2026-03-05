@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
+from django.contrib.auth.decorators import login_required
 import json
 from django.db.models import OuterRef, Subquery
 from account_master.models import (
@@ -98,6 +99,7 @@ def account_list(request):
     return render(request, "account_master/account_list.html", context)
 
 
+@login_required
 def create_account(request, borrower_id=None):
     from account_master.models import Borrower
 
@@ -123,7 +125,6 @@ def create_account(request, borrower_id=None):
 from django.contrib.auth.decorators import login_required
 
 
-@login_required
 def account_detail(request, loan_id):
     account = get_object_or_404(LoanAccount, loan_id=loan_id)
 
@@ -259,6 +260,7 @@ def generate_ecl_provision(request, loan_id):
         return JsonResponse({"success": False, "error": str(e)})
 
 
+@login_required
 def update_account(request, loan_id):
     account = get_object_or_404(LoanAccount, loan_id=loan_id)
     if request.method == "POST":
@@ -272,6 +274,7 @@ def update_account(request, loan_id):
     return render(request, "account_master/update_account.html", {"form": form})
 
 
+@login_required
 def update_account_status(request, loan_id):
     account = get_object_or_404(LoanAccount, loan_id=loan_id)
     if request.method == "POST":

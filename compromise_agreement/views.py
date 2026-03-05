@@ -11,7 +11,7 @@ from .forms import CompromiseAgreementForm, CompromiseInstallmentForm
 from .tables import CompromiseAgreementTable, CompromiseInstallmentTable
 
 
-class CompromiseAgreementListView(LoginRequiredMixin, ListView):
+class CompromiseAgreementListView(ListView):
     model = CompromiseAgreement
     template_name = "compromise_agreement/compromise_agreement_list.html"
     context_object_name = "table"
@@ -20,7 +20,7 @@ class CompromiseAgreementListView(LoginRequiredMixin, ListView):
         return CompromiseAgreementTable(CompromiseAgreement.objects.all())
 
 
-class CompromiseAgreementDetailView(LoginRequiredMixin, DetailView):
+class CompromiseAgreementDetailView(DetailView):
     model = CompromiseAgreement
     template_name = "compromise_agreement/compromise_agreement_detail.html"
 

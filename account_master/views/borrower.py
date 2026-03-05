@@ -8,7 +8,6 @@ from account_master.tables import BorrowerTable, BorrowerAccountTable
 from account_master.filters import BorrowerFilter
 
 
-@login_required
 def borrower_list(request):
     borrowers = Borrower.objects.all()
     filter = BorrowerFilter(request.GET, queryset=borrowers)
@@ -26,7 +25,6 @@ def borrower_list(request):
     return render(request, "account_master/borrower_list.html", context)
 
 
-@login_required
 def borrower_detail(request, borrower_id):
     borrower = get_object_or_404(Borrower, borrower_id=borrower_id)
     accounts = LoanAccount.objects.filter(borrower=borrower)
