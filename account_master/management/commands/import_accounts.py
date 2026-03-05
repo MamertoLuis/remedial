@@ -31,6 +31,11 @@ class Command(BaseCommand):
             action="store_true",
             help="Continue processing even if some rows have errors.",
         )
+        parser.add_argument(
+            "--skip-existing",
+            action="store_true",
+            help="Skip updating existing loan accounts (only create new ones).",
+        )
 
     def _find_similar_borrower_ids(self, borrower_id, max_suggestions=5):
         """
@@ -112,12 +117,20 @@ class Command(BaseCommand):
         dry_run = options["dry_run"]
         verbose = options["verbose"]
         skip_errors = options["skip_errors"]
+        skip_existing = options["skip_existing"]
 
         self.stdout.write(
             self.style.SUCCESS(
                 f"Enhanced import of loan account data from {csv_file_path}..."
             )
         )
+
+        if skip_existing:
+            self.stdout.write(
+                self.style.WARNING(
+                    "SKIP EXISTING MODE: Only new loan accounts will be created."
+                )
+            )
 
         if dry_run:
             self.stdout.write(
@@ -326,7 +339,15 @@ class Command(BaseCommand):
                                         self.stdout.write(
                                             f"  -> Would UPDATE existing loan account"
                                         )
-                                    updated_count += 1
+                                    # Check if skip-existing is set
+                                    if skip_existing:
+                                        if verbose:
+                                            self.stdout.write(
+                                                f"     (but will SKIP due to --skip-existing flag)"
+                                            )
+                                        skipped_count += 1
+                                    else:
+                                        updated_count += 1
                                 else:
                                     if verbose:
                                         self.stdout.write(
@@ -334,6 +355,21 @@ class Command(BaseCommand):
                                         )
                                     imported_count += 1
                             else:
+                                # Add skip-existing logic
+                                if skip_existing:
+                                    # Check if loan account exists first
+                                    from account_master.models import LoanAccount
+
+                                    if LoanAccount.objects.filter(
+                                        loan_id=loan_id
+                                    ).exists():
+                                        skipped_count += 1
+                                        if verbose:
+                                            self.stdout.write(
+                                                f"Row {row_num}: Skipped existing loan account '{loan_id}'"
+                                            )
+                                        continue
+
                                 _, created = upsert_loan_account(
                                     loan_id=loan_id,
                                     defaults={
@@ -403,6 +439,8 @@ class Command(BaseCommand):
                     self.stdout.write(f"Rows skipped: {skipped_count}")
                 self.stdout.write(f"  - New accounts imported: {imported_count}")
                 self.stdout.write(f"  - Existing accounts updated: {updated_count}")
+                if skip_existing:
+                    self.stdout.write(f"  - Existing accounts skipped: {skipped_count}")
 
                 if errors:
                     self.stdout.write(
@@ -427,12 +465,20 @@ class Command(BaseCommand):
                                 f"\nDRY RUN COMPLETE: Would import {imported_count} new loan accounts and update {updated_count} existing accounts."
                             )
                         )
+                        if skip_existing:
+                            self.stdout.write(
+                                f" (and skip {skipped_count} existing accounts due to --skip-existing flag)"
+                            )
                     else:
                         self.stdout.write(
                             self.style.SUCCESS(
                                 f"\nSuccessfully imported {imported_count} new loan accounts and updated {updated_count} existing accounts."
                             )
                         )
+                        if skip_existing:
+                            self.stdout.write(
+                                f" and skipped {skipped_count} existing accounts."
+                            )
 
         except FileNotFoundError:
             raise CommandError(f'File "{csv_file_path}" not found.')
