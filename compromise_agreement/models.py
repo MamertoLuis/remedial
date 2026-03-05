@@ -83,6 +83,13 @@ class CompromiseAgreement(models.Model):
         super().save(*args, **kwargs)
 
         if self.installment_flag and self.number_of_installments:
+            paid_exists = self.installments.filter(
+                status=CompromiseInstallment.InstallmentStatus.PAID
+            ).exists()
+            if paid_exists:
+                self._installment_regeneration_skipped = True
+                return
+
             self.installments.all().delete()
             amount_per_installment = (
                 self.approved_compromise_amount / self.number_of_installments

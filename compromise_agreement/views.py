@@ -108,7 +108,16 @@ class CompromiseAgreementUpdateView(LoginRequiredMixin, UpdateView):
 
     def form_valid(self, form):
         form.instance.updated_by = self.request.user
-        return super().form_valid(form)
+        response = super().form_valid(form)
+
+        if getattr(form.instance, "_installment_regeneration_skipped", False):
+            messages.warning(
+                self.request,
+                "Installment plan was not regenerated because some installments have already been paid. "
+                "Payment history has been preserved.",
+            )
+
+        return response
 
     def get_success_url(self):
         return reverse(

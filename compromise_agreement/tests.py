@@ -240,3 +240,85 @@ class CompromiseAgreementTests(TestCase):
         )
         response = self.client.get(update_url)
         self.assertEqual(response.status_code, 302)  # Redirect to login
+
+    def test_installment_regeneration_skipped_when_paid(self):
+        """Test that installment regeneration is skipped when installments have been paid."""
+        self.client.login(email="testuser@example.com", password="testpassword")
+
+        paid_installment = CompromiseInstallment.objects.create(
+            compromise_agreement=self.compromise_agreement,
+            installment_number=1,
+            due_date=date.today() + timedelta(days=30),
+            amount_due=Decimal("1000.00"),
+            amount_paid=Decimal("1000.00"),
+            payment_date=date.today(),
+            status="PAID",
+        )
+
+        initial_installment_count = CompromiseInstallment.objects.count()
+
+        update_url = reverse(
+            "compromise_agreement_update", kwargs={"pk": self.compromise_agreement.pk}
+        )
+        post_data = {
+            "strategy": self.strategy.pk,
+            "account": self.loan_account.pk,
+            "original_total_exposure": self.compromise_agreement.original_total_exposure,
+            "approved_compromise_amount": Decimal("6000.00"),
+            "approval_level": "MANAGER",
+            "approval_date": date.today(),
+            "installment_flag": True,
+            "number_of_installments": 6,
+            "payment_frequency": "MONTHLY",
+            "first_payment_date": date.today() + timedelta(days=30),
+            "rescission_clause_flag": False,
+            "status": "ACTIVE",
+        }
+        response = self.client.post(update_url, post_data)
+
+        self.assertEqual(response.status_code, 302)
+        self.compromise_agreement.refresh_from_db()
+
+        self.assertEqual(
+            CompromiseInstallment.objects.count(), initial_installment_count
+        )
+
+        paid_installment.refresh_from_db()
+        self.assertEqual(paid_installment.amount_paid, Decimal("1000.00"))
+        self.assertEqual(paid_installment.status, "PAID")
+
+        messages = list(response.wsgi_request._messages)
+        self.assertTrue(any("not regenerated" in str(m) for m in messages))
+
+    def test_installment_regeneration_works_when_no_payments(self):
+        """Test that installment regeneration works when no installments have been paid."""
+        self.client.login(email="testuser@example.com", password="testpassword")
+
+        initial_installment_count = CompromiseInstallment.objects.count()
+
+        update_url = reverse(
+            "compromise_agreement_update", kwargs={"pk": self.compromise_agreement.pk}
+        )
+        post_data = {
+            "strategy": self.strategy.pk,
+            "account": self.loan_account.pk,
+            "original_total_exposure": self.compromise_agreement.original_total_exposure,
+            "approved_compromise_amount": Decimal("6000.00"),
+            "approval_level": "MANAGER",
+            "approval_date": date.today(),
+            "installment_flag": True,
+            "number_of_installments": 3,
+            "payment_frequency": "MONTHLY",
+            "first_payment_date": date.today() + timedelta(days=30),
+            "rescission_clause_flag": False,
+            "status": "ACTIVE",
+        }
+        response = self.client.post(update_url, post_data)
+
+        self.assertEqual(response.status_code, 302)
+        self.compromise_agreement.refresh_from_db()
+
+        self.assertEqual(
+            CompromiseInstallment.objects.count(),
+            3,
+        )
