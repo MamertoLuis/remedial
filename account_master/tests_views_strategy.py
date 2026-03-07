@@ -162,7 +162,8 @@ class StrategyAndCollectionViewsTest(TestCase):
         self.assertIn("table", response.context)
 
     def test_create_collection_activity_get(self):
-        # Note: create_collection_activity does not have @login_required in the view
+        # Login user for this test since view requires authentication
+        self.client.login(username="testuser", password="password")
         url = reverse("create_collection_activity", args=[self.account.loan_id])
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)

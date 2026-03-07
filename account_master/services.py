@@ -25,24 +25,27 @@ def upsert_borrower(*, borrower_id: str, defaults: dict) -> tuple[Borrower, bool
     """
     Create or update a Borrower.
     """
-    borrower_type = defaults.get("borrower_type", "PERSON")
-    full_name = defaults.get("full_name")
-    primary_address = defaults.get("primary_address")
-    mobile = defaults.get("mobile")
-    borrower_group = defaults.get("borrower_group")
-    update_fields = {
-        "borrower_type": borrower_type,
-        "full_name": full_name,
-        "primary_address": primary_address,
-        "mobile": mobile,
-    }
-    if "borrower_group" in defaults:
-        update_fields["borrower_group"] = borrower_group
+    # Create a mutable copy of defaults to avoid modifying the original dictionary
+    _defaults = defaults.copy()
 
-    obj, created = Borrower.objects.update_or_create(
-        borrower_id=borrower_id,
-        defaults=update_fields,
-    )
+    # Set default borrower_type if not provided
+    if "borrower_type" not in _defaults:
+        _defaults["borrower_type"] = "PERSON"
+
+    # Remove borrower_id from _defaults as it's used as a lookup parameter
+    _defaults.pop("borrower_id", None)
+
+    try:
+        obj = Borrower.objects.get(borrower_id=borrower_id)
+        created = False
+        # Update fields if object exists
+        for key, value in _defaults.items():
+            setattr(obj, key, value)
+        obj.save()
+    except Borrower.DoesNotExist:
+        obj = Borrower.objects.create(borrower_id=borrower_id, **_defaults)
+        created = True
+
     return obj, created
 
 

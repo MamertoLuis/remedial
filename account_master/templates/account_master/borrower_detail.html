@@ -55,7 +55,7 @@
     </div>
 
     <div class="mt-4">
-        <a href="{% url 'borrower_list' %}" class="btn btn-secondary">Back to Borrower List</a>
+        <a href="{% if back_url %}{{ back_url }}{% else %}{% url 'borrower_list' %}{% endif %}" class="btn btn-secondary">Back to Borrower List</a>
         <a href="{% url 'update_borrower' borrower.borrower_id %}" class="btn btn-primary">Update</a>
     </div>
 {% endblock %}

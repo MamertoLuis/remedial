@@ -8,10 +8,11 @@ from account_master.tables import BorrowerTable, BorrowerAccountTable
 from account_master.filters import BorrowerFilter
 
 
+@login_required
 def borrower_list(request):
     borrowers = Borrower.objects.all()
     filter = BorrowerFilter(request.GET, queryset=borrowers)
-    table = BorrowerTable(filter.qs)
+    table = BorrowerTable(filter.qs, request=request)
     RequestConfig(request).configure(table)
     table.paginate(page=request.GET.get("page", 1), per_page=25)
     context = {
@@ -25,6 +26,7 @@ def borrower_list(request):
     return render(request, "account_master/borrower_list.html", context)
 
 
+@login_required
 def borrower_detail(request, borrower_id):
     borrower = get_object_or_404(Borrower, borrower_id=borrower_id)
     accounts = LoanAccount.objects.filter(borrower=borrower)
@@ -35,6 +37,7 @@ def borrower_detail(request, borrower_id):
         "borrower": borrower,
         "table": table,
         "entity_type": "borrower",
+        "back_url": request.GET.get("back"),
         "breadcrumbs": [
             {"title": "Dashboard", "url": ""},
             {"title": "Borrowers", "url": ""},

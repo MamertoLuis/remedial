@@ -1,4 +1,6 @@
 import django_tables2 as tables
+from django.urls import reverse
+from urllib.parse import urlencode
 from .models import (
     LoanAccount,
     CollectionActivityLog,
@@ -9,8 +11,26 @@ from .models import (
 )
 
 
+class BackLinkColumn(tables.LinkColumn):
+    def compose_url(self, *args, **kwargs):
+        url = super().compose_url(*args, **kwargs)
+        if (
+            url
+            and hasattr(self, "table")
+            and self.table
+            and hasattr(self.table, "request")
+            and self.table.request
+        ):
+            back_url = self.table.request.get_full_path()
+            if "?" in url:
+                url = f"{url}&back={back_url}"
+            else:
+                url = f"{url}?back={back_url}"
+        return url
+
+
 class BorrowerTable(tables.Table):
-    borrower_id = tables.LinkColumn("borrower_detail", args=[tables.A("borrower_id")])
+    borrower_id = BackLinkColumn("borrower_detail", args=[tables.A("borrower_id")])
 
     class Meta:
         model = Borrower
@@ -25,7 +45,7 @@ class BorrowerTable(tables.Table):
 
 
 class LoanAccountTable(tables.Table):
-    loan_id = tables.LinkColumn("account_detail", args=[tables.A("loan_id")])
+    loan_id = BackLinkColumn("account_detail", args=[tables.A("loan_id")])
     borrower = tables.Column(
         accessor="borrower.full_name", order_by="borrower__full_name"
     )
@@ -122,6 +142,21 @@ class ExposureTable(tables.Table):
         )
         attrs = {"class": "table table-striped"}
         order_by = ("-as_of_date",)
+
+    def render_principal_outstanding(self, value):
+        if value is not None:
+            return f"{value:,.2f}"
+        return "0.00"
+
+    def render_accrued_interest(self, value):
+        if value is not None:
+            return f"{value:,.2f}"
+        return "0.00"
+
+    def render_accrued_penalty(self, value):
+        if value is not None:
+            return f"{value:,.2f}"
+        return "0.00"
 
 
 class DelinquencyStatusTable(tables.Table):

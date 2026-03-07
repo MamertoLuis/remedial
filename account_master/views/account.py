@@ -61,7 +61,7 @@ def account_list(request):
         else:
             accounts = accounts.filter(borrower__borrower_group=borrower_group)
 
-    table = LoanAccountTable(accounts, user=request.user)
+    table = LoanAccountTable(accounts, user=request.user, request=request)
     RequestConfig(request).configure(table)
     table.paginate(page=request.GET.get("page", 1), per_page=25)
 
@@ -125,6 +125,7 @@ def create_account(request, borrower_id=None):
 from django.contrib.auth.decorators import login_required
 
 
+@login_required
 def account_detail(request, loan_id):
     account = get_object_or_404(LoanAccount, loan_id=loan_id)
 
@@ -204,6 +205,7 @@ def account_detail(request, loan_id):
         "collection_activities_table": collection_activities_table,
         "compromise_agreements_table": compromise_agreements_table,
         "entity_type": "loan",
+        "back_url": request.GET.get("back"),
         "breadcrumbs": [
             {"title": "Dashboard", "url": ""},
             {"title": "Loan Accounts", "url": ""},

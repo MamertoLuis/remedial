@@ -1,4 +1,4 @@
-from django.test import TestCase, Client
+from django.test import TestCase, Client, RequestFactory
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from django.utils import timezone
@@ -25,6 +25,7 @@ class AccountDetailViewTests(TestCase):
         self.user = User.objects.create_user(
             username="testuser", email="testuser@example.com", password="testpassword"
         )
+        self.client.force_login(self.user)
 
         self.borrower = Borrower.objects.create(
             borrower_id="B001",
@@ -114,6 +115,58 @@ class AccountDetailViewTests(TestCase):
         )
 
     def test_account_detail_view_authenticated(self):
+        print(
+            f"Login status in authenticated test: {self.client.session.get('_auth_user_id') is not None}"
+        )
+        response = self.client.get(
+            reverse("account_detail", kwargs={"loan_id": self.loan_account.loan_id})
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(response, "account_master/account_detail.html")
+
+    def test_account_detail_view_unauthenticated(self):
+        self.client.logout()
+        response = self.client.get(
+            reverse("account_detail", kwargs={"loan_id": self.loan_account.loan_id})
+        )
+        self.assertEqual(response.status_code, 302)  # Redirect to login
+
+    def test_account_detail_view_context(self):
+        print(
+            f"Login status in context test: {self.client.session.get('_auth_user_id') is not None}"
+        )
+        response = self.client.get(
+            reverse("account_detail", kwargs={"loan_id": self.loan_account.loan_id})
+        )
+
+        self.assertTrue("account" in response.context)
+        self.assertEqual(response.context["account"], self.loan_account)
+
+        self.assertTrue("latest_exposure" in response.context)
+        self.assertEqual(response.context["latest_exposure"], self.latest_exposure)
+
+        self.assertTrue("latest_delinquency" in response.context)
+        self.assertEqual(
+            response.context["latest_delinquency"], self.latest_delinquency
+        )
+
+        self.assertTrue("current_strategy" in response.context)
+        self.assertEqual(response.context["current_strategy"], self.current_strategy)
+
+        self.assertTrue("historical_exposure_table" in response.context)
+        self.assertTrue("historical_delinquency_table" in response.context)
+        self.assertTrue("historical_strategies_table" in response.context)
+        self.assertTrue("collection_activities_table" in response.context)
+
+        # Verify table data counts
+        self.assertEqual(len(response.context["historical_exposure_table"].data), 2)
+        self.assertEqual(len(response.context["historical_delinquency_table"].data), 2)
+        self.assertEqual(
+            len(response.context["historical_strategies_table"].data), 1
+        )  # Only historical, not active
+        self.assertEqual(len(response.context["collection_activities_table"].data), 2)
+
+    def test_account_detail_view_content(self):
         self.client.login(email="testuser@example.com", password="testpassword")
         response = self.client.get(
             reverse("account_detail", kwargs={"loan_id": self.loan_account.loan_id})
@@ -122,6 +175,7 @@ class AccountDetailViewTests(TestCase):
         self.assertTemplateUsed(response, "account_master/account_detail.html")
 
     def test_account_detail_view_unauthenticated(self):
+        self.client.logout()
         response = self.client.get(
             reverse("account_detail", kwargs={"loan_id": self.loan_account.loan_id})
         )

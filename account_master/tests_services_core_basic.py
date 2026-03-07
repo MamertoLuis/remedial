@@ -17,9 +17,15 @@ class CoreServicesBasicTests(TestCase):
             "primary_address": "123 Main St",
             "mobile": "1234567890",
         }
-        borrower, created = upsert_borrower(borrower_id="B001", defaults=defaults)
+        self.assertFalse(
+            Borrower.objects.filter(borrower_id="TEST_BORROWER_CREATE_SIMPLE").exists(),
+            "Borrower should not exist before creation attempt",
+        )
+        borrower, created = upsert_borrower(
+            borrower_id="TEST_BORROWER_CREATE_SIMPLE", defaults=defaults
+        )
         self.assertTrue(created)
-        self.assertEqual(borrower.borrower_id, "B001")
+        self.assertEqual(borrower.borrower_id, "TEST_BORROWER_CREATE_SIMPLE")
         self.assertEqual(borrower.full_name, "John Doe")
 
     def test_upsert_borrower_update(self):

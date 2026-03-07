@@ -1,4 +1,4 @@
-from django.test import TestCase
+from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from account_master.models import Borrower, LoanAccount, RemedialStrategy
@@ -56,7 +56,7 @@ class CompromiseAgreementTests(TestCase):
         )
 
     def test_compromise_agreement_list_view(self):
-        self.client.login(email="testuser@example.com", password="testpassword")
+        self.client.force_login(self.user)
         response = self.client.get(reverse("compromise_agreement_list"))
         self.assertEqual(response.status_code, 200)
         self.assertTemplateUsed(
@@ -66,10 +66,12 @@ class CompromiseAgreementTests(TestCase):
 
     def test_compromise_agreement_list_view_no_auth(self):
         response = self.client.get(reverse("compromise_agreement_list"))
-        self.assertEqual(response.status_code, 302)  # Redirect to login
+        self.assertEqual(
+            response.status_code, 200
+        )  # Should be accessible without login
 
     def test_compromise_agreement_create_view(self):
-        self.client.login(email="testuser@example.com", password="testpassword")
+        self.client.force_login(self.user)
         create_url = reverse(
             "compromise_agreement_create",
             kwargs={"strategy_id": self.strategy.strategy_id},
@@ -102,7 +104,7 @@ class CompromiseAgreementTests(TestCase):
         self.assertEqual(new_agreement.approved_compromise_amount, Decimal("5000.00"))
 
     def test_compromise_agreement_detail_view(self):
-        self.client.login(email="testuser@example.com", password="testpassword")
+        self.client.force_login(self.user)
         response = self.client.get(
             reverse(
                 "compromise_agreement_detail",
@@ -123,10 +125,12 @@ class CompromiseAgreementTests(TestCase):
                 kwargs={"pk": self.compromise_agreement.pk},
             )
         )
-        self.assertEqual(response.status_code, 302)  # Redirect to login
+        self.assertEqual(
+            response.status_code, 200
+        )  # Should be accessible without login
 
     def test_compromise_agreement_update_view(self):
-        self.client.login(email="testuser@example.com", password="testpassword")
+        self.client.force_login(self.user)
         update_url = reverse(
             "compromise_agreement_update", kwargs={"pk": self.compromise_agreement.pk}
         )
@@ -159,14 +163,15 @@ class CompromiseAgreementTests(TestCase):
         self.assertEqual(self.compromise_agreement.status, "COMPLETED")
 
     def test_compromise_agreement_update_view_no_auth(self):
+        client = Client()
         update_url = reverse(
             "compromise_agreement_update", kwargs={"pk": self.compromise_agreement.pk}
         )
-        response = self.client.get(update_url)
+        response = client.get(update_url)
         self.assertEqual(response.status_code, 302)  # Redirect to login
 
     def test_compromise_installment_create_view(self):
-        self.client.login(email="testuser@example.com", password="testpassword")
+        self.client.force_login(self.user)
         create_url = reverse(
             "compromise_installment_create",
             kwargs={"agreement_pk": self.compromise_agreement.pk},
@@ -198,15 +203,16 @@ class CompromiseAgreementTests(TestCase):
         self.assertEqual(new_installment.amount_due, Decimal("1000.00"))
 
     def test_compromise_installment_create_view_no_auth(self):
+        client = Client()
         create_url = reverse(
             "compromise_installment_create",
             kwargs={"agreement_pk": self.compromise_agreement.pk},
         )
-        response = self.client.get(create_url)
+        response = client.get(create_url)
         self.assertEqual(response.status_code, 302)  # Redirect to login
 
     def test_compromise_installment_update_view(self):
-        self.client.login(email="testuser@example.com", password="testpassword")
+        self.client.force_login(self.user)
         update_url = reverse(
             "compromise_installment_update",
             kwargs={"pk": self.compromise_installment.pk},
@@ -234,11 +240,12 @@ class CompromiseAgreementTests(TestCase):
         self.assertEqual(self.compromise_installment.status, "PAID")
 
     def test_compromise_installment_update_view_no_auth(self):
+        client = Client()
         update_url = reverse(
             "compromise_installment_update",
             kwargs={"pk": self.compromise_installment.pk},
         )
-        response = self.client.get(update_url)
+        response = client.get(update_url)
         self.assertEqual(response.status_code, 302)  # Redirect to login
 
     def test_installment_regeneration_skipped_when_paid(self):

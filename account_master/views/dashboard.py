@@ -1,11 +1,13 @@
 from django.shortcuts import render
 from django.utils import timezone
 from django.contrib.auth import get_user_model
+from django.contrib.auth.decorators import login_required
 from account_master.services.dashboard_service import DashboardService
 from account_master.services.activity_service import ActivityService
 from account_master.services.alert_service import AlertService
 
 
+@login_required
 def dashboard(request):
     kpis = DashboardService.get_portfolio_kpis()
     recent_activities = ActivityService.get_recent_activities(limit=20)
