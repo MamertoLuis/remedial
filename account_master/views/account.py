@@ -61,6 +61,29 @@ def account_list(request):
         else:
             accounts = accounts.filter(borrower__borrower_group=borrower_group)
 
+    # New filter for remedial_status
+    remedial_status = request.GET.get("remedial_status")
+    if remedial_status == "active":
+        accounts = accounts.filter(
+            remedial_strategies__strategy_status=RemedialStrategy.StrategyStatus.ACTIVE
+        ).distinct()
+
+    # New filter for legal_status
+    legal_status = request.GET.get("legal_status")
+    if legal_status == "active":
+        accounts = accounts.filter(
+            remedial_strategies__strategy_type="Legal Action",
+            remedial_strategies__strategy_status=RemedialStrategy.StrategyStatus.ACTIVE,
+        ).distinct()
+
+    # New filter for foreclosure_status
+    foreclosure_status = request.GET.get("foreclosure_status")
+    if foreclosure_status == "active":
+        accounts = accounts.filter(
+            remedial_strategies__strategy_type="Foreclosure",
+            remedial_strategies__strategy_status=RemedialStrategy.StrategyStatus.ACTIVE,
+        ).distinct()
+
     table = LoanAccountTable(accounts, user=request.user, request=request)
     RequestConfig(request).configure(table)
     table.paginate(page=request.GET.get("page", 1), per_page=25)

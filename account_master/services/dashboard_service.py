@@ -559,6 +559,62 @@ class DashboardService:
         return result
 
     @classmethod
+    def get_accounts_under_foreclosure_count(cls):
+        """
+        Get the count of LoanAccount instances that have at least one active RemedialStrategy
+        of type 'Foreclosure'.
+
+        Returns:
+            int: Number of accounts under foreclosure.
+        """
+        cache_key = cls.get_cache_key("accounts_under_foreclosure_count")
+        result = cache.get(cache_key)
+
+        if result is None:
+            try:
+                count = (
+                    LoanAccount.objects.filter(has_foreclosure_strategy=True)
+                    .distinct()
+                    .count()
+                )
+                result = count
+                cache.set(cache_key, result, cls.CACHE_TIMEOUT)
+            except Exception as e:
+                logger.error(
+                    f"Error calculating count of accounts under foreclosure: {e}"
+                )
+                result = 0
+        return result
+
+    @classmethod
+    def get_accounts_under_legal_action_count(cls):
+        """
+        Get the count of LoanAccount instances that have at least one active RemedialStrategy
+        of type 'Legal Action'.
+
+        Returns:
+            int: Number of accounts under legal action.
+        """
+        cache_key = cls.get_cache_key("accounts_under_legal_action_count")
+        result = cache.get(cache_key)
+
+        if result is None:
+            try:
+                count = (
+                    LoanAccount.objects.filter(has_legal_action_strategy=True)
+                    .distinct()
+                    .count()
+                )
+                result = count
+                cache.set(cache_key, result, cls.CACHE_TIMEOUT)
+            except Exception as e:
+                logger.error(
+                    f"Error calculating count of accounts under legal action: {e}"
+                )
+                result = 0
+        return result
+
+    @classmethod
     def get_delinquency_trend(cls, months=6):
         """
         Calculate delinquency trend over specified months.
@@ -604,6 +660,35 @@ class DashboardService:
         return result
 
     @classmethod
+    def get_accounts_with_active_remedial_strategy_count(cls):
+        """
+        Get the count of LoanAccount instances that have at least one active RemedialStrategy.
+
+        Returns:
+            int: Number of accounts with active remedial strategies.
+        """
+        cache_key = cls.get_cache_key("accounts_with_active_remedial_strategy_count")
+        result = cache.get(cache_key)
+
+        if result is None:
+            try:
+                count = (
+                    LoanAccount.objects.filter(
+                        remedial_strategies__strategy_status=RemedialStrategy.StrategyStatus.ACTIVE
+                    )
+                    .distinct()
+                    .count()
+                )
+                result = count
+                cache.set(cache_key, result, cls.CACHE_TIMEOUT)
+            except Exception as e:
+                logger.error(
+                    f"Error calculating count of accounts with active remedial strategies: {e}"
+                )
+                result = 0
+        return result
+
+    @classmethod
     def get_portfolio_kpis(cls):
         """
         Get all portfolio KPIs in a single call.
@@ -626,9 +711,13 @@ class DashboardService:
                     "total_remedial": cls.get_total_remedial_amount(),
                     "total_legal": cls.get_total_legal_amount(),
                     "total_written_off_mtd": cls.get_total_written_off_mtd(),
+                    # New KPI for foreclosure
+                    "accounts_under_foreclosure_count": cls.get_accounts_under_foreclosure_count(),
+                    "accounts_under_legal_action_count": cls.get_accounts_under_legal_action_count(),
                     # Keep some existing useful metrics
                     "active_strategies": cls.get_active_strategies_count(),
                     "delinquency_trend": cls.get_delinquency_trend(),
+                    "accounts_with_active_remedial_strategy_count": cls.get_accounts_with_active_remedial_strategy_count(),
                     # Additional basic metrics
                     "total_borrowers": Borrower.objects.count(),
                     "total_accounts": LoanAccount.objects.count(),
@@ -662,11 +751,15 @@ class DashboardService:
             "total_remedial": Decimal("0.00"),
             "total_legal": Decimal("0.00"),
             "total_written_off_mtd": Decimal("0.00"),
+            # New KPI default
+            "accounts_under_foreclosure_count": 0,
+            "accounts_under_legal_action_count": 0,
             # Keep some existing useful metrics
             "recovery_rate": 0.0,
             "provision_coverage": 0.0,
             "active_strategies": {},
             "delinquency_trend": [],
+            "accounts_with_active_remedial_strategy_count": 0,
             "total_borrowers": 0,
             "total_accounts": 0,
             "total_compromise_agreements": 0,

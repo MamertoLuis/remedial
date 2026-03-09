@@ -46,12 +46,66 @@ class Borrower(AuditableModel):
     )
 
     def __str__(self):
-        return self.full_name
+        return str(self.full_name)
 
     def get_absolute_url(self):
         from django.urls import reverse
 
         return reverse("borrower_detail", args=[str(self.borrower_id)])
+
+
+class RemedialStrategy(AuditableModel):
+    STRATEGY_TYPE_CHOICES = [
+        ("Intensive Collection", _("Intensive Collection")),
+        ("Restructuring", _("Restructuring")),
+        ("Compromise", _("Compromise")),
+        ("Foreclosure", _("Foreclosure")),
+        ("Legal Action", _("Legal Action")),
+        ("Write-Off", _("Write-Off")),
+    ]
+
+    class StrategyStatus(models.TextChoices):
+        ACTIVE = "ACTIVE", _("Active")
+        COMPLETED = "COMPLETED", _("Completed")
+        CANCELLED = "CANCELLED", _("Cancelled")
+
+    strategy_id = models.AutoField(primary_key=True)
+    account = models.ForeignKey(
+        "LoanAccount", on_delete=models.CASCADE, related_name="remedial_strategies"
+    )
+    strategy_type = models.CharField(max_length=50, choices=STRATEGY_TYPE_CHOICES)
+    strategy_start_date = models.DateField()
+    strategy_status = models.CharField(
+        max_length=10, choices=StrategyStatus.choices, default=StrategyStatus.ACTIVE
+    )
+    strategy_outcome = models.TextField(blank=True)
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+
+        if self.strategy_status == self.StrategyStatus.ACTIVE:
+            # Deactivate any other active strategies for the same account
+            RemedialStrategy.objects.filter(
+                account=self.account, strategy_status=self.StrategyStatus.ACTIVE
+            ).exclude(pk=self.pk).update(strategy_status=self.StrategyStatus.CANCELLED)
+
+            # Supersede any active compromise agreements for the same account
+            # This part needs to be checked when CompromiseAgreement model is present
+            # self.account.compromise_agreements.filter(status="ACTIVE").exclude(
+            #     strategy=self
+            # ).update(status="SUPERSEDED")
+
+    def __str__(self):
+        return str(f"{self.strategy_type} for {self.account.loan_id}")
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["account", "strategy_type"],
+                condition=models.Q(strategy_status="ACTIVE"),
+                name="unique_active_strategy_per_account",
+            )
+        ]
 
 
 class LoanAccount(AuditableModel):
@@ -84,12 +138,44 @@ class LoanAccount(AuditableModel):
     )
 
     def __str__(self):
-        return self.loan_id
+        return str(self.loan_id)
 
     def get_absolute_url(self):
         from django.urls import reverse
 
         return reverse("account_detail", args=[str(self.loan_id)])
+
+    @property
+    def has_active_remedial_strategy(self):
+        """
+        Returns True if the LoanAccount has at least one active RemedialStrategy,
+        False otherwise.
+        """
+        return self.remedial_strategies.filter(
+            strategy_status=RemedialStrategy.StrategyStatus.ACTIVE
+        ).exists()
+
+    @property
+    def has_legal_action_strategy(self):
+        """
+        Returns True if the LoanAccount has an active 'Legal Action' RemedialStrategy,
+        False otherwise.
+        """
+        return self.remedial_strategies.filter(
+            strategy_type="Legal Action",
+            strategy_status=RemedialStrategy.StrategyStatus.ACTIVE,
+        ).exists()
+
+    @property
+    def has_foreclosure_strategy(self):
+        """
+        Returns True if the LoanAccount has an active 'Foreclosure' RemedialStrategy,
+        False otherwise.
+        """
+        return self.remedial_strategies.filter(
+            strategy_type="Foreclosure",
+            strategy_status=RemedialStrategy.StrategyStatus.ACTIVE,
+        ).exists()
 
 
 class CollectionActivityLog(AuditableModel):
@@ -115,65 +201,9 @@ class CollectionActivityLog(AuditableModel):
     next_action_date = models.DateField(null=True, blank=True)
 
     def __str__(self):
-        return (
+        return str(
             f"{self.activity_type} on {self.activity_date} for {self.account.loan_id}"
         )
-
-
-from django.utils.translation import gettext_lazy as _
-
-
-class RemedialStrategy(AuditableModel):
-    STRATEGY_TYPE_CHOICES = [
-        ("Intensive Collection", _("Intensive Collection")),
-        ("Restructuring", _("Restructuring")),
-        ("Compromise", _("Compromise")),
-        ("Foreclosure", _("Foreclosure")),
-        ("Legal Action", _("Legal Action")),
-        ("Write-Off", _("Write-Off")),
-    ]
-
-    class StrategyStatus(models.TextChoices):
-        ACTIVE = "ACTIVE", _("Active")
-        COMPLETED = "COMPLETED", _("Completed")
-        CANCELLED = "CANCELLED", _("Cancelled")
-
-    strategy_id = models.AutoField(primary_key=True)
-    account = models.ForeignKey(
-        LoanAccount, on_delete=models.CASCADE, related_name="remedial_strategies"
-    )
-    strategy_type = models.CharField(max_length=50, choices=STRATEGY_TYPE_CHOICES)
-    strategy_start_date = models.DateField()
-    strategy_status = models.CharField(
-        max_length=10, choices=StrategyStatus.choices, default=StrategyStatus.ACTIVE
-    )
-    strategy_outcome = models.TextField(blank=True)
-
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-
-        if self.strategy_status == self.StrategyStatus.ACTIVE:
-            # Deactivate any other active strategies for the same account
-            RemedialStrategy.objects.filter(
-                account=self.account, strategy_status=self.StrategyStatus.ACTIVE
-            ).exclude(pk=self.pk).update(strategy_status=self.StrategyStatus.CANCELLED)
-
-            # Supersede any active compromise agreements for the same account
-            self.account.compromise_agreements.filter(status="ACTIVE").exclude(
-                strategy=self
-            ).update(status="SUPERSEDED")
-
-    def __str__(self):
-        return f"{self.strategy_type} for {self.account.loan_id}"
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["account", "strategy_type"],
-                condition=models.Q(strategy_status="ACTIVE"),
-                name="unique_active_strategy_per_account",
-            )
-        ]
 
 
 class Exposure(AuditableModel):
@@ -311,7 +341,7 @@ class ECLProvisionHistory(AuditableModel):
     )
     remarks = models.TextField(blank=True, default="")
 
-    # “Effective” flag to mark the provision used for reporting for that exposure
+    # "Effective" flag to mark the provision used for reporting for that exposure
     is_current = models.BooleanField(default=True)
 
     class Meta:
@@ -330,7 +360,9 @@ class ECLProvisionHistory(AuditableModel):
         ]
 
     def __str__(self):
-        return f"ECL {self.provision_amount} for {self.exposure.account.loan_id} as of {self.as_of_date}"
+        return str(
+            f"ECL {self.provision_amount} for {self.exposure.account.loan_id} as of {self.as_of_date}"
+        )
 
 
 # ============================================================================
@@ -451,7 +483,7 @@ class Alert(AuditableModel):
         ]
 
     def __str__(self):
-        return f"{self.get_alert_type_display()}: {self.title}"
+        return str(f"{self.get_alert_type_display()}: {self.title}")
 
     def get_entity_url(self):
         """Get URL for the related entity."""
@@ -636,13 +668,11 @@ class AlertRule(AuditableModel):
 
     recipients = models.ManyToManyField(
         "users.User",
+        through="AlertRuleRecipient",
+        through_fields=("alert_rule", "user"),
         blank=True,
         related_name="alert_rules",
         help_text=_("Users to notify when rule triggers"),
-    )
-
-    metadata = models.JSONField(
-        default=dict, blank=True, help_text=_("Additional rule configuration")
     )
 
     last_triggered = models.DateTimeField(
@@ -661,7 +691,7 @@ class AlertRule(AuditableModel):
         ]
 
     def __str__(self):
-        return f"{self.name} ({self.get_rule_type_display()})"
+        return str(f"{self.name} ({self.get_rule_type_display()})")
 
     def evaluate_condition(self, value):
         """Evaluate if the condition is met."""
@@ -698,9 +728,10 @@ class AlertRule(AuditableModel):
             metadata=metadata or {},
         )
 
-        # Assign to recipients
+        # Assign to recipients - using the through model to assign
         if self.recipients.exists():
-            alert.assigned_to.set(self.recipients.all())
+            for user in self.recipients.all():
+                AlertRuleRecipient.objects.create(alert_rule=self, user=user)
 
         # Update rule stats
         self.last_triggered = timezone.now()
@@ -708,6 +739,21 @@ class AlertRule(AuditableModel):
         self.save()
 
         return alert
+
+
+class AlertRuleRecipient(models.Model):
+    """
+    Intermediate model for AlertRule and User ManyToMany relationship.
+    """
+
+    alert_rule = models.ForeignKey(AlertRule, on_delete=models.CASCADE)
+    user = models.ForeignKey("users.User", on_delete=models.CASCADE)
+
+    class Meta:
+        unique_together = ("alert_rule", "user")
+
+    def __str__(self):
+        return str(f"{self.alert_rule.name} - {self.user.username}")
 
 
 class AlertLog(AuditableModel):
@@ -766,7 +812,7 @@ class AlertLog(AuditableModel):
         ]
 
     def __str__(self):
-        return f"{self.alert.title} - {self.action_taken}"
+        return str(f"{self.alert.title} - {self.action_taken}")
 
 
 # Import signals at the end to avoid circular imports

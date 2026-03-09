@@ -20,25 +20,34 @@
     <!-- Financial KPIs -->
     <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4 mb-4">
         <div class="col">
-            {% include 'partials/_kpi_card.html' with title="Total Loan Portfolio" value=kpis.total_loan_portfolio unit="₱" icon="bi-graph-up" icon_color="primary" detail_url="/accounts/" description="Total outstanding principal across all accounts" %}
+            {% include 'partials/_kpi_card.html' with title="Total Loan Portfolio" value=kpis.total_loan_portfolio|floatformat:2 unit="₱" icon="bi-graph-up" icon_color="primary" detail_url="/accounts/" description="Total outstanding principal across all accounts" %}
         </div>
         <div class="col">
-            {% include 'partials/_kpi_card.html' with title="Total Past Due Loans" value=kpis.total_past_due_loans unit="₱" icon="bi-exclamation-circle" icon_color="warning" detail_url="/accounts/?status=PAST_DUE" description="Total amount of past due loans" %}
+            {% include 'partials/_kpi_card.html' with title="Total Past Due Loans" value=kpis.total_past_due_loans|floatformat:2 unit="₱" icon="bi-exclamation-circle" icon_color="warning" detail_url="/accounts/?status=PAST_DUE" description="Total amount of past due loans" %}
         </div>
         <div class="col">
-            {% include 'partials/_kpi_card.html' with title="Total NPL" value=kpis.total_npl unit="₱" icon="bi-exclamation-triangle" icon_color="danger" detail_url="/accounts/?status=NPL" description="Total amount of non-performing loans" %}
+            {% include 'partials/_kpi_card.html' with title="Total NPL" value=kpis.total_npl|floatformat:2 unit="₱" icon="bi-exclamation-triangle" icon_color="danger" detail_url="/accounts/?status=NPL" description="Total amount of non-performing loans" %}
         </div>
         <div class="col">
-            {% include 'partials/_kpi_card.html' with title="NPL Ratio" value=kpis.npl_ratio unit="%" icon="bi-percent" icon_color="warning" detail_url="/accounts/?status=NPL" description="Non-performing loans ratio" %}
+            {% include 'partials/_kpi_card.html' with title="NPL Ratio" value=kpis.npl_ratio|floatformat:2 unit="%" icon="bi-percent" icon_color="warning" detail_url="/accounts/?status=NPL" description="Non-performing loans ratio" %}
         </div>
         <div class="col">
-            {% include 'partials/_kpi_card.html' with title="Accounts under Remedial" value=kpis.total_remedial unit="₱" icon="bi-gear" icon_color="info" detail_url="/accounts/" description="Total amount under remedial strategies" %}
+            {% include 'partials/_kpi_card.html' with title="Accounts under Remedial" value=kpis.total_remedial|floatformat:2 unit="₱" icon="bi-gear" icon_color="info" detail_url="/accounts/" description="Total amount under remedial strategies" %}
         </div>
         <div class="col">
-            {% include 'partials/_kpi_card.html' with title="Accounts under Legal" value=kpis.total_legal unit="₱" icon="bi-balance-scale" icon_color="danger" detail_url="/accounts/" description="Total amount under legal action" %}
+            {% include 'partials/_kpi_card.html' with title="Accounts with Active Remedial Strategy" value=kpis.accounts_with_active_remedial_strategy_count|floatformat:"0" unit="" icon="bi-shield-check" icon_color="success" detail_url="/accounts/?remedial_status=active" description="Number of accounts currently under an active remedial strategy" %}
         </div>
         <div class="col">
-            {% include 'partials/_kpi_card.html' with title="Accounts Written-off (MTD)" value=kpis.total_written_off_mtd unit="₱" icon="bi-file-x" icon_color="secondary" detail_url="/accounts/?status=WRITEOFF" description="Written-off amount this month" %}
+            {% include 'partials/_kpi_card.html' with title="Accounts under Legal" value=kpis.total_legal|floatformat:2 unit="₱" icon="bi-balance-scale" icon_color="danger" detail_url="/accounts/?legal_status=active" description="Total amount under legal action" %}
+        </div>
+        <div class="col">
+            {% include 'partials/_kpi_card.html' with title="Accounts under Legal Action" value=kpis.accounts_under_legal_action_count|floatformat:"0" unit="" icon="bi-gavel" icon_color="danger" detail_url="/accounts/?legal_status=active" description="Number of accounts currently under legal action strategy" %}
+        </div>
+        <div class="col">
+            {% include 'partials/_kpi_card.html' with title="Accounts under Foreclosure" value=kpis.accounts_under_foreclosure_count|floatformat:"0" unit="" icon="bi-house-slash" icon_color="danger" detail_url="/accounts/?foreclosure_status=active" description="Number of accounts currently under foreclosure strategy" %}
+        </div>
+        <div class="col">
+            {% include 'partials/_kpi_card.html' with title="Accounts Written-off (MTD)" value=kpis.total_written_off_mtd|floatformat:2 unit="₱" icon="bi-file-x" icon_color="secondary" detail_url="/accounts/?status=WRITEOFF" description="Written-off amount this month" %}
         </div>
     </div>
 
