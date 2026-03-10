@@ -1,4 +1,10 @@
 from .base import *
+import environ
+import os
+
+# Initialise environment variables
+env = environ.Env()
+environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
 
 # Production specific settings
 DEBUG = env.bool("DEBUG", default=False)
