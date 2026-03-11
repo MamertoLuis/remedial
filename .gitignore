@@ -5,4 +5,6 @@ doc/*.md
 **/migrations/*.py
 !**/migrations/__init__.py
 **/__pycache__/
+/staticfiles/
+media/
 
