@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% load static %}
+{% load reporting_filters %}
+
+{% block title %}Past Due Aging Summary Report{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1>Past Due Aging Summary</h1>
+        <button class="btn btn-secondary" onclick="window.print()">
+            <i class="bi bi-printer"></i> Print Report
+        </button>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Summary</h5>
+        </div>
+        <div class="card-body">
+            <p class="card-text"><strong>As of Date:</strong> {{ as_of_date|date:"F d, Y" }}</p>
+            <p class="card-text"><strong>Grand Total Amount:</strong> {{ grand_total_amount|currency }}</p>
+            <p class="card-text"><strong>Grand Total Accounts:</strong> {{ grand_total_accounts }}</p>
+        </div>
+    </div>
+
+    {% for officer, officer_data in report_data.items %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">LOAN OFFICER: {{ officer }}</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Aging</th>
+                            <th class="text-end">Amount</th>
+                            <th class="text-end">Accounts</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for aging_bucket in ordered_aging_buckets %}
+                            {% with data=officer_data|get_item:aging_bucket %}
+                                {% if data %}
+                                <tr>
+                                    <td>{{ aging_bucket }}</td>
+                                    <td class="text-end">{{ data.amount|currency }}</td>
+                                    <td class="text-end">{{ data.accounts }}</td>
+                                </tr>
+                                {% endif %}
+                            {% endwith %}
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr class="table-group-divider">
+                            <th>Total for {{ officer }}</th>
+                            {% with total_officer_amount=0 total_officer_accounts=0 %}
+                                {% for aging_bucket in ordered_aging_buckets %}
+                                    {% with data=officer_data|get_item:aging_bucket %}
+                                        {% if data %}
+                                            {% with total_officer_amount=total_officer_amount|add:data.amount total_officer_accounts=total_officer_accounts|add:data.accounts %}
+                                            {% endwith %}
+                                        {% endif %}
+                                    {% endwith %}
+                                {% endfor %}
+                                <th class="text-end">{{ total_officer_amount|currency }}</th>
+                                <th class="text-end">{{ total_officer_accounts }}</th>
+                            {% endwith %}
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <p>No data available for the Past Due Aging Summary report.</p>
+    {% endfor %}
+
+</div>
+{% endblock content %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'reporting/css/print.css' %}" media="print">
+{% endblock %}

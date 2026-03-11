@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% load static %}
+
+{% block extra_head %}
+    <link rel="stylesheet" href="{% static 'reporting/css/print.css' %}" media="print">
+{% endblock %}
+
+{% block content %}
+    <div class="container-fluid">
+        <div class="card my-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">{{ title }}</h5>
+                <button class="btn btn-primary btn-sm" onclick="window.print()">Print Report</button>
+            </div>
+            <div class="card-body">
+                {% block report_content %}
+                {% endblock %}
+            </div>
+        </div>
+    </div>
+{% endblock %}

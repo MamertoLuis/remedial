@@ -8,5 +8,6 @@ urlpatterns = [
     path("__debug__/", include("debug_toolbar.urls")),
     path("accounts/", include("allauth.urls")),
     path("compromise/", include("compromise_agreement.urls")),
+    path("reports/", include("reporting.urls")),
     path("profile/", profile, name="profile"),
 ]

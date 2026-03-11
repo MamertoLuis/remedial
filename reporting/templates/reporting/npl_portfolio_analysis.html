@@ -1,0 +1,90 @@
+{% extends "reporting/base_report.html" %}
+{% load humanize %}
+{% load reporting_filters %}
+
+{% block report_content %}
+    <h6 class="text-center mb-4">As of: {{ report_date|date:"F d, Y" }}</h6>
+
+    <div class="mb-5">
+        <h5 class="mb-3">Non-Performing Loans Report</h5>
+        <div class="table-responsive">
+            <table class="table table-sm table-bordered">
+                <thead class="table-light">
+                    <tr>
+                        <th>Borrower</th>
+                        <th>Loan ID</th>
+                        <th class="text-end">Balance</th>
+                        <th class="text-end">Days Past Due</th>
+                        <th>Collateral</th>
+                        <th>Strategy</th>
+                        <th>Officer</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in report_data %}
+                    <tr>
+                        <td>{{ item.borrower }}</td>
+                        <td>{{ item.loan_id }}</td>
+                        <td class="text-end">{{ item.balance|intcomma }}</td>
+                        <td class="text-end">{{ item.days_past_due }}</td>
+                        <td>{{ item.collateral }}</td>
+                        <td>{{ item.strategy }}</td>
+                        <td>{{ item.officer }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center">No NPL accounts found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="mb-5">
+        <h5 class="mb-3">NPL by Strategy Summary</h5>
+        <div class="table-responsive">
+            <table class="table table-sm table-bordered">
+                <thead class="table-light">
+                    <tr>
+                        <th>Strategy</th>
+                        <th class="text-end">Balance</th>
+                        <th class="text-end">Accounts</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in npl_by_strategy %}
+                    <tr>
+                        <td>{{ item.strategy }}</td>
+                        <td class="text-end">{{ item.balance|intcomma }}</td>
+                        <td class="text-end">{{ item.accounts }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <th class="text-end">Total</th>
+                        <th class="text-end">
+                            {% with total_balance=0 %}
+                                {% for item in npl_by_strategy %}
+                                    {% with total_balance=total_balance|add:item.balance %}
+                                    {% endwith %}
+                                {% endfor %}
+                                {{ total_balance|intcomma }}
+                            {% endwith %}
+                        </th>
+                        <th class="text-end">
+                            {% with total_accounts=0 %}
+                                {% for item in npl_by_strategy %}
+                                    {% with total_accounts=total_accounts|add:item.accounts %}
+                                    {% endwith %}
+                                {% endfor %}
+                                {{ total_accounts }}
+                            {% endwith %}
+                        </th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+{% endblock %}

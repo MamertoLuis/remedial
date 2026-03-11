@@ -1,0 +1,26 @@
+/* Print styles for reports */
+body {
+    font-family: sans-serif;
+    color: #000;
+    background: #fff;
+}
+
+.card {
+    border: none !important;
+    box-shadow: none !important;
+}
+
+.card-header {
+    background-color: #f8f9fa !important;
+    border-bottom: 1px solid #dee2e6 !important;
+    padding: 1rem 0;
+}
+
+.card-body {
+    padding: 0;
+}
+
+/* Hide elements not needed for print */
+.btn, .navbar, .sidebar, .footer {
+    display: none !important;
+}
