@@ -27,9 +27,9 @@
                     <tr>
                         <td>{{ data.officer }}</td>
                         {% for bucket in aging_buckets_order %}
-                            <td class="text-end">{{ data.buckets|get_item:bucket|get_item:"amount"|intcomma }}</td>
+                            <td class="text-end">{{ data.buckets|get_item:bucket|get_item:"amount"|floatformat:2 | intcomma }}</td>
                         {% endfor %}
-                        <td class="text-end fw-bold">{{ data.officer_total_amount|intcomma }}</td>
+                        <td class="text-end fw-bold">{{ data.officer_total_amount|floatformat:2 | intcomma  }}</td>
                         <td class="text-end fw-bold">{{ data.officer_total_accounts }}</td>
                     </tr>
                     {% empty %}
@@ -48,7 +48,7 @@
                                         {% with total_amount_for_bucket=total_amount_for_bucket|add:data.buckets|get_item:bucket|get_item:"amount" %}
                                         {% endwith %}
                                     {% endfor %}
-                                    {{ total_amount_for_bucket|intcomma }}
+                                    {{ total_amount_for_bucket|floatformat:2 | intcomma }}
                                 {% endwith %}
                             </th>
                         {% endfor %}
@@ -58,7 +58,7 @@
                                     {% with grand_total_amount=grand_total_amount|add:data.officer_total_amount %}
                                     {% endwith %}
                                 {% endfor %}
-                                {{ grand_total_amount|intcomma }}
+                                {{ grand_total_amount|floatformat:2 | intcomma }}
                             {% endwith %}
                         </th>
                         <th class="text-end">

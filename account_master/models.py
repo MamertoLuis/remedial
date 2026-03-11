@@ -122,6 +122,12 @@ class LoanAccount(AuditableModel):
         ("UNSECURED", "Unsecured"),
     ]
 
+    TRANSACTION_TYPE_CHOICES = [
+        ("NEW", "New"),
+        ("RESTRUCTURED", "Restructured"),
+        ("RENEWED", "Renewed"),
+    ]
+
     loan_id = models.CharField(max_length=20, primary_key=True)
     borrower = models.ForeignKey(Borrower, on_delete=models.CASCADE)
     booking_date = models.DateField()
@@ -135,6 +141,9 @@ class LoanAccount(AuditableModel):
     account_officer_id = models.CharField(max_length=20, blank=True)
     status = models.CharField(
         max_length=20, choices=LOAN_STATUS_CHOICES, default="PERFORMING"
+    )
+    transaction_type = models.CharField(
+        max_length=15, choices=TRANSACTION_TYPE_CHOICES, blank=True, null=True
     )
 
     def __str__(self):

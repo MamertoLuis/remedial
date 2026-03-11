@@ -73,6 +73,19 @@
                             </select>
                         </div>
 
+                        <!-- Transaction Type Filter -->
+                        <div class="mb-4">
+                            <label for="transaction_type" class="form-label fw-bold text-muted small text-uppercase">Transaction Type</label>
+                            <select name="transaction_type" id="transaction_type" class="form-select" onchange="this.form.submit()">
+                                <option value="" {% if not selected_transaction_type %}selected{% endif %}>All Types</option>
+                                {% for value, label in transaction_type_choices %}
+                                    <option value="{{ value }}" {% if selected_transaction_type == value %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
                         <div class="d-grid">
                             <a href="{% url 'account_list' %}" class="btn btn-outline-secondary">Clear All Filters</a>
                         </div>

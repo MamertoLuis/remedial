@@ -47,6 +47,7 @@ class LoanAccountForm(forms.ModelForm):
             "loan_security",
             "account_officer_id",
             "status",
+            "transaction_type",
         ]
         widgets = {
             "booking_date": forms.DateInput(attrs={"type": "date"}),

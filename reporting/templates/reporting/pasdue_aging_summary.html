@@ -45,7 +45,7 @@
                                 {% if data %}
                                 <tr>
                                     <td>{{ aging_bucket }}</td>
-                                    <td class="text-end">{{ data.amount|currency }}</td>
+                                    <td class="text-end">{{ data.amount|floatformat:2 }}</td>
                                     <td class="text-end">{{ data.accounts }}</td>
                                 </tr>
                                 {% endif %}
@@ -64,7 +64,7 @@
                                         {% endif %}
                                     {% endwith %}
                                 {% endfor %}
-                                <th class="text-end">{{ total_officer_amount|currency }}</th>
+                                <th class="text-end">{{ total_officer_amount|floatformat:2 }}</th>
                                 <th class="text-end">{{ total_officer_accounts }}</th>
                             {% endwith %}
                         </tr>

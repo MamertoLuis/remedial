@@ -159,6 +159,7 @@ def npl_portfolio_analysis(request):
 
     npl_accounts = (
         LoanAccount.objects.filter(delinquency_statuses__npl_flag=True)
+        .exclude(exposures__principal_outstanding=Decimal("1"))
         .distinct()
         .prefetch_related("exposures", "remedial_strategies")
         .order_by("loan_id")
@@ -238,6 +239,7 @@ def top_20_npl_accounts(request):
 
     top_npl_accounts = (
         LoanAccount.objects.filter(delinquency_statuses__npl_flag=True)
+        .exclude(exposures__principal_outstanding=Decimal("1"))
         .annotate(
             latest_principal_outstanding=Coalesce(latest_exposure_subquery, Decimal(0))
         )

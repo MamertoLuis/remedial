@@ -61,6 +61,11 @@ def account_list(request):
         else:
             accounts = accounts.filter(borrower__borrower_group=borrower_group)
 
+    # New filter for transaction_type
+    transaction_type = request.GET.get("transaction_type")
+    if transaction_type and transaction_type != "":
+        accounts = accounts.filter(transaction_type=transaction_type)
+
     # New filter for remedial_status
     remedial_status = request.GET.get("remedial_status")
     if remedial_status == "active":
@@ -110,9 +115,11 @@ def account_list(request):
         "selected_status": status,
         "selected_security": security,
         "selected_borrower_group": borrower_group,
+        "selected_transaction_type": transaction_type,
         "borrower_groups": borrower_groups,
         "status_choices": LoanAccount.LOAN_STATUS_CHOICES,
         "security_choices": LoanAccount.LOAN_SECURITY_CHOICES,
+        "transaction_type_choices": LoanAccount.TRANSACTION_TYPE_CHOICES,
         "breadcrumbs": [
             {"title": "Dashboard", "url": "/"},
             {"title": "Loan Accounts", "url": None},

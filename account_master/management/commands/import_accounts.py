@@ -321,6 +321,11 @@ class Command(BaseCommand):
                                 "loan_security",
                                 required=False,
                             )
+                            transaction_type = self._clean_value(
+                                row.get("transaction_type", ""),
+                                "transaction_type",
+                                required=False,
+                            )
 
                             if dry_run:
                                 if verbose:
@@ -382,6 +387,7 @@ class Command(BaseCommand):
                                         "loan_security": loan_security or "UNSECURED",
                                         "account_officer_id": account_officer_id,
                                         "status": status or "PERFORMING",
+                                        "transaction_type": transaction_type or None,
                                     },
                                 )
 
