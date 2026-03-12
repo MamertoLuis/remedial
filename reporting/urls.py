@@ -26,4 +26,9 @@ urlpatterns = [
         views.top_20_npl_accounts,
         name="top_20_npl_accounts",
     ),
+    path(
+        "loan-officer-performance-summary/",
+        views.loan_officer_performance_summary,
+        name="loan_officer_performance_summary",
+    ),
 ]

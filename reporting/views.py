@@ -1,13 +1,14 @@
 from django.shortcuts import render
+from django.utils import timezone
+from django.db.models import Sum, Count, Max, Subquery, OuterRef, Min, F
+from django.db.models.functions import Coalesce
+from decimal import Decimal
 from account_master.models import (
     LoanAccount,
     Exposure,
     DelinquencyStatus,
     RemedialStrategy,
 )
-from django.db.models import Sum, Count, Max, Subquery, OuterRef
-from django.db.models.functions import Coalesce
-from decimal import Decimal
 
 
 def loan_portfolio_breakdown(request):
@@ -287,6 +288,135 @@ def top_20_npl_accounts(request):
     return render(request, "reporting/top_20_npl_accounts.html", context)
 
 
+def loan_officer_performance_summary(request):
+    # Get the latest as_of_date from Exposure for report date
+    latest_date = (
+        Exposure.objects.order_by("-as_of_date")
+        .values_list("as_of_date", flat=True)
+        .first()
+    )
+
+    # Get current month start and end dates
+    now = timezone.now()
+    current_month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    current_month_end = now
+
+    # Get unique account officers from LoanAccount
+    officers = (
+        LoanAccount.objects.exclude(account_officer_id="")
+        .values_list("account_officer_id", flat=True)
+        .distinct()
+        .order_by("account_officer_id")
+    )
+
+    # Subquery to get the latest principal_outstanding for each LoanAccount
+    latest_exposure_subquery = Subquery(
+        Exposure.objects.filter(account=OuterRef("loan_id"))
+        .order_by("-as_of_date")
+        .values("principal_outstanding")[:1]
+    )
+
+    report_data = []
+
+    for officer_id in officers:
+        # Get accounts assigned to this officer
+        accounts = LoanAccount.objects.filter(account_officer_id=officer_id)
+
+        # Accounts assigned count
+        accounts_assigned = accounts.count()
+
+        if accounts_assigned == 0:
+            continue  # Skip officers with no accounts
+
+        # Portfolio balance
+        accounts_with_exposure = accounts.annotate(
+            latest_principal_outstanding=Coalesce(latest_exposure_subquery, Decimal(0))
+        )
+        portfolio_balance = accounts_with_exposure.aggregate(
+            total=Sum("latest_principal_outstanding")
+        )["total"] or Decimal(0)
+
+        # Past due balance
+        past_due_balance = accounts_with_exposure.filter(status="PAST_DUE").aggregate(
+            total=Sum("latest_principal_outstanding")
+        )["total"] or Decimal(0)
+
+        # NPL balance
+        npl_balance = accounts_with_exposure.filter(status="NPL").aggregate(
+            total=Sum("latest_principal_outstanding")
+        )["total"] or Decimal(0)
+
+        # Collected amount (current month)
+        # Get account IDs for this officer
+        officer_account_ids = accounts.values_list("loan_id", flat=True)
+
+        # Get first and last exposures for each account in current month
+        monthly_exposures = (
+            Exposure.objects.filter(
+                account_id__in=officer_account_ids,
+                as_of_date__gte=current_month_start,
+                as_of_date__lte=current_month_end,
+            )
+            .values("account_id")
+            .annotate(
+                first_exposure=Min("principal_outstanding"),
+                last_exposure=Max("principal_outstanding"),
+            )
+        )
+
+        collected = Decimal(0)
+        for exposure in monthly_exposures:
+            # Calculate reduction (only positive reductions)
+            reduction = exposure["first_exposure"] - exposure["last_exposure"]
+            if reduction > 0:
+                collected += reduction
+
+        # Collection rate
+        collection_rate = (
+            (collected / portfolio_balance * 100)
+            if portfolio_balance > 0
+            else Decimal(0)
+        )
+
+        report_data.append(
+            {
+                "officer": officer_id,
+                "accounts_assigned": accounts_assigned,
+                "portfolio_balance": portfolio_balance,
+                "past_due_balance": past_due_balance,
+                "npl_balance": npl_balance,
+                "collected": collected,
+                "collection_rate": collection_rate,
+            }
+        )
+
+    # Calculate totals
+    total_accounts = sum(item["accounts_assigned"] for item in report_data)
+    total_portfolio_balance = sum(item["portfolio_balance"] for item in report_data)
+    total_past_due_balance = sum(item["past_due_balance"] for item in report_data)
+    total_npl_balance = sum(item["npl_balance"] for item in report_data)
+    total_collected = sum(item["collected"] for item in report_data)
+    overall_collection_rate = (
+        (total_collected / total_portfolio_balance * 100)
+        if total_portfolio_balance > 0
+        else Decimal(0)
+    )
+
+    context = {
+        "title": "Loan Officer Performance Summary",
+        "report_data": report_data,
+        "report_date": latest_date,
+        "current_month": current_month_start.strftime("%B %Y"),
+        "total_accounts": total_accounts,
+        "total_portfolio_balance": total_portfolio_balance,
+        "total_past_due_balance": total_past_due_balance,
+        "total_npl_balance": total_npl_balance,
+        "total_collected": total_collected,
+        "overall_collection_rate": overall_collection_rate,
+    }
+    return render(request, "reporting/loan_officer_performance_summary.html", context)
+
+
 def reports_index(request):
     context = {
         "title": "Reports Index",
@@ -306,6 +436,10 @@ def reports_index(request):
             {
                 "name": "Top 20 Non-Performing Loans",
                 "url_name": "reporting:top_20_npl_accounts",
+            },
+            {
+                "name": "Loan Officer Performance Summary",
+                "url_name": "reporting:loan_officer_performance_summary",
             },
         ],
     }

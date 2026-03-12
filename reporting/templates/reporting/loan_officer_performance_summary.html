@@ -1,0 +1,75 @@
+{% extends "reporting/base_report.html" %}
+{% load humanize %}
+
+{% block report_content %}
+    <h6 class="text-center mb-4">
+        As of: {{ report_date|date:"F d, Y" }} | Collection Period: {{ current_month }}
+    </h6>
+
+    <div class="mb-4">
+        <h5 class="mb-3">Loan Officer Performance Summary</h5>
+        <div class="table-responsive">
+            <table class="table table-sm table-bordered">
+                <thead class="table-light">
+                    <tr>
+                        <th>Loan Officer</th>
+                        <th class="text-end">Accounts Assigned</th>
+                        <th class="text-end">Portfolio Balance</th>
+                        <th class="text-end">Past Due</th>
+                        <th class="text-end">NPL</th>
+                        <th class="text-end">Collected</th>
+                        <th class="text-end">Collection Rate</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for data in report_data %}
+                    <tr>
+                        <td>{{ data.officer }}</td>
+                        <td class="text-end">{{ data.accounts_assigned|intcomma }}</td>
+                        <td class="text-end">₱{{ data.portfolio_balance|floatformat:2|intcomma }}</td>
+                        <td class="text-end">₱{{ data.past_due_balance|floatformat:2|intcomma }}</td>
+                        <td class="text-end">₱{{ data.npl_balance|floatformat:2|intcomma }}</td>
+                        <td class="text-end">₱{{ data.collected|floatformat:2|intcomma }}</td>
+                        <td class="text-end">{{ data.collection_rate|floatformat:2 }}%</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center">No loan officer performance data found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="table-active">
+                        <th>Total</th>
+                        <th class="text-end">{{ total_accounts|intcomma }}</th>
+                        <th class="text-end">₱{{ total_portfolio_balance|floatformat:2|intcomma }}</th>
+                        <th class="text-end">₱{{ total_past_due_balance|floatformat:2|intcomma }}</th>
+                        <th class="text-end">₱{{ total_npl_balance|floatformat:2|intcomma }}</th>
+                        <th class="text-end">₱{{ total_collected|floatformat:2|intcomma }}</th>
+                        <th class="text-end">{{ overall_collection_rate|floatformat:2 }}%</th>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+    
+    <div class="row">
+        <div class="col-md-6">
+            <small class="text-muted">
+                <strong>Definitions:</strong><br>
+                • <strong>Accounts Assigned:</strong> Number of accounts assigned to the loan officer<br>
+                • <strong>Portfolio Balance:</strong> Total outstanding balance of assigned accounts<br>
+                • <strong>Past Due:</strong> Total balance of accounts in past due status<br>
+                • <strong>NPL:</strong> Total balance of non-performing loans
+            </small>
+        </div>
+        <div class="col-md-6">
+            <small class="text-muted">
+                • <strong>Collected:</strong> Reduction in outstanding balance during {{ current_month }}<br>
+                • <strong>Collection Rate:</strong> (Collected / Portfolio Balance) * 100<br>
+                • Report includes accounts with assigned loan officers only<br>
+                • Collection period is {{ current_month }}
+            </small>
+        </div>
+    </div>
+{% endblock %}
