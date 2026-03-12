@@ -573,7 +573,10 @@ class DashboardService:
         if result is None:
             try:
                 count = (
-                    LoanAccount.objects.filter(has_foreclosure_strategy=True)
+                    LoanAccount.objects.filter(
+                        remedial_strategies__strategy_type="Foreclosure",
+                        remedial_strategies__strategy_status="ACTIVE",
+                    )
                     .distinct()
                     .count()
                 )
@@ -601,7 +604,10 @@ class DashboardService:
         if result is None:
             try:
                 count = (
-                    LoanAccount.objects.filter(has_legal_action_strategy=True)
+                    LoanAccount.objects.filter(
+                        remedial_strategies__strategy_type="Legal Action",
+                        remedial_strategies__strategy_status="ACTIVE",
+                    )
                     .distinct()
                     .count()
                 )

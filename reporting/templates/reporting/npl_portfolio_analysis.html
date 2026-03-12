@@ -24,7 +24,7 @@
                     {% for item in report_data %}
                     <tr>
                         <td>{{ item.borrower }}</td>
-                        <td>{{ item.loan_id }}</td>
+                        <td><a href="{% url 'account_detail' item.loan_id %}">{{ item.loan_id }}</a></td>
                         <td class="text-end">{{ item.balance|intcomma }}</td>
                         <td class="text-end">{{ item.days_past_due }}</td>
                         <td>{{ item.collateral }}</td>
