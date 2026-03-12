@@ -1,6 +1,16 @@
 {% if record.status == 'UNPAID' %}
     <a href="{% url 'compromise_installment_update' record.pk %}" class="btn btn-sm btn-warning">Update</a>
-    <a href="{% url 'mark_installment_paid' record.pk %}" class="btn btn-sm btn-success">Paid</a>
+    <button type="button" 
+            class="btn btn-sm btn-success"
+            hx-post="{% url 'mark_installment_paid' record.pk %}"
+            hx-target="#installment-row-{{ record.pk }}"
+            hx-swap="outerHTML"
+            hx-indicator="#indicator-{{ record.pk }}">
+        <span class="btn-text">Paid</span>
+        <span id="indicator-{{ record.pk }}" class="htmx-indicator">
+            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+        </span>
+    </button>
 {% else %}
     <a href="{% url 'compromise_installment_update' record.pk %}" class="btn btn-sm btn-warning">Update</a>
 {% endif %}

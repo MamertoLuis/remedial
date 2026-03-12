@@ -14,33 +14,15 @@
     </div>
 </div>
 
+<!-- Error message container for HTMX -->
+<div id="htmx-error-container" class="mb-3"></div>
+
 <div class="card mb-4">
     <div class="card-header">
         <h5 class="mb-0">Agreement Details</h5>
     </div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col-md-6">
-                <p><strong>Account ID:</strong> <a href="{% url 'account_detail' account.loan_id %}">{{ account.loan_id }}</a></p>
-                <p><strong>Strategy Type:</strong> <a href="{% url 'remedial_strategy_detail' account.loan_id strategy.strategy_id %}">{{ strategy.get_strategy_type_display }}</a></p>
-                <p><strong>Original Total Exposure:</strong> ₱{{ object.original_total_exposure|floatformat:2|intcomma }}</p>
-                <p><strong>Approved Compromise Amount:</strong> ₱{{ object.approved_compromise_amount|floatformat:2|intcomma }}</p>
-                <p><strong>Total Amount Paid:</strong> ₱{{ total_paid|floatformat:2|intcomma }}</p>
-                <p><strong>Remaining Balance:</strong> ₱{{ remaining_balance|floatformat:2|intcomma }}</p>
-                <p><strong>Discount Amount:</strong> ₱{{ object.discount_amount|floatformat:2|intcomma }}</p>
-                <p><strong>Discount Percentage:</strong> {{ object.discount_percentage|floatformat:2 }}%</p>
-            </div>
-            <div class="col-md-6">
-                <p><strong>Status:</strong> <span class="badge bg-{% if object.status == 'ACTIVE' %}success{% elif object.status == 'COMPLETED' %}info{% elif object.status == 'SUPERSEDED' %}warning{% else %}danger{% endif %}">{{ object.get_status_display }}</span></p>
-                <p><strong>Approval Level:</strong> {{ object.get_approval_level_display }}</p>
-                <p><strong>Approval Date:</strong> {{ object.approval_date|date:"F d, Y" }}</p>
-                <p><strong>Installment Plan:</strong> {% if object.installment_flag %}Yes ({{ object.number_of_installments }} {{ object.get_payment_frequency_display }}){% else %}No{% endif %}</p>
-                {% if object.installment_flag %}
-                    <p><strong>First Payment Due:</strong> {{ object.first_payment_date|date:"F d, Y" }}</p>
-                {% endif %}
-                <p><strong>Rescission Clause:</strong> {{ object.rescission_clause_flag|yesno }}</p>
-            </div>
-        </div>
+    <div class="card-body" id="agreement-summary">
+        {% include "compromise_agreement/_agreement_summary.html" with object=object account=account strategy=strategy total_paid=total_paid remaining_balance=remaining_balance %}
     </div>
 </div>
 
@@ -53,10 +35,79 @@
     </div>
     <div class="card-body">
         {% if installments_table.data %}
-            {% render_table installments_table %}
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Installment Number</th>
+                            <th>Due Date</th>
+                            <th class="text-end">Amount Due</th>
+                            <th class="text-end">Amount Paid</th>
+                            <th>Payment Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for record in installments_table.data %}
+                            <tr id="installment-row-{{ record.pk }}">
+                                <td>{{ record.installment_number }}</td>
+                                <td>{{ record.due_date|date:"M d, Y" }}</td>
+                                <td class="text-end">₱{{ record.amount_due|floatformat:2|intcomma }}</td>
+                                <td class="text-end">₱{{ record.amount_paid|floatformat:2|intcomma }}</td>
+                                <td>{{ record.payment_date|date:"M d, Y" }}</td>
+                                <td>
+                                    {% if record.status == 'PAID' %}
+                                        <span class="badge bg-success">{{ record.get_status_display }}</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">{{ record.get_status_display }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% include "compromise_agreement/_installment_actions.html" with record=record %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         {% else %}
             <p class="text-muted">No installments scheduled for this agreement.</p>
         {% endif %}
     </div>
 </div>
+
+<!-- HTMX error handling -->
+{% block extra_js %}
+<script>
+    // Handle HTMX errors
+    document.addEventListener('htmx:afterRequest', function(evt) {
+        const errorContainer = document.getElementById('htmx-error-container');
+        if (evt.detail.failed) {
+            const errorResponse = evt.detail.xhr.response;
+            if (errorContainer) {
+                errorContainer.innerHTML = errorResponse;
+                errorContainer.scrollIntoView({ behavior: 'smooth' });
+                
+                // Auto-hide error after 5 seconds
+                setTimeout(() => {
+                    errorContainer.innerHTML = '';
+                }, 5000);
+            }
+        }
+    });
+    
+    // After successful payment, update the summary
+    document.addEventListener('htmx:afterSwap', function(evt) {
+        // Check if this was a successful installment payment
+        if (evt.detail.target.id && evt.detail.target.id.startsWith('installment-row-')) {
+            // Fetch updated summary data
+            htmx.ajax('GET', `{% url 'compromise_agreement_detail' object.pk %}?summary_only=1`, {
+                target: '#agreement-summary',
+                swap: 'innerHTML'
+            });
+        }
+    });
+</script>
+{% endblock %}
 {% endblock %}

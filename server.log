@@ -1,6 +1,2 @@
-usage: manage.py runserver [-h] [--ipv6] [--nothreading] [--noreload]
-                           [--nostatic] [--insecure] [--version]
-                           [--settings SETTINGS] [--pythonpath PYTHONPATH]
-                           [--no-color] [--force-color] [--skip-checks]
-                           [addrport]
-manage.py runserver: error: unrecognized arguments: --debug
+Watching for file changes with StatReloader
+[12/Mar/2026 06:53:29] "GET / HTTP/1.1" 302 0

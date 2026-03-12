@@ -11,7 +11,13 @@
     <link rel="stylesheet" href="{% static 'css/bank-theme.css' %}">
     <link rel="stylesheet" href="{% static 'css/layout.css' %}">
     {% block extra_css %}{% endblock %}
+    <script src="https://unpkg.com/htmx.org@1.9.9"></script>
     <script>
+        // Configure HTMX to include CSRF token in requests
+        document.addEventListener('htmx:configRequest', (evt) => {
+            evt.detail.headers['X-CSRFToken'] = '{{ csrf_token }}';
+        });
+        
         // Prevent Flash of Unstyled Content (FOUC) for dark theme
         const storedTheme = localStorage.getItem('theme');
         const preferredTheme = storedTheme ? storedTheme : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
