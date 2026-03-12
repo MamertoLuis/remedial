@@ -111,6 +111,8 @@
         <div class="section-header">Financial Terms</div>
         <div class="data-row"><strong>Original Total Exposure:</strong> <span class="currency">PHP {{ agreement.original_total_exposure|floatformat:2|intcomma }}</span></div>
         <div class="data-row"><strong>Approved Compromise Amount:</strong> <span class="currency">PHP {{ agreement.approved_compromise_amount|floatformat:2|intcomma }}</span></div>
+        <div class="data-row"><strong>Total Amount Paid:</strong> <span class="currency">PHP {{ total_paid|floatformat:2|intcomma }}</span></div>
+        <div class="data-row"><strong>Remaining Balance:</strong> <span class="currency">PHP {{ remaining_balance|floatformat:2|intcomma }}</span></div>
         <div class="data-row"><strong>Discount Amount:</strong> <span class="currency">PHP {{ agreement.discount_amount|floatformat:2|intcomma }}</span></div>
         <div class="data-row"><strong>Discount Percentage:</strong> <span>{{ agreement.discount_percentage|floatformat:2 }}%</span></div>
     </div>

@@ -25,6 +25,8 @@
                 <p><strong>Strategy Type:</strong> <a href="{% url 'remedial_strategy_detail' account.loan_id strategy.strategy_id %}">{{ strategy.get_strategy_type_display }}</a></p>
                 <p><strong>Original Total Exposure:</strong> ₱{{ object.original_total_exposure|floatformat:2|intcomma }}</p>
                 <p><strong>Approved Compromise Amount:</strong> ₱{{ object.approved_compromise_amount|floatformat:2|intcomma }}</p>
+                <p><strong>Total Amount Paid:</strong> ₱{{ total_paid|floatformat:2|intcomma }}</p>
+                <p><strong>Remaining Balance:</strong> ₱{{ remaining_balance|floatformat:2|intcomma }}</p>
                 <p><strong>Discount Amount:</strong> ₱{{ object.discount_amount|floatformat:2|intcomma }}</p>
                 <p><strong>Discount Percentage:</strong> {{ object.discount_percentage|floatformat:2 }}%</p>
             </div>

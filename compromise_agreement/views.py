@@ -26,6 +26,18 @@ class CompromiseAgreementDetailView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+
+        # Calculate total amount paid and remaining balance
+        total_paid = sum(
+            installment.amount_paid or 0
+            for installment in self.object.installments.all()
+            if installment.status == "PAID"
+        )
+        remaining_balance = self.object.approved_compromise_amount - total_paid
+
+        # Add to context
+        context["total_paid"] = total_paid
+        context["remaining_balance"] = remaining_balance
         context["installments_table"] = CompromiseInstallmentTable(
             self.object.installments.all()
         )
@@ -203,9 +215,19 @@ def generate_term_sheet_pdf(request, pk):
     agreement = get_object_or_404(CompromiseAgreement, pk=pk)
     installments = agreement.installments.all().order_by("installment_number")
 
+    # Calculate total amount paid and remaining balance
+    total_paid = sum(
+        installment.amount_paid or 0
+        for installment in installments
+        if installment.status == "PAID"
+    )
+    remaining_balance = agreement.approved_compromise_amount - total_paid
+
     context = {
         "agreement": agreement,
         "installments": installments,
+        "total_paid": total_paid,
+        "remaining_balance": remaining_balance,
         "request": request,
     }
     template = get_template("compromise_agreement/term_sheet_pdf.html")
