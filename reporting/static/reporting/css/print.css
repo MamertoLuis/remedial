@@ -1,26 +1,129 @@
-/* Print styles for reports */
-body {
-    font-family: sans-serif;
-    color: #000;
-    background: #fff;
-}
+@media print {
+    /* 1. Page Setup */
+    @page {
+        size: A4 portrait;
+        margin: 10mm; /* Minimal margins for maximum content area */
+    }
 
-.card {
-    border: none !important;
-    box-shadow: none !important;
-}
+    /* 2. Global Typography */
+    body {
+        font-family: "Helvetica", "Arial", sans-serif;
+        font-size: 10pt;
+        line-height: 1rem;
+        color: #000;
+        background: #fff;
+        margin: 0;
+        padding: 0;
+    }
 
-.card-header {
-    background-color: #f8f9fa !important;
-    border-bottom: 1px solid #dee2e6 !important;
-    padding: 1rem 0;
-}
+    /* 3. Card Styling - Minimal */
+    .card {
+        border: 1pt solid #000 !important;
+        box-shadow: none !important;
+        margin-bottom: 1rem !important;
+        page-break-inside: avoid;
+    }
 
-.card-body {
-    padding: 0;
-}
+    .card-header {
+        background: none !important;
+        border-bottom: 1pt solid #000 !important;
+        padding: 4px 0 !important;
+        font-weight: bold;
+        font-size: 10pt;
+        text-transform: uppercase;
+        color: #000 !important;
+    }
 
-/* Hide elements not needed for print */
-.btn, .navbar, .sidebar, .footer {
-    display: none !important;
+    .card-body {
+        padding: 6px 0 !important;
+    }
+
+    /* 4. Table Optimizations - Compact with Minimal Borders */
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 10pt;
+        line-height: 1rem;
+        border: 1pt solid #000 !important; /* Outer border only */
+    }
+
+    /* Remove all internal borders */
+    td, th {
+        border: none !important;
+        padding: 2px 4px !important;
+        font-size: 10pt;
+        vertical-align: top;
+    }
+
+    /* Table headers - bold for distinction */
+    th {
+        font-weight: bold !important;
+        text-align: left;
+    }
+
+    /* Right-aligned numeric columns */
+    th.text-end, td.text-end {
+        text-align: right !important;
+    }
+
+    /* Footer top border */
+    tfoot th, tfoot td {
+        border-top: 1pt solid #000 !important;
+        font-weight: bold !important;
+    }
+
+    /* 5. Spacing Overrides */
+    /* Override Bootstrap spacing classes */
+    .mb-5, .mb-4, .mb-3, .my-3 {
+        margin-bottom: 1rem !important;
+    }
+
+    .text-center {
+        text-align: center !important;
+    }
+
+    /* 6. Color Removal - Pure B&W */
+    .table-light, .card-header, [class*="bg-"], .badge {
+        background: transparent !important;
+        color: #000 !important;
+        border: none !important;
+    }
+
+    /* 7. Hyperlink Styling - Make unidentifiable */
+    a, a:link, a:visited, a:hover, a:active {
+        color: #000 !important;
+        text-decoration: none !important;
+        font-weight: normal !important;
+    }
+
+    /* 8. Hide UI Elements */
+    .btn, .navbar, .sidebar, .footer, .nav-tabs, .breadcrumb {
+        display: none !important;
+    }
+
+    /* 9. Page Break Management */
+    tr {
+        page-break-inside: avoid;
+    }
+
+    h5, h6 {
+        page-break-after: avoid;
+    }
+
+    /* 10. Force Colors for Print */
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* 11. Responsive Table Container Fix */
+    .table-responsive {
+        overflow: visible !important;
+    }
+
+    /* 12. Column Width Optimizations */
+    /* Auto-adjust column widths for best space utilization */
+    table {
+        table-layout: auto;
+    }
 }

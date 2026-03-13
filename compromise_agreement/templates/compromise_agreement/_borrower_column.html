@@ -1,0 +1,2 @@
+{% load django_tables2 %}
+<a href="{% url 'borrower_detail' record.account.borrower.borrower_id %}">{{ record.account.borrower.full_name }}</a>

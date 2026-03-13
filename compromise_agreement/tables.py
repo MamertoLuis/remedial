@@ -1,8 +1,21 @@
 import django_tables2 as tables
+from django.utils.html import format_html
+from django.urls import reverse
 from .models import CompromiseAgreement, CompromiseInstallment
 
 
 class CompromiseAgreementTable(tables.Table):
+    borrower = tables.TemplateColumn(
+        template_name="compromise_agreement/_borrower_column.html",
+        verbose_name="Borrower",
+        orderable=False,
+    )
+
+    account = tables.TemplateColumn(
+        template_name="compromise_agreement/_account_column.html",
+        verbose_name="Account",
+    )
+
     actions = tables.TemplateColumn(
         template_name="compromise_agreement/_actions.html", verbose_name="Actions"
     )
@@ -12,6 +25,7 @@ class CompromiseAgreementTable(tables.Table):
         template_name = "django_tables2/bootstrap5.html"
         fields = (
             "compromise_id",
+            "borrower",
             "account",
             "original_total_exposure",
             "approved_compromise_amount",
