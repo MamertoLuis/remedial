@@ -2,6 +2,7 @@
 <div class="row">
     <div class="col-md-6">
         <p><strong>Account ID:</strong> <a href="{% url 'account_detail' account.loan_id %}">{{ account.loan_id }}</a></p>
+        <p><strong>Borrower:</strong> <a href="{% url 'borrower_detail' account.borrower.borrower_id %}">{{ account.borrower.full_name }}</a></p>
         <p><strong>Strategy Type:</strong> <a href="{% url 'remedial_strategy_detail' account.loan_id strategy.strategy_id %}">{{ strategy.get_strategy_type_display }}</a></p>
         <p><strong>Original Total Exposure:</strong> ₱{{ object.original_total_exposure|floatformat:2|intcomma }}</p>
         <p><strong>Approved Compromise Amount:</strong> ₱{{ object.approved_compromise_amount|floatformat:2|intcomma }}</p>

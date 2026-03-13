@@ -19,6 +19,7 @@
         <div class="row">
             <div class="col-md-6">
                 <p><strong>Account ID:</strong> <a href="{% url 'account_detail' strategy.account.loan_id %}">{{ strategy.account.loan_id }}</a></p>
+                <p><strong>Borrower:</strong> <a href="{% url 'borrower_detail' strategy.account.borrower.borrower_id %}">{{ strategy.account.borrower.full_name }}</a></p>
                 <p><strong>Strategy Type:</strong> {{ strategy.get_strategy_type_display }}</p>
             </div>
             <div class="col-md-6">
