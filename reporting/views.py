@@ -350,31 +350,32 @@ def loan_officer_performance_summary(request):
         # Get account IDs for this officer
         officer_account_ids = accounts.values_list("loan_id", flat=True)
 
-        # Get first and last exposures for each account in current month
-        monthly_exposures = (
+        # Get shouldbepay and actualpay for each account in current month
+        monthly_payments = (
             Exposure.objects.filter(
                 account_id__in=officer_account_ids,
                 as_of_date__gte=current_month_start,
                 as_of_date__lte=current_month_end,
+                shouldbepay__isnull=False,
             )
             .values("account_id")
             .annotate(
-                first_exposure=Min("principal_outstanding"),
-                last_exposure=Max("principal_outstanding"),
+                total_shouldbepay=Sum("shouldbepay"),
+                total_actualpay=Sum("actualpay"),
             )
         )
 
-        collected = Decimal(0)
-        for exposure in monthly_exposures:
-            # Calculate reduction (only positive reductions)
-            reduction = exposure["first_exposure"] - exposure["last_exposure"]
-            if reduction > 0:
-                collected += reduction
+        total_shouldbepay = Decimal(0)
+        total_actualpay = Decimal(0)
 
-        # Collection rate
+        for payment in monthly_payments:
+            total_shouldbepay += payment["total_shouldbepay"] or Decimal(0)
+            total_actualpay += payment["total_actualpay"] or Decimal(0)
+
+        # Collection rate using shouldbepay and actualpay
         collection_rate = (
-            (collected / portfolio_balance * 100)
-            if portfolio_balance > 0
+            (total_actualpay / total_shouldbepay * 100)
+            if total_shouldbepay > 0
             else Decimal(0)
         )
 
@@ -385,7 +386,8 @@ def loan_officer_performance_summary(request):
                 "portfolio_balance": portfolio_balance,
                 "past_due_balance": past_due_balance,
                 "npl_balance": npl_balance,
-                "collected": collected,
+                "shouldbepay": total_shouldbepay,
+                "actualpay": total_actualpay,
                 "collection_rate": collection_rate,
             }
         )
@@ -395,10 +397,11 @@ def loan_officer_performance_summary(request):
     total_portfolio_balance = sum(item["portfolio_balance"] for item in report_data)
     total_past_due_balance = sum(item["past_due_balance"] for item in report_data)
     total_npl_balance = sum(item["npl_balance"] for item in report_data)
-    total_collected = sum(item["collected"] for item in report_data)
+    total_shouldbepay_all = sum(item["shouldbepay"] for item in report_data)
+    total_actualpay_all = sum(item["actualpay"] for item in report_data)
     overall_collection_rate = (
-        (total_collected / total_portfolio_balance * 100)
-        if total_portfolio_balance > 0
+        (total_actualpay_all / total_shouldbepay_all * 100)
+        if total_shouldbepay_all > 0
         else Decimal(0)
     )
 
@@ -411,7 +414,8 @@ def loan_officer_performance_summary(request):
         "total_portfolio_balance": total_portfolio_balance,
         "total_past_due_balance": total_past_due_balance,
         "total_npl_balance": total_npl_balance,
-        "total_collected": total_collected,
+        "total_shouldbepay": total_shouldbepay_all,
+        "total_actualpay": total_actualpay_all,
         "overall_collection_rate": overall_collection_rate,
     }
     return render(request, "reporting/loan_officer_performance_summary.html", context)

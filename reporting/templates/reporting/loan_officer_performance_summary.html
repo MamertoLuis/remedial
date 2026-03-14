@@ -17,7 +17,8 @@
                         <th class="text-end">Portfolio Balance</th>
                         <th class="text-end">Past Due</th>
                         <th class="text-end">NPL</th>
-                        <th class="text-end">Collected</th>
+                        <th class="text-end">Should Be Pay</th>
+                        <th class="text-end">Actual Pay</th>
                         <th class="text-end">Collection Rate</th>
                     </tr>
                 </thead>
@@ -29,12 +30,13 @@
                         <td class="text-end">₱{{ data.portfolio_balance|floatformat:2|intcomma }}</td>
                         <td class="text-end">₱{{ data.past_due_balance|floatformat:2|intcomma }}</td>
                         <td class="text-end">₱{{ data.npl_balance|floatformat:2|intcomma }}</td>
-                        <td class="text-end">₱{{ data.collected|floatformat:2|intcomma }}</td>
+                        <td class="text-end">₱{{ data.shouldbepay|floatformat:2|intcomma }}</td>
+                        <td class="text-end">₱{{ data.actualpay|floatformat:2|intcomma }}</td>
                         <td class="text-end">{{ data.collection_rate|floatformat:2 }}%</td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="7" class="text-center">No loan officer performance data found.</td>
+                        <td colspan="8" class="text-center">No loan officer performance data found.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -45,7 +47,8 @@
                         <th class="text-end">₱{{ total_portfolio_balance|floatformat:2|intcomma }}</th>
                         <th class="text-end">₱{{ total_past_due_balance|floatformat:2|intcomma }}</th>
                         <th class="text-end">₱{{ total_npl_balance|floatformat:2|intcomma }}</th>
-                        <th class="text-end">₱{{ total_collected|floatformat:2|intcomma }}</th>
+                        <th class="text-end">₱{{ total_shouldbepay|floatformat:2|intcomma }}</th>
+                        <th class="text-end">₱{{ total_actualpay|floatformat:2|intcomma }}</th>
                         <th class="text-end">{{ overall_collection_rate|floatformat:2 }}%</th>
                     </tr>
                 </tfoot>
@@ -65,8 +68,9 @@
         </div>
         <div class="col-md-6">
             <small class="text-muted">
-                • <strong>Collected:</strong> Reduction in outstanding balance during {{ current_month }}<br>
-                • <strong>Collection Rate:</strong> (Collected / Portfolio Balance) * 100<br>
+                • <strong>Should Be Pay:</strong> Expected payment amount during {{ current_month }}<br>
+                • <strong>Actual Pay:</strong> Actual payment received during {{ current_month }}<br>
+                • <strong>Collection Rate:</strong> (Actual Pay / Should Be Pay) * 100<br>
                 • Report includes accounts with assigned loan officers only<br>
                 • Collection period is {{ current_month }}
             </small>

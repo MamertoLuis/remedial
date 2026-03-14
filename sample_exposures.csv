@@ -1,0 +1,3 @@
+loan_id,as_of_date,principal_outstanding,accrued_interest,accrued_penalty,days_past_due,shouldbepay,actualpay
+0000002301-0002605-3,2026-03-14,10000.00,500.00,100.00,0,1000.00,800.00
+0000234801-0003432-1,2026-03-14,15000.00,750.00,150.00,30,1500.00,1200.00

@@ -85,22 +85,23 @@ def upsert_exposure(
     Create or update an Exposure record.
     Auto-creates DelinquencyStatus from Exposure data.
     """
-    principal_outstanding = defaults.get("principal_outstanding", Decimal("0.00"))
-    accrued_interest = defaults.get("accrued_interest", Decimal("0.00"))
-    accrued_penalty = defaults.get("accrued_penalty", Decimal("0.00"))
-    days_past_due = defaults.get("days_past_due", 0)
-    snapshot_type = defaults.get("snapshot_type", "EVENT")
+    # Create a copy of defaults to avoid modifying the original
+    update_defaults = defaults.copy()
+
+    # Set default values for required fields if not present
+    update_defaults.setdefault("principal_outstanding", Decimal("0.00"))
+    update_defaults.setdefault("accrued_interest", Decimal("0.00"))
+    update_defaults.setdefault("accrued_penalty", Decimal("0.00"))
+    update_defaults.setdefault("days_past_due", 0)
+    update_defaults.setdefault("snapshot_type", "EVENT")
+
+    # Extract days_past_due for delinquency status creation
+    days_past_due = update_defaults.get("days_past_due", 0)
 
     obj, created = Exposure.objects.update_or_create(
         account=account,
         as_of_date=as_of_date,
-        defaults={
-            "principal_outstanding": principal_outstanding,
-            "accrued_interest": accrued_interest,
-            "accrued_penalty": accrued_penalty,
-            "days_past_due": days_past_due,
-            "snapshot_type": snapshot_type,
-        },
+        defaults=update_defaults,
     )
 
     _auto_create_delinquency_status(account, as_of_date, days_past_due)

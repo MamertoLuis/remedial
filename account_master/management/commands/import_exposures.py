@@ -5,7 +5,7 @@ from decimal import Decimal, InvalidOperation
 from django.core.management.base import BaseCommand, CommandError
 from django.db import transaction
 
-from account_master.models import LoanAccount
+from account_master.models import LoanAccount, Exposure
 from account_master.services import upsert_exposure
 
 
@@ -134,6 +134,8 @@ class Command(BaseCommand):
 
                 optional_headers = [
                     "days_past_due",
+                    "shouldbepay",
+                    "actualpay",
                 ]
 
                 # Check for all required headers
@@ -210,13 +212,36 @@ class Command(BaseCommand):
                             except ValueError:
                                 days_past_due = 0
 
+                            # Parse optional shouldbepay and actualpay fields
+                            shouldbepay_str = row.get("shouldbepay", "0.00")
+                            try:
+                                shouldbepay = Decimal(
+                                    self._clean_value(
+                                        shouldbepay_str,
+                                        "shouldbepay",
+                                        required=False,
+                                    )
+                                )
+                            except (ValueError, InvalidOperation):
+                                shouldbepay = None
+
+                            actualpay_str = row.get("actualpay", "0.00")
+                            try:
+                                actualpay = Decimal(
+                                    self._clean_value(
+                                        actualpay_str,
+                                        "actualpay",
+                                        required=False,
+                                    )
+                                )
+                            except (ValueError, InvalidOperation):
+                                actualpay = None
+
                             if dry_run:
                                 self.stdout.write(
                                     f"Row {row_num}: Would process exposure for loan '{loan_id}' as of {as_of_date}"
                                 )
                                 # Check if exposure exists without actually creating/updating
-                                from account_master.models import Exposure
-
                                 existing = Exposure.objects.filter(
                                     account=loan_account, as_of_date=as_of_date
                                 ).exists()
@@ -228,16 +253,30 @@ class Command(BaseCommand):
                                     self.stdout.write(f"  -> Would CREATE new exposure")
                                 continue
 
-                            _, created = upsert_exposure(
+                            # Use direct ORM creation instead of service function for now
+                            defaults = {
+                                "principal_outstanding": principal_outstanding,
+                                "accrued_interest": accrued_interest,
+                                "accrued_penalty": accrued_penalty,
+                                "days_past_due": days_past_due,
+                                "shouldbepay": shouldbepay,
+                                "actualpay": actualpay,
+                                "snapshot_type": snapshot_type,
+                            }
+
+                            obj, created = Exposure.objects.update_or_create(
                                 account=loan_account,
                                 as_of_date=as_of_date,
-                                defaults={
-                                    "principal_outstanding": principal_outstanding,
-                                    "accrued_interest": accrued_interest,
-                                    "accrued_penalty": accrued_penalty,
-                                    "days_past_due": days_past_due,
-                                    "snapshot_type": snapshot_type,
-                                },
+                                defaults=defaults,
+                            )
+
+                            # Still call the auto-create delinquency status function
+                            from account_master.services.main import (
+                                _auto_create_delinquency_status,
+                            )
+
+                            _auto_create_delinquency_status(
+                                loan_account, as_of_date, days_past_due
                             )
 
                             if created:

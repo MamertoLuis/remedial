@@ -3,6 +3,7 @@ from django.utils import timezone
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth import get_user_model
+from decimal import Decimal
 
 
 class AuditableModel(models.Model):
@@ -235,10 +236,29 @@ class Exposure(AuditableModel):
     accrued_interest = models.DecimalField(max_digits=18, decimal_places=2)
     accrued_penalty = models.DecimalField(max_digits=18, decimal_places=2)
     days_past_due = models.IntegerField(default=0)
+    shouldbepay = models.DecimalField(
+        max_digits=18, decimal_places=2, null=True, blank=True
+    )
+    actualpay = models.DecimalField(
+        max_digits=18, decimal_places=2, null=True, blank=True
+    )
 
     @property
     def total_exposure(self):
-        return self.principal_outstanding + self.accrued_interest + self.accrued_penalty
+        return (
+            Decimal(str(self.principal_outstanding or 0))
+            + Decimal(str(self.accrued_interest or 0))
+            + Decimal(str(self.accrued_penalty or 0))
+        )
+
+    @property
+    def collection_efficiency(self):
+        """Calculate collection efficiency as (actualpay / shouldbepay) * 100"""
+        if self.shouldbepay and self.shouldbepay > 0:
+            return (
+                Decimal(str(self.actualpay or 0)) / Decimal(str(self.shouldbepay))
+            ) * 100
+        return Decimal("0")
 
     class Meta:
         constraints = [
