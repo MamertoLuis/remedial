@@ -350,27 +350,16 @@ def loan_officer_performance_summary(request):
         # Get account IDs for this officer
         officer_account_ids = accounts.values_list("loan_id", flat=True)
 
-        # Get shouldbepay and actualpay for each account in current month
-        monthly_payments = (
-            Exposure.objects.filter(
-                account_id__in=officer_account_ids,
-                as_of_date__gte=current_month_start,
-                as_of_date__lte=current_month_end,
-                shouldbepay__isnull=False,
-            )
-            .values("account_id")
-            .annotate(
-                total_shouldbepay=Sum("shouldbepay"),
-                total_actualpay=Sum("actualpay"),
-            )
+        # Get all shouldbepay and actualpay data for this officer's accounts
+        payment_data = Exposure.objects.filter(
+            account_id__in=officer_account_ids,
+        ).aggregate(
+            total_shouldbepay=Sum(Coalesce("shouldbepay", Decimal(0))),
+            total_actualpay=Sum(Coalesce("actualpay", Decimal(0))),
         )
 
-        total_shouldbepay = Decimal(0)
-        total_actualpay = Decimal(0)
-
-        for payment in monthly_payments:
-            total_shouldbepay += payment["total_shouldbepay"] or Decimal(0)
-            total_actualpay += payment["total_actualpay"] or Decimal(0)
+        total_shouldbepay = payment_data["total_shouldbepay"] or Decimal(0)
+        total_actualpay = payment_data["total_actualpay"] or Decimal(0)
 
         # Collection rate using shouldbepay and actualpay
         collection_rate = (
