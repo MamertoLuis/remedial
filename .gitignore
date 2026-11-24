@@ -7,4 +7,5 @@ doc/*.md
 **/__pycache__/
 /staticfiles/
 media/
+.agents/
 
