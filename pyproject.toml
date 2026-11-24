@@ -48,7 +48,6 @@ dependencies = [
     "psycopg==3.3.2",
     "psycopg-binary==3.3.2",
     "psycopg2-binary==2.9.11",
-    "pycairo==1.29.0",
     "pycparser==3.0",
     "pyhanko==0.33.0",
     "pyhanko-certvalidator==0.29.1",
@@ -61,10 +60,8 @@ dependencies = [
     "pyyaml==6.0.3",
     "reportlab==4.4.10",
     "requests==2.32.5",
-    "rlpycairo==0.4.0",
     "six==1.17.0",
     "sqlparse==0.5.5",
-    "svglib==1.6.0",
     "tinycss2==1.5.1",
     "typing-extensions==4.15.0",
     "tzdata==2025.3",
@@ -78,9 +75,7 @@ dependencies = [
     "xhtml2pdf==0.2.17",
 ]
 
-[project.scripts]
-remedial = "remedial:main"
-
-[build-system]
-requires = ["uv_build>=0.10.2,<0.11.0"]
-build-backend = "uv_build"
+# This is a Django application, not a distributable library: do not install it
+# as a package. Dependencies are managed exclusively by uv (uv.lock).
+[tool.uv]
+package = false

@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = "==3.12.12"
 
 [[package]]
@@ -721,7 +721,7 @@ wheels = [
 [[package]]
 name = "remedial"
 version = "0.1.0"
-source = { editable = "." }
+source = { virtual = "." }
 dependencies = [
     { name = "amqp" },
     { name = "arabic-reshaper" },
@@ -763,7 +763,6 @@ dependencies = [
     { name = "psycopg" },
     { name = "psycopg-binary" },
     { name = "psycopg2-binary" },
-    { name = "pycairo" },
     { name = "pycparser" },
     { name = "pyhanko" },
     { name = "pyhanko-certvalidator" },
@@ -776,10 +775,8 @@ dependencies = [
     { name = "pyyaml" },
     { name = "reportlab" },
     { name = "requests" },
-    { name = "rlpycairo" },
     { name = "six" },
     { name = "sqlparse" },
-    { name = "svglib" },
     { name = "tinycss2" },
     { name = "typing-extensions" },
     { name = "tzdata" },
@@ -835,7 +832,6 @@ requires-dist = [
     { name = "psycopg", specifier = "==3.3.2" },
     { name = "psycopg-binary", specifier = "==3.3.2" },
     { name = "psycopg2-binary", specifier = "==2.9.11" },
-    { name = "pycairo", specifier = "==1.29.0" },
     { name = "pycparser", specifier = "==3.0" },
     { name = "pyhanko", specifier = "==0.33.0" },
     { name = "pyhanko-certvalidator", specifier = "==0.29.1" },
@@ -848,10 +844,8 @@ requires-dist = [
     { name = "pyyaml", specifier = "==6.0.3" },
     { name = "reportlab", specifier = "==4.4.10" },
     { name = "requests", specifier = "==2.32.5" },
-    { name = "rlpycairo", specifier = "==0.4.0" },
     { name = "six", specifier = "==1.17.0" },
     { name = "sqlparse", specifier = "==0.5.5" },
-    { name = "svglib", specifier = "==1.6.0" },
     { name = "tinycss2", specifier = "==1.5.1" },
     { name = "typing-extensions", specifier = "==4.15.0" },
     { name = "tzdata", specifier = "==2025.3" },
