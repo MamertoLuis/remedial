@@ -4,13 +4,21 @@ import os
 
 # Initialise environment variables
 env = environ.Env()
-environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
+# .env lives at the repository root, next to manage.py (not inside the package).
+environ.Env.read_env(os.path.join(PROJECT_ROOT, ".env"))
 
 # Production specific settings
 DEBUG = env.bool("DEBUG", default=False)
 
+# SECURITY: fail fast if the secret key is not supplied by the environment.
+# No insecure fallback is allowed in production.
+SECRET_KEY = env.str("SECRET_KEY")
+
 # Ensure ALLOWED_HOSTS is set in production
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS")
+
+# Database: driven entirely by DATABASE_URL (e.g. postgres://user:pass@host:5432/db)
+DATABASES = {"default": env.db("DATABASE_URL")}
 
 # CSRF and Session settings
 try:
@@ -21,7 +29,8 @@ except environ.ImproperlyConfigured:
 # Security settings
 USE_X_FORWARDED_HOST = True
 SECURE_BROWSER_XSS_FILTER = env.bool("SECURE_BROWSER_XSS_FILTER", default=True)
-SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "http")
+# Nginx terminates TLS and forwards X-Forwarded-Proto: https
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SECURE_HSTS_SECONDS = env.int("SECURE_HSTS_SECONDS", default=31536000)
 SECURE_HSTS_INCLUDE_SUBDOMAINS = env.bool(
     "SECURE_HSTS_INCLUDE_SUBDOMAINS", default=True

@@ -4,15 +4,28 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# NOTE: BASE_DIR resolves to the inner Django package directory (the parent of
+# `remedial/settings`), which is what STATIC_ROOT and the local SQLite database
+# currently point at. The repository root (where `manage.py`, `.env` and
+# `pyproject.toml` live) is PROJECT_ROOT. Moving BASE_DIR would relocate
+# STATIC_ROOT and the local database, so that cleanup is a separate refactor.
+PROJECT_ROOT = BASE_DIR.parent
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-o#90p%9c*8a-j7w7!h!r7g*p+@^x(e$f#1t-s)k-^!z*y(m^v"  # This should be replaced with an actual secret key in production
+# In development an insecure fallback is used. Production settings MUST provide
+# SECRET_KEY through the environment and fail fast when it is missing
+# (see remedial/settings/production.py).
+SECRET_KEY = os.environ.get(
+    "SECRET_KEY", "django-insecure-dev-only-do-not-use-in-production"
+)
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# Development settings override this to True.
+DEBUG = os.environ.get("DEBUG", "False").lower() in ("1", "true", "yes")
 
 ALLOWED_HOSTS = []
 
@@ -78,6 +91,7 @@ WSGI_APPLICATION = "remedial.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
+# Default local database. Production settings replace this with DATABASE_URL.
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
