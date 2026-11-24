@@ -51,6 +51,7 @@ dependencies = [
     "pycparser==3.0",
     "pyhanko==0.33.0",
     "pyhanko-certvalidator==0.29.1",
+    "pymysql==1.2.4",
     "pypdf==6.7.1",
     "python-bidi==0.6.7",
     "python-dateutil==2.9.0.post0",

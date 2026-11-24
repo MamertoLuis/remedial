@@ -17,4 +17,5 @@ doc/*.md
 /staticfiles/
 media/
 .agents/
+pi-sess.txt
 
