@@ -8,6 +8,7 @@ class User(AbstractUser):
         ACCOUNT_OFFICER = "ACCOUNT_OFFICER", _("Account Officer")
         MANAGER = "MANAGER", _("Manager")
         BOARD_MEMBER = "BOARD_MEMBER", _("Board Member")
+        SYSTEM_ADMINISTRATOR = "SYSTEM_ADMINISTRATOR", _("System Administrator")
 
     role = models.CharField(
         max_length=20, choices=Role.choices, default=Role.ACCOUNT_OFFICER

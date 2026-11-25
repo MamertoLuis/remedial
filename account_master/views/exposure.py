@@ -4,11 +4,12 @@ from django.contrib.auth.decorators import login_required
 from account_master.models import LoanAccount, Exposure
 from account_master.services import upsert_exposure
 from account_master.forms import ExposureForm
+from account_master.decorators import system_admin_required
 
 logger = logging.getLogger(__name__)
 
 
-@login_required
+@system_admin_required
 def create_exposure(request, loan_id):
     logger.info(f"create_exposure called for loan_id: {loan_id}")
     account = get_object_or_404(LoanAccount, loan_id=loan_id)
@@ -33,7 +34,7 @@ def create_exposure(request, loan_id):
     )
 
 
-@login_required
+@system_admin_required
 def update_exposure(request, loan_id, exposure_id):
     account = get_object_or_404(LoanAccount, loan_id=loan_id)
     exposure = get_object_or_404(Exposure, exposure_id=exposure_id, account=account)

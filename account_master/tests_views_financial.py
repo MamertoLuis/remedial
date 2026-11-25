@@ -10,9 +10,16 @@ User = get_user_model()
 class FinancialViewsTest(TestCase):
     def setUp(self):
         self.client = Client()
+        # MANAGER user drives the manager-gated delinquency views.
         self.user = User.objects.create_user(username="testuser", password="password")
         self.user.role = User.Role.MANAGER
         self.user.save()
+        # SYSTEM_ADMINISTRATOR user drives the fact-plane exposure views.
+        self.admin_user = User.objects.create_user(
+            username="adminuser", password="password"
+        )
+        self.admin_user.role = User.Role.SYSTEM_ADMINISTRATOR
+        self.admin_user.save()
         self.borrower = Borrower.objects.create(
             borrower_id="B001",
             full_name="Test Borrower",
@@ -72,7 +79,7 @@ class FinancialViewsTest(TestCase):
             pass  # View might not exist
 
     def test_create_exposure_authenticated(self):
-        self.client.force_login(self.user)
+        self.client.force_login(self.admin_user)
         response = self.client.get(
             reverse("create_exposure", args=[self.account.loan_id])
         )
@@ -92,7 +99,7 @@ class FinancialViewsTest(TestCase):
 
     def test_create_exposure_post(self):
         self.exposure.delete()
-        self.client.force_login(self.user)
+        self.client.force_login(self.admin_user)
         data = {
             "as_of_date": date.today().isoformat(),
             "outstanding_principal": 60000.00,
@@ -115,7 +122,7 @@ class FinancialViewsTest(TestCase):
         )
 
     def test_update_exposure_authenticated(self):
-        self.client.force_login(self.user)
+        self.client.force_login(self.admin_user)
         response = self.client.get(
             reverse(
                 "update_exposure",
@@ -141,7 +148,7 @@ class FinancialViewsTest(TestCase):
         )
 
     def test_update_exposure_post(self):
-        self.client.force_login(self.user)
+        self.client.force_login(self.admin_user)
         data = {
             "as_of_date": date.today().isoformat(),
             "outstanding_principal": 70000.00,

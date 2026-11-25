@@ -1,0 +1,8 @@
+{% comment %}
+Per-row delete trigger for the borrower list (ui-workspace). Opens the shared
+confirm modal; the modal posts to the delete_borrower URL. The delete_borrower
+page remains the no-JS fallback.
+{% endcomment %}
+<button type="button" class="app-btn app-btn-danger app-btn-sm"
+        data-modal-open="delete-borrower-modal"
+        data-action-url="{% url 'delete_borrower' record.borrower_id %}">Delete</button>

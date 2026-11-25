@@ -9,9 +9,12 @@ User = get_user_model()
 class BorrowerViewsTests(TestCase):
     def setUp(self):
         self.client = Client()
+        # Fact-plane (create/update/delete) views require SYSTEM_ADMINISTRATOR.
         self.user = User.objects.create_user(
             username="testuser", password="password123"
         )
+        self.user.role = User.Role.SYSTEM_ADMINISTRATOR
+        self.user.save()
 
         self.borrower = Borrower.objects.create(
             borrower_id="B001",

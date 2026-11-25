@@ -6,13 +6,23 @@ from account_master.services import upsert_borrower
 from account_master.forms import BorrowerForm
 from account_master.tables import BorrowerTable, BorrowerAccountTable
 from account_master.filters import BorrowerFilter
+from account_master.decorators import system_admin_required
 
 
 @login_required
 def borrower_list(request):
+    from users.models import User
+
     borrowers = Borrower.objects.all()
     filter = BorrowerFilter(request.GET, queryset=borrowers)
     table = BorrowerTable(filter.qs, request=request)
+    # The delete action (and its confirm modal) is admin-only, mirroring the
+    # system_admin_required gate on the delete view itself.
+    if not (
+        request.user.is_authenticated
+        and request.user.role == User.Role.SYSTEM_ADMINISTRATOR
+    ):
+        table.columns.hide("delete")
     RequestConfig(request).configure(table)
     table.paginate(page=request.GET.get("page", 1), per_page=25)
     context = {
@@ -47,7 +57,7 @@ def borrower_detail(request, borrower_id):
     return render(request, "account_master/borrower_detail.html", context)
 
 
-@login_required
+@system_admin_required
 def create_borrower(request):
     if request.method == "POST":
         form = BorrowerForm(request.POST)
@@ -62,7 +72,7 @@ def create_borrower(request):
     return render(request, "account_master/create_borrower.html", {"form": form})
 
 
-@login_required
+@system_admin_required
 def update_borrower(request, borrower_id):
     borrower = get_object_or_404(Borrower, borrower_id=borrower_id)
     if request.method == "POST":
@@ -82,7 +92,7 @@ def update_borrower(request, borrower_id):
     return render(request, "account_master/update_borrower.html", {"form": form})
 
 
-@login_required
+@system_admin_required
 def delete_borrower(request, borrower_id):
     borrower = get_object_or_404(Borrower, borrower_id=borrower_id)
     if request.method == "POST":

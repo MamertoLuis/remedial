@@ -16,6 +16,7 @@ from account_master.models import (
 )
 from account_master.services import upsert_loan_account
 from account_master.forms import LoanAccountForm
+from account_master.decorators import system_admin_required
 from django_tables2 import RequestConfig
 from account_master.tables import (
     LoanAccountTable,
@@ -129,7 +130,7 @@ def account_list(request):
     return render(request, "account_master/account_list.html", context)
 
 
-@login_required
+@system_admin_required
 def create_account(request, borrower_id=None):
     from account_master.models import Borrower
 
@@ -292,7 +293,7 @@ def generate_ecl_provision(request, loan_id):
         return JsonResponse({"success": False, "error": str(e)})
 
 
-@login_required
+@system_admin_required
 def update_account(request, loan_id):
     account = get_object_or_404(LoanAccount, loan_id=loan_id)
     if request.method == "POST":
@@ -306,7 +307,7 @@ def update_account(request, loan_id):
     return render(request, "account_master/update_account.html", {"form": form})
 
 
-@login_required
+@system_admin_required
 def update_account_status(request, loan_id):
     account = get_object_or_404(LoanAccount, loan_id=loan_id)
     if request.method == "POST":
