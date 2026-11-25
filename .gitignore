@@ -13,6 +13,9 @@ doc/*.md
 !/AGENTS.md
 !/DESIGN.md
 
+# OpenSpec specs and change artifacts are the source of record — track them
+!openspec/**/*.md
+
 # Tailwind standalone CLI binary (platform-specific, fetched by `make css`)
 /tools/
 **/migrations/*.py
