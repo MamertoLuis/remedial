@@ -1,38 +1,36 @@
 {% extends "reporting/base_report.html" %}
 {% load humanize %}
+{% load ui_filters %}
 
 {% block report_content %}
-    <h6 class="text-center mb-4">
-        As of: {{ report_date|date:"F d, Y" }} | Collection Period: {{ current_month }}
-    </h6>
 
     <div class="mb-4">
         <h5 class="mb-3">Loan Officer Performance Summary</h5>
         <div class="table-responsive">
-            <table class="table table-sm table-bordered">
-                <thead class="table-light">
+            <table class="app-table">
+                <thead>
                     <tr>
-                        <th>Loan Officer</th>
-                        <th class="text-end">Accounts Assigned</th>
-                        <th class="text-end">Portfolio Balance</th>
-                        <th class="text-end">Past Due</th>
-                        <th class="text-end">NPL</th>
-                        <th class="text-end">Should Be Pay</th>
-                        <th class="text-end">Actual Pay</th>
-                        <th class="text-end">Collection Rate</th>
+                        <th scope="col">Loan Officer</th>
+                        <th scope="col" class="text-right tabular-nums">Accounts Assigned</th>
+                        <th scope="col" class="text-right tabular-nums">Portfolio Balance</th>
+                        <th scope="col" class="text-right tabular-nums">Past Due</th>
+                        <th scope="col" class="text-right tabular-nums">NPL</th>
+                        <th scope="col" class="text-right tabular-nums">Should Be Pay</th>
+                        <th scope="col" class="text-right tabular-nums">Actual Pay</th>
+                        <th scope="col" class="text-right tabular-nums">Collection Rate</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for data in report_data %}
                     <tr>
                         <td>{{ data.officer }}</td>
-                        <td class="text-end">{{ data.accounts_assigned|intcomma }}</td>
-                        <td class="text-end">₱{{ data.portfolio_balance|floatformat:2|intcomma }}</td>
-                        <td class="text-end">₱{{ data.past_due_balance|floatformat:2|intcomma }}</td>
-                        <td class="text-end">₱{{ data.npl_balance|floatformat:2|intcomma }}</td>
-                        <td class="text-end">₱{{ data.shouldbepay|floatformat:2|intcomma }}</td>
-                        <td class="text-end">₱{{ data.actualpay|floatformat:2|intcomma }}</td>
-                        <td class="text-end">{{ data.collection_rate|floatformat:2 }}%</td>
+                        <td class="text-right tabular-nums">{{ data.accounts_assigned|intcomma }}</td>
+                        <td class="text-right tabular-nums">{{ data.portfolio_balance|peso }}</td>
+                        <td class="text-right tabular-nums">{{ data.past_due_balance|peso }}</td>
+                        <td class="text-right tabular-nums">{{ data.npl_balance|peso }}</td>
+                        <td class="text-right tabular-nums">{{ data.shouldbepay|peso }}</td>
+                        <td class="text-right tabular-nums">{{ data.actualpay|peso }}</td>
+                        <td class="text-right tabular-nums">{{ data.collection_rate|floatformat:2 }}%</td>
                     </tr>
                     {% empty %}
                     <tr>
@@ -42,14 +40,14 @@
                 </tbody>
                 <tfoot>
                     <tr class="table-active">
-                        <th>Total</th>
-                        <th class="text-end">{{ total_accounts|intcomma }}</th>
-                        <th class="text-end">₱{{ total_portfolio_balance|floatformat:2|intcomma }}</th>
-                        <th class="text-end">₱{{ total_past_due_balance|floatformat:2|intcomma }}</th>
-                        <th class="text-end">₱{{ total_npl_balance|floatformat:2|intcomma }}</th>
-                        <th class="text-end">₱{{ total_shouldbepay|floatformat:2|intcomma }}</th>
-                        <th class="text-end">₱{{ total_actualpay|floatformat:2|intcomma }}</th>
-                        <th class="text-end">{{ overall_collection_rate|floatformat:2 }}%</th>
+                        <th scope="col">Total</th>
+                        <th scope="col" class="text-right tabular-nums">{{ total_accounts|intcomma }}</th>
+                        <th scope="col" class="text-right tabular-nums">{{ total_portfolio_balance|peso }}</th>
+                        <th scope="col" class="text-right tabular-nums">{{ total_past_due_balance|peso }}</th>
+                        <th scope="col" class="text-right tabular-nums">{{ total_npl_balance|peso }}</th>
+                        <th scope="col" class="text-right tabular-nums">{{ total_shouldbepay|peso }}</th>
+                        <th scope="col" class="text-right tabular-nums">{{ total_actualpay|peso }}</th>
+                        <th scope="col" class="text-right tabular-nums">{{ overall_collection_rate|floatformat:2 }}%</th>
                     </tr>
                 </tfoot>
             </table>
@@ -58,7 +56,7 @@
     
     <div class="row">
         <div class="col-md-6">
-            <small class="text-muted">
+            <small class="text-slate-500 dark:text-slate-400">
                 <strong>Definitions:</strong><br>
                 • <strong>Accounts Assigned:</strong> Number of accounts assigned to the loan officer<br>
                 • <strong>Portfolio Balance:</strong> Total outstanding balance of assigned accounts<br>
@@ -67,7 +65,7 @@
             </small>
         </div>
         <div class="col-md-6">
-            <small class="text-muted">
+            <small class="text-slate-500 dark:text-slate-400">
                 • <strong>Should Be Pay:</strong> Expected payment amount during {{ current_month }}<br>
                 • <strong>Actual Pay:</strong> Actual payment received during {{ current_month }}<br>
                 • <strong>Collection Rate:</strong> (Actual Pay / Should Be Pay) * 100<br>

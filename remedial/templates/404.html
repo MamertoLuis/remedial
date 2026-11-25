@@ -1,0 +1,26 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - Page Not Found | Remedial System</title>
+    <link rel="stylesheet" href="{% static 'css/app.css' %}">
+    <script>
+        (function () {
+            var stored = localStorage.getItem('theme');
+            var preferred = stored || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            if (preferred === 'dark') document.documentElement.classList.add('dark');
+        })();
+    </script>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950">
+    <div class="min-h-screen flex items-center justify-center p-4">
+        <div class="app-section max-w-md w-full text-center">
+            <h1 class="app-page-title mb-2">Page Not Found</h1>
+            <p class="app-empty-message mb-4">The page you are looking for does not exist or may have been moved.</p>
+            <a href="/" class="app-btn app-btn-primary">Back to Dashboard</a>
+        </div>
+    </div>
+</body>
+</html>

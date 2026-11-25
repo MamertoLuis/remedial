@@ -1,15 +1,34 @@
 {% extends 'base.html' %}
-{% load django_tables2 %}
-{% load crispy_forms_tags %}
+{% load ui_tags %}
+
+{% block title %}Borrowers{% endblock %}
 
 {% block content %}
-    <h1>Borrowers</h1>
-    <a href="{% url 'create_borrower' %}" class="btn btn-primary mb-3">Create Borrower</a>
-    
-    <form method="get">
-        {{ filter.form|crispy }}
-        <button type="submit" class="btn btn-primary">Search</button>
-    </form>
-    
-    {% render_table table %}
+    {% if core_data_edit_allowed %}
+        {% capture as create_borrower_url %}{% url 'create_borrower' %}{% endcapture %}
+        {% include 'partials/page_header.html' with page_title="Borrowers" page_subtitle="Track and manage borrower records" record_count=filter.qs.count primary_action_url=create_borrower_url primary_action_label="Create Borrower" %}
+    {% else %}
+        {% include 'partials/page_header.html' with page_title="Borrowers" page_subtitle="Track and manage borrower records" record_count=filter.qs.count %}
+    {% endif %}
+
+    {% capture as filter_fields %}
+    {% for field in filter.form %}
+    <div class="app-field">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}<span class="app-help">{{ field.help_text }}</span>{% endif %}
+        {% for error in field.errors %}<span class="app-error" id="{{ field.id_for_label }}-error">{{ error }}</span>{% endfor %}
+    </div>
+    {% endfor %}
+    {% endcapture %}
+
+    {% include 'partials/filter_bar.html' with filter_fields=filter_fields|safe clear_url=request.path hx_target='#table-container' %}
+
+    {% include 'partials/data_table.html' with table=table %}
+{% endblock %}
+
+{% block extra_js %}
+{% if core_data_edit_allowed %}
+    {% include 'partials/confirm_modal.html' with modal_id='delete-borrower-modal' title='Delete borrower' message='Are you sure you want to delete this borrower? This action cannot be undone.' form_action='/borrowers/' confirm_label='Delete borrower' %}
+{% endif %}
 {% endblock %}

@@ -1,0 +1,18 @@
+{% load django_tables2 %}
+{% comment %}
+Shared table wrapper (ui-workspace). Context:
+- table: django-tables2 table, or None to render the empty state,
+- table_id (opt): container id (default "table-container") — the HTMX swap target,
+- empty_title / empty_message / empty_url / empty_label (opt): empty-state content,
+- caption (opt): rendered as aria-label on the table for non-obvious contexts.
+django-tables2 pages pass their table; column-level collapse is driven by
+table.collapse_columns (see the overridden django_tables2/table.html).
+{% endcomment %}
+<div class="app-data-table" {% if table_id %}id="{{ table_id }}"{% else %}id="table-container"{% endif %}>
+    <div class="app-loading htmx-indicator" role="status" aria-live="polite">Loading…</div>
+    {% if table %}
+        {% render_table table %}
+    {% else %}
+        {% include 'partials/empty_state.html' with title=empty_title message=empty_message action_url=empty_url action_label=empty_label %}
+    {% endif %}
+</div>

@@ -1,45 +1,23 @@
-{% extends 'base.html' %}
+{% extends 'base_auth.html' %}
 
 {% block title %}Sign Out | Remedial System{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6 col-lg-5">
-        <div class="card shadow-sm border-0">
-            <div class="card-header bg-danger text-white text-center py-4">
-                <i class="bi bi-box-arrow-right display-4 d-block mb-2"></i>
-                <h4 class="mb-0">Sign Out</h4>
-                <p class="mb-0 mt-1 small opacity-75">You are about to leave Remedial System</p>
-            </div>
-            <div class="card-body p-4 text-center">
-                <p class="lead">
-                    Are you sure you want to sign out
-                    <strong>&ldquo;{{ user.get_full_name|default:user.username }}&rdquo;</strong>?
-                </p>
-                <p class="text-muted small mb-4">
-                    Any unsaved work will be lost. You can sign back in at any time
-                    with your username and password.
-                </p>
+<div class="app-section">
+    <h1 class="app-page-title text-center mb-1">Sign Out</h1>
+    <p class="app-page-subtitle text-center mb-4">
+        Are you sure you want to sign out <strong>&ldquo;{{ user.get_full_name|default:user.username }}&rdquo;</strong>?
+    </p>
 
-                <form method="post" action="{% url 'account_logout' %}">
-                    {% csrf_token %}
-                    {% if redirect_field_value %}
-                        <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
-                    {% endif %}
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-danger btn-lg">
-                            <i class="bi bi-box-arrow-right me-1"></i> Sign Out
-                        </button>
-                        <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">
-                            <i class="bi bi-arrow-left me-1"></i> Cancel &amp; Go Back
-                        </a>
-                    </div>
-                </form>
-            </div>
-            <div class="card-footer bg-transparent text-center text-muted small py-3">
-                <i class="bi bi-shield-lock me-1"></i> Your session will be securely ended.
-            </div>
+    <form method="post" action="{% url 'account_logout' %}">
+        {% csrf_token %}
+        {% if redirect_field_value %}
+        <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+        {% endif %}
+        <div class="app-form-actions">
+            <a href="{% url 'dashboard' %}" class="app-btn app-btn-secondary">Cancel</a>
+            <button type="submit" class="app-btn app-btn-danger">Sign Out</button>
         </div>
-    </div>
+    </form>
 </div>
 {% endblock %}

@@ -1,23 +1,23 @@
 {% extends "reporting/base_report.html" %}
 {% load humanize %}
+{% load ui_filters %}
 {% load reporting_filters %}
 
 {% block report_content %}
-    <h6 class="text-center mb-4">As of: {{ report_date|date:"F d, Y" }}</h6>
 
     <div class="mb-5">
         <h5 class="mb-3">Top 20 Non-Performing Loans</h5>
         <div class="table-responsive">
-            <table class="table table-sm table-bordered">
-                <thead class="table-light">
+            <table class="app-table">
+                <thead>
                     <tr>
-                        <th>Borrower</th>
-                        <th>Loan ID</th>
-                        <th class="text-end">Balance</th>
-                        <th class="text-end">Days Past Due</th>
-                        <th>Collateral</th>
-                        <th>Strategy</th>
-                        <th>Officer</th>
+                        <th scope="col">Borrower</th>
+                        <th scope="col">Loan ID</th>
+                        <th scope="col" class="text-right tabular-nums">Balance</th>
+                        <th scope="col" class="text-right tabular-nums">Days Past Due</th>
+                        <th scope="col">Collateral</th>
+                        <th scope="col">Strategy</th>
+                        <th scope="col">Officer</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -25,8 +25,8 @@
                     <tr>
                         <td>{{ item.borrower }}</td>
                         <td>{{ item.loan_id }}</td>
-                        <td class="text-end">{{ item.balance|intcomma }}</td>
-                        <td class="text-end">{{ item.days_past_due }}</td>
+                        <td class="text-right tabular-nums">{{ item.balance|peso }}</td>
+                        <td class="text-right tabular-nums">{{ item.days_past_due }}</td>
                         <td>{{ item.collateral }}</td>
                         <td>{{ item.strategy }}</td>
                         <td>{{ item.officer }}</td>

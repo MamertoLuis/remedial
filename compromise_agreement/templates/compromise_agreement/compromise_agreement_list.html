@@ -1,9 +1,8 @@
 {% extends "base.html" %}
-{% load django_tables2 %}
 
 {% block title %}Compromise Agreements{% endblock %}
 
 {% block content %}
-    <h1>Compromise Agreements</h1>
-    {% render_table table %}
+    {% include 'partials/page_header.html' with page_title="Compromise Agreements" page_subtitle="Active and historical settlement agreements" record_count=table.data.count %}
+    {% include 'partials/data_table.html' with table=table %}
 {% endblock %}

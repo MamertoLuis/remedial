@@ -15,7 +15,12 @@ def _is_manager_or_board_member(user):
 @login_required
 def create_delinquency_status(request, loan_id):
     if not _is_manager_or_board_member(request.user):
-        return render(request, "account_master/403.html", status=403)
+        return render(
+            request,
+            "account_master/403.html",
+            {"required_roles": "MANAGER or BOARD_MEMBER"},
+            status=403,
+        )
 
     logger.info(f"create_delinquency_status called for loan_id: {loan_id}")
     account = get_object_or_404(LoanAccount, loan_id=loan_id)
@@ -43,7 +48,12 @@ def create_delinquency_status(request, loan_id):
 @login_required
 def update_delinquency_status(request, loan_id, delinquency_id):
     if not _is_manager_or_board_member(request.user):
-        return render(request, "account_master/403.html", status=403)
+        return render(
+            request,
+            "account_master/403.html",
+            {"required_roles": "MANAGER or BOARD_MEMBER"},
+            status=403,
+        )
 
     account = get_object_or_404(LoanAccount, loan_id=loan_id)
     delinquency_status = get_object_or_404(

@@ -1,217 +1,132 @@
 {% extends 'base.html' %}
-{% load render_table from django_tables2 %}
-{% load humanize %}
+{% load ui_filters %}
+
+{% block title %}Dashboard{% endblock %}
 
 {% block content %}
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="mb-0">Dashboard</h1>
-        <div class="d-flex align-items-center gap-3">
-            <div class="text-muted small">
-                <i class="bi bi-clock me-1"></i>
-                Last updated: {% now "jS F Y, H:i" %}
-            </div>
-            <!-- Alert Badge in Header -->
-            {% if alert_counts.total > 0 %}
-                {% include 'partials/_alert_badge.html' with count=alert_counts.total color='danger' show_pulse=True icon='bi-bell' %}
-            {% endif %}
+    <div class="flex justify-between items-center mb-3">
+        <h1 class="app-page-title">Dashboard</h1>
+        <div class="text-slate-500 dark:text-slate-400 text-sm">
+            Last updated: {% now "jS F Y, H:i" %}
         </div>
     </div>
 
-    <!-- Financial KPIs -->
-    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-4 g-4 mb-4">
-        <div class="col">
-            {% include 'partials/_kpi_card.html' with title="Total Loan Portfolio" value=kpis.total_loan_portfolio|floatformat:2 unit="₱" icon="bi-graph-up" icon_color="primary" detail_url="/accounts/" description="Total outstanding principal across all accounts" %}
-        </div>
-        <div class="col">
-            {% include 'partials/_kpi_card.html' with title="Total Past Due Loans" value=kpis.total_past_due_loans|floatformat:2 unit="₱" icon="bi-exclamation-circle" icon_color="warning" detail_url="/accounts/?status=PAST_DUE" description="Total amount of past due loans" %}
-        </div>
-        <div class="col">
-            {% include 'partials/_kpi_card.html' with title="Total NPL" value=kpis.total_npl|floatformat:2 unit="₱" icon="bi-exclamation-triangle" icon_color="danger" detail_url="/accounts/?status=NPL" description="Total amount of non-performing loans" %}
-        </div>
-        <div class="col">
-            {% include 'partials/_kpi_card.html' with title="NPL Ratio" value=kpis.npl_ratio|floatformat:2 unit="%" icon="bi-percent" icon_color="warning" detail_url="/accounts/?status=NPL" description="Non-performing loans ratio" %}
-        </div>
-        <div class="col">
-            {% include 'partials/_kpi_card.html' with title="Accounts under Remedial" value=kpis.total_remedial|floatformat:2 unit="₱" icon="bi-gear" icon_color="info" detail_url="/accounts/" description="Total amount under remedial strategies" %}
-        </div>
-        <div class="col">
-            {% include 'partials/_kpi_card.html' with title="Accounts with Active Remedial Strategy" value=kpis.accounts_with_active_remedial_strategy_count|floatformat:"0" unit="" icon="bi-shield-check" icon_color="success" detail_url="/accounts/?remedial_status=active" description="Number of accounts currently under an active remedial strategy" %}
-        </div>
-        <div class="col">
-            {% include 'partials/_kpi_card.html' with title="Accounts under Legal" value=kpis.total_legal|floatformat:2 unit="₱" icon="bi-balance-scale" icon_color="danger" detail_url="/accounts/?legal_status=active" description="Total amount under legal action" %}
-        </div>
-        <div class="col">
-            {% include 'partials/_kpi_card.html' with title="Accounts under Legal Action" value=kpis.accounts_under_legal_action_count|floatformat:"0" unit="" icon="bi-gavel" icon_color="danger" detail_url="/accounts/?legal_status=active" description="Number of accounts currently under legal action strategy" %}
-        </div>
-        <div class="col">
-            {% include 'partials/_kpi_card.html' with title="Accounts under Foreclosure" value=kpis.accounts_under_foreclosure_count|floatformat:"0" unit="" icon="bi-house-slash" icon_color="danger" detail_url="/accounts/?foreclosure_status=active" description="Number of accounts currently under foreclosure strategy" %}
-        </div>
-        <div class="col">
-            {% include 'partials/_kpi_card.html' with title="Accounts Written-off (MTD)" value=kpis.total_written_off_mtd|floatformat:2 unit="₱" icon="bi-file-x" icon_color="secondary" detail_url="/accounts/?status=WRITEOFF" description="Written-off amount this month" %}
-        </div>
+    <!-- KPI strip (triage first; red only for NPL and past-due values) -->
+    <div class="app-kpi-strip">
+        {% with ratio=kpis.npl_ratio|floatformat:2 %}
+        {% include 'partials/kpi_tile.html' with label="NPL Ratio" value=ratio|add:"%" subtext="Non-performing loans" severity="critical" %}
+        {% endwith %}
+        {% include 'partials/kpi_tile.html' with label="Total NPL" value=kpis.total_npl severity="critical" is_money=True url="/accounts/?status=NPL" subtext="Non-performing loans" %}
+        {% include 'partials/kpi_tile.html' with label="Total Past Due" value=kpis.total_past_due_loans severity="critical" is_money=True url="/accounts/?status=PAST_DUE" subtext="Overdue accounts" %}
+        {% include 'partials/kpi_tile.html' with label="Total Loan Portfolio" value=kpis.total_loan_portfolio severity="neutral" is_money=True url="/portfolio/" subtext="Outstanding principal" %}
+        {% include 'partials/kpi_tile.html' with label="Total Remedial" value=kpis.total_remedial severity="neutral" is_money=True url="/accounts/?remedial_status=active" subtext="Under remedial strategies" %}
+        {% include 'partials/kpi_tile.html' with label="Active Remedial Strategy" value=kpis.accounts_with_active_remedial_strategy_count severity="neutral" url="/accounts/?remedial_status=active" subtext="Accounts" %}
+        {% include 'partials/kpi_tile.html' with label="Total Legal" value=kpis.total_legal severity="neutral" is_money=True url="/accounts/?legal_status=active" subtext="Under legal action" %}
+        {% include 'partials/kpi_tile.html' with label="Accounts under Legal Action" value=kpis.accounts_under_legal_action_count severity="neutral" url="/accounts/?legal_status=active" subtext="Accounts" %}
     </div>
 
-    <div class="text-end mb-4">
-        <a href="{% url 'portfolio_summary' %}" class="btn btn-outline-secondary btn-sm">
-            <i class="bi bi-pie-chart me-1"></i>View Portfolio Summary
-        </a>
-    </div>
-
-    <!-- Alert Summary Widget -->
-    {% if alert_counts.total > 0 %}
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header bg-white d-flex justify-content-between align-items-center">
-            <h5 class="card-title mb-0">
-                <i class="bi bi-exclamation-triangle text-warning me-2"></i>
-                Active Alerts
-            </h5>
-            <a href="{% url 'alert_list' %}" class="btn btn-sm btn-outline-primary">View All Alerts</a>
+    <!-- Needs-attention queue -->
+    <div class="app-data-table app-section mt-4">
+        <div class="app-section-head">
+            <h2 class="app-section-title">Needs Attention</h2>
+            <a href="{% url 'account_list' %}" class="app-btn app-btn-secondary">View all</a>
         </div>
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                            <span class="badge bg-danger rounded-pill p-2">
-                                <i class="bi bi-exclamation-triangle-fill"></i>
-                            </span>
-                        </div>
-                        <div class="flex-grow-1 ms-3">
-                            <h6 class="mb-0">{{ alert_counts.total_critical|default:0 }}</h6>
-                            <small class="text-muted">Critical Alerts</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                            <span class="badge bg-warning rounded-pill p-2">
-                                <i class="bi bi-exclamation-circle-fill"></i>
-                            </span>
-                        </div>
-                        <div class="flex-grow-1 ms-3">
-                            <h6 class="mb-0">{{ alert_counts.total_warning|default:0 }}</h6>
-                            <small class="text-muted">Warning Alerts</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                            <span class="badge bg-info rounded-pill p-2">
-                                <i class="bi bi-info-circle-fill"></i>
-                            </span>
-                        </div>
-                        <div class="flex-grow-1 ms-3">
-                            <h6 class="mb-0">{{ alert_counts.total_info|default:0 }}</h6>
-                            <small class="text-muted">Info Alerts</small>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                            <span class="badge bg-secondary rounded-pill p-2">
-                                <i class="bi bi-clock"></i>
-                            </span>
-                        </div>
-                        <div class="flex-grow-1 ms-3">
-                            <h6 class="mb-0">{{ alert_counts.total_overdue|default:0 }}</h6>
-                            <small class="text-muted">Overdue Actions</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Recent Alerts Preview -->
-            {% if active_alerts %}
-            <div class="mt-3">
-                <h6 class="text-muted small mb-2">Recent Alerts</h6>
-                {% for alert in active_alerts|slice:":3" %}
-                    <div class="alert alert-light d-flex align-items-center mb-2 p-2" role="alert">
-                        {% if alert.alert_type == 'CRITICAL' %}
-                            <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>
-                        {% elif alert.alert_type == 'WARNING' %}
-                            <i class="bi bi-exclamation-circle-fill text-warning me-2"></i>
-                        {% elif alert.alert_type == 'INFO' %}
-                            <i class="bi bi-info-circle-fill text-info me-2"></i>
-                        {% elif alert.alert_type == 'SUCCESS' %}
-                            <i class="bi bi-check-circle-fill text-success me-2"></i>
-                        {% else %}
-                            <i class="bi bi-bell-fill text-secondary me-2"></i>
-                        {% endif %}
-                        <div class="flex-grow-1">
-                            <div class="fw-bold small">{{ alert.title|truncatechars:40 }}</div>
-                            <div class="small text-muted">{{ alert.message|truncatechars:60 }}</div>
-                        </div>
-                        <a href="{{ alert.get_entity_url|default:'#' }}" class="btn btn-sm btn-link">View</a>
-                    </div>
+        <div class="app-table-scroll">
+            <table class="app-table" aria-label="Accounts needing attention, sorted by days past due">
+                <thead>
+                    <tr>
+                        <th scope="col">Borrower</th>
+                        <th scope="col">Account no.</th>
+                        <th scope="col">Outstanding</th>
+                        <th scope="col">Days past due</th>
+                        <th scope="col">Strategy</th>
+                        <th scope="col">Assigned officer</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for account in needs_attention %}
+                    <tr class="app-table-row">
+                        <td><a href="{% url 'borrower_detail' account.borrower_id %}">{{ account.borrower.full_name|default:account.borrower_id }}</a></td>
+                        <td><a href="{% url 'account_detail' account.loan_id %}">{{ account.loan_id }}</a></td>
+                        <td class="tabular-nums">{{ account.outstanding_balance|peso }}</td>
+                        <td class="tabular-nums">{{ account.days_past_due }}</td>
+                        <td>{{ account.active_strategy_type|default:"—" }}</td>
+                        <td>{{ account.account_officer_id|default:"—" }}</td>
+                        <td>{% include 'partials/status_chip.html' with value=account.status %}</td>
+                        <td><a href="{% url 'account_detail' account.loan_id %}" class="app-btn app-btn-secondary">Open</a></td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="8">
+                            <div class="app-empty">
+                                <p class="app-empty-title">No accounts need attention</p>
+                                <p class="app-empty-message">No past-due or NPL accounts with delinquency data.</p>
+                            </div>
+                        </td>
+                    </tr>
                 {% endfor %}
-            </div>
-            {% endif %}
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- Operational KPIs -->
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-header bg-white">
-            <h5 class="card-title mb-0">Operational Overview</h5>
-        </div>
-        <div class="card-body">
-            {% include 'partials/_kpi_item.html' with value=kpis.total_borrowers label="Total Borrowers" icon="bi-people" icon_color="primary" detail_url="/borrowers/" description="Borrowers actively tracked" %}
-            {% include 'partials/_kpi_item.html' with value=kpis.total_accounts label="Total Accounts" icon="bi-briefcase" icon_color="primary" detail_url="/accounts/" description="Loan accounts managed" %}
-            {% include 'partials/_kpi_item.html' with value=kpis.active_compromise_agreements label="Active Agreements" icon="bi-file-earmark-text" icon_color="success" detail_url="/compromise/" description="Compromise agreements in progress" %}
-            {% include 'partials/_kpi_item.html' with value=kpis.recent_activities label="Recent Activities" icon="bi-activity" icon_color="info" detail_url="#" description="Activities in last 7 days" %}
+                </tbody>
+            </table>
         </div>
     </div>
 
-    <!-- Recent Activities Timeline -->
-    <div class="card border-0 shadow-sm">
-        <div class="card-body">
-            {% now "Y-m-d" as today %}
-            {% now "Y-m-d" as yesterday %}{% comment %}This will be adjusted with a template filter{% endcomment %}
-            
-            {% include 'partials/_timeline.html' with activities=activities today=today yesterday=yesterday %}
+    <!-- Recent Activities Timeline (existing feature) -->
+    <div class="app-section mt-4">
+        {% now "Y-m-d" as today %}
+        {% include 'partials/_timeline.html' with activities=activities today=today yesterday=today %}
+    </div>
+{% endblock %}
+
+{% block sidebar %}
+    <!-- Alerts panel (right column) -->
+    <div class="app-alerts-panel app-section">
+        <div class="app-section-head">
+            <h2 class="app-section-title">Alerts</h2>
+            <a href="{% url 'alert_list' %}" class="app-link">View all</a>
         </div>
+        {% if active_alerts %}
+            <ul class="app-alerts-list">
+                {% for alert in active_alerts %}
+                <li class="app-alert-item">
+                    <span class="app-alert-dot alert-{{ alert.alert_type|lower }}" aria-hidden="true"></span>
+                    <div class="min-w-0">
+                        <div class="app-alert-title">{{ alert.title|truncatechars:48 }}</div>
+                        <div class="app-alert-meta">{{ alert.message|truncatechars:70 }}</div>
+                    </div>
+                    <a href="{{ alert.get_entity_url|default:'#' }}" class="app-link" aria-label="View {{ alert.title }}">View</a>
+                </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            {% include 'partials/empty_state.html' with title="No open alerts" message="Everything is clear." %}
+        {% endif %}
     </div>
 {% endblock %}
 
 {% block extra_js %}
-<!-- Alert Panel -->
-{% include 'partials/_alert_panel.html' with alert_counts=alert_counts alerts=active_alerts is_expanded=True %}
-
 <script>
-// Auto-refresh alerts every 30 seconds
-setInterval(function() {
+// Auto-refresh alerts every 30 seconds (kept from the original dashboard).
+setInterval(function () {
     fetch('/api/alerts/refresh/', {
         method: 'GET',
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-        }
+        headers: {'X-Requested-With': 'XMLHttpRequest'}
     })
-    .then(response => response.json())
-    .then(data => {
-        // Update alert badge
-        const badge = document.querySelector('.alert-badge .badge');
-        if (badge && data.total_alerts) {
+    .then(function (response) { return response.json(); })
+    .then(function (data) {
+        // Sidebar nav badge
+        var badge = document.querySelector('.app-nav-badge');
+        if (badge) {
             if (data.total_alerts > 0) {
                 badge.textContent = data.total_alerts;
-                badge.style.display = 'block';
+                badge.style.display = 'inline-block';
             } else {
                 badge.style.display = 'none';
             }
         }
-        
-        // Update alert counts in summary widget
-        const criticalCount = document.querySelector('.badge.bg-danger').parentNode.parentNode.querySelector('h6');
-        if (criticalCount && data.critical_count !== undefined) {
-            criticalCount.textContent = data.critical_count;
-        }
     })
-    .catch(error => {
-        console.error('Error refreshing alerts:', error);
-    });
-}, 30000); // 30 seconds
+    .catch(function (error) { console.error('Error refreshing alerts:', error); });
+}, 30000);
 </script>
 {% endblock %}

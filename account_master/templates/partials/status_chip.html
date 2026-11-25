@@ -1,0 +1,7 @@
+{% load ui_tags %}
+{% comment %}
+Status chip (ui-workspace). Context: value (raw status value), label (str, optional
+override; defaults to the raw value). Color comes from the single status→chip
+mapping in ui_tags.STATUS_SEVERITY.
+{% endcomment %}
+<span class="{% status_chip_class value %}" {% if title %}title="{{ title }}"{% endif %}>{{ label|default:value|default:"—" }}</span>

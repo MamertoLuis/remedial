@@ -1,0 +1,15 @@
+{% comment %}
+Horizontal filter bar (ui-workspace). Context:
+- filter_fields: safe HTML of the page's filter controls (build with the
+  `capture` tag so existing GET parameter names and values are preserved),
+- clear_url: URL for the Clear action (typically request.path),
+- hx_target (opt): "#table-container" to swap only the table on change.
+The form submits with method GET (HTMX) to the current path.
+{% endcomment %}
+<form method="get" class="app-filter-bar" {% if hx_target %}hx-get="{{ request.path }}" hx-target="{{ hx_target }}" hx-push-url="true" hx-select="{{ hx_target }}"{% endif %}>
+    <div class="app-filter-fields">{{ filter_fields|safe }}</div>
+    <div class="app-filter-actions">
+        <button type="submit" class="app-btn app-btn-primary">Apply</button>
+        {% if clear_url %}<a href="{{ clear_url }}" class="app-btn app-btn-secondary">Clear</a>{% endif %}
+    </div>
+</form>

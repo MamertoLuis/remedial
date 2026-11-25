@@ -3,16 +3,16 @@
 <div class="kpi-row">
     {% for kpi in kpis %}
         <div class="kpi-item">
-            <div class="kpi-label text-muted small">{{ kpi.label }}</div>
-            <div class="kpi-value fw-bold">{{ kpi.value|default:"-" }}</div>
+            <div class="kpi-label text-slate-500 dark:text-slate-400 small">{{ kpi.label }}</div>
+            <div class="kpi-value font-bold">{{ kpi.value|default:"-" }}</div>
             {% if kpi.trend %}
                 <div class="kpi-trend small">
                     {% if kpi.trend > 0 %}
-                        <span class="text-success">↑</span>
+                        <span class="text-ok">↑</span>
                     {% elif kpi.trend < 0 %}
-                        <span class="text-danger">↓</span>
+                        <span class="text-critical">↓</span>
                     {% else %}
-                        <span class="text-muted">→</span>
+                        <span class="text-slate-500 dark:text-slate-400">→</span>
                     {% endif %}
                     {{ kpi.trend|abs|floatformat:1 }}%
                 </div>

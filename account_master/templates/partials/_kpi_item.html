@@ -1,14 +1,14 @@
 {% load static %}
 
-<div class="row align-items-center py-2 border-bottom">
+<div class="row items-center py-2 border-bottom">
     <div class="col">
-        <div class="d-flex align-items-center">
+        <div class="flex items-center">
             {% if icon %}
                 <i class="bi {{ icon }} text-{{ icon_color }} me-3"></i>
             {% endif %}
             <div>
-                <div class="fw-bold">{{ value }}</div>
-                <div class="text-muted small">{{ label }}</div>
+                <div class="font-bold">{{ value }}</div>
+                <div class="text-slate-500 dark:text-slate-400 small">{{ label }}</div>
             </div>
         </div>
     </div>
@@ -19,7 +19,7 @@
     </div>
     {% if description %}
         <div class="col-12">
-            <div class="text-muted small mt-1">{{ description }}</div>
+            <div class="text-slate-500 dark:text-slate-400 small mt-1">{{ description }}</div>
         </div>
     {% endif %}
 </div>

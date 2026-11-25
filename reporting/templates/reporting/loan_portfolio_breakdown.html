@@ -1,26 +1,26 @@
 {% extends "reporting/base_report.html" %}
 {% load humanize %}
+{% load ui_filters %}
 
 {% block report_content %}
-    <h6 class="text-center mb-4">As of: {{ report_date|date:"F d, Y" }}</h6>
 
     <div class="mb-5">
         <h5 class="mb-3">Portfolio by Loan Type</h5>
         <div class="table-responsive">
-            <table class="table table-sm table-bordered">
-                <thead class="table-light">
+            <table class="app-table">
+                <thead>
                     <tr>
-                        <th>Loan Type</th>
-                        <th class="text-end">Balance</th>
-                        <th class="text-end">% of Portfolio</th>
+                        <th scope="col">Loan Type</th>
+                        <th scope="col" class="text-right tabular-nums">Balance</th>
+                        <th scope="col" class="text-right tabular-nums">% of Portfolio</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for item in portfolio_by_loan_type %}
                     <tr>
                         <td>{{ item.loan_type }}</td>
-                        <td class="text-end">{{ item.balance|intcomma }}</td>
-                        <td class="text-end">{{ item.percentage|floatformat:2 }}%</td>
+                        <td class="text-right tabular-nums">{{ item.balance|peso }}</td>
+                        <td class="text-right tabular-nums">{{ item.percentage|floatformat:2 }}%</td>
                     </tr>
                     {% empty %}
                     <tr>
@@ -30,9 +30,9 @@
                 </tbody>
                 <tfoot>
                     <tr>
-                        <th class="text-end">Total</th>
-                        <th class="text-end">{{ total_portfolio_balance |floatformat:2 |intcomma }}</th>
-                        <th class="text-end">100.00%</th>
+                        <th scope="col" class="text-right tabular-nums">Total</th>
+                        <th scope="col" class="text-right tabular-nums">{{ total_portfolio_balance |floatformat:2 |intcomma }}</th>
+                        <th scope="col" class="text-right tabular-nums">100.00%</th>
                     </tr>
                 </tfoot>
             </table>
@@ -42,20 +42,20 @@
     <div class="mb-5">
         <h5 class="mb-3">Portfolio by Status</h5>
         <div class="table-responsive">
-            <table class="table table-sm table-bordered">
-                <thead class="table-light">
+            <table class="app-table">
+                <thead>
                     <tr>
-                        <th>Status</th>
-                        <th class="text-end">Balance</th>
-                        <th class="text-end">% of Portfolio</th>
+                        <th scope="col">Status</th>
+                        <th scope="col" class="text-right tabular-nums">Balance</th>
+                        <th scope="col" class="text-right tabular-nums">% of Portfolio</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for item in portfolio_by_status %}
                     <tr>
                         <td>{{ item.status }}</td>
-                        <td class="text-end">{{ item.balance | floatformat:2|intcomma }}</td>
-                        <td class="text-end">{{ item.percentage| floatformat:2 }}%</td>
+                        <td class="text-right tabular-nums">{{ item.balance | floatformat:2|intcomma }}</td>
+                        <td class="text-right tabular-nums">{{ item.percentage| floatformat:2 }}%</td>
                     </tr>
                     {% empty %}
                     <tr>
@@ -65,9 +65,9 @@
                 </tbody>
                 <tfoot>
                     <tr>
-                        <th class="text-end">Total</th>
-                        <th class="text-end">{{ total_portfolio_balance | floatformat:2 |intcomma }}</th>
-                        <th class="text-end">100.00%</th>
+                        <th scope="col" class="text-right tabular-nums">Total</th>
+                        <th scope="col" class="text-right tabular-nums">{{ total_portfolio_balance | floatformat:2 |intcomma }}</th>
+                        <th scope="col" class="text-right tabular-nums">100.00%</th>
                     </tr>
                 </tfoot>
             </table>

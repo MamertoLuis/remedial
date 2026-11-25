@@ -72,7 +72,7 @@ class AlertListViewTests(TestCase):
 
         # Check response
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, "Alerts Management")
+        self.assertContains(response, ">Alerts</h1>")
         self.assertContains(response, "Critical Alert")
         self.assertContains(response, "Warning Alert")
 

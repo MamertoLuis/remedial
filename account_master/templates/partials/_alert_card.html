@@ -4,8 +4,8 @@
     <div class="card border-0 shadow-sm {{ alert.urgency_class }}-border-start border-3">
         <div class="card-body">
             <!-- Alert Header -->
-            <div class="d-flex justify-content-between align-items-start mb-2">
-                <div class="d-flex align-items-center">
+            <div class="flex justify-between align-items-start mb-2">
+                <div class="flex items-center">
                     <i class="bi {{ alert.type_icon }} text-{{ alert.urgency_class }} me-2"></i>
                     <div>
                         <span class="badge bg-{{ alert.urgency_class }} bg-opacity-10 text-{{ alert.urgency_class }}">
@@ -61,17 +61,17 @@
             <h6 class="card-title mb-2">{{ alert.title }}</h6>
             
             <!-- Alert Message -->
-            <p class="card-text text-muted small mb-3">{{ alert.message }}</p>
+            <p class="card-text text-slate-500 dark:text-slate-400 small mb-3">{{ alert.message }}</p>
             
             <!-- Alert Details -->
             <div class="row g-2 mb-3">
                 {% if alert.due_date %}
                     <div class="col-12">
-                        <small class="text-muted">
+                        <small class="text-slate-500 dark:text-slate-400">
                             <i class="bi bi-calendar-event me-1"></i>
                             Due: {{ alert.due_date|date:"F j, Y" }}
                             {% if alert.is_overdue %}
-                                <span class="text-danger">(Overdue)</span>
+                                <span class="text-critical">(Overdue)</span>
                             {% endif %}
                         </small>
                     </div>
@@ -79,7 +79,7 @@
                 
                 {% if alert.assigned_to %}
                     <div class="col-12">
-                        <small class="text-muted">
+                        <small class="text-slate-500 dark:text-slate-400">
                             <i class="bi bi-person me-1"></i>
                             Assigned to: {{ alert.assigned_to.get_full_name|default:alert.assigned_to.username }}
                         </small>
@@ -88,7 +88,7 @@
                 
                 {% if alert.created_at %}
                     <div class="col-12">
-                        <small class="text-muted">
+                        <small class="text-slate-500 dark:text-slate-400">
                             <i class="bi bi-clock me-1"></i>
                             Created: {{ alert.created_at|date:"M j, Y g:i A" }}
                         </small>
@@ -98,7 +98,7 @@
             
             <!-- Quick Actions -->
             {% if alert.status == 'NEW' %}
-                <div class="d-flex gap-2">
+                <div class="flex gap-2">
                     <button class="btn btn-sm btn-outline-primary acknowledge-btn" data-alert-id="{{ alert.alert_id }}">
                         <i class="bi bi-check-circle me-1"></i>Acknowledge
                     </button>

@@ -1,38 +1,49 @@
 {% extends 'base.html' %}
-{% load crispy_forms_tags %}
+{% load ui_tags %}
+
+{% block title %}User Profile{% endblock %}
+
 {% block content %}
-<div class="row">
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header">
-                <h4 class="mb-0">User Profile</h4>
+    {% include 'partials/page_header.html' with page_title="User Profile" page_subtitle=user.username %}
+
+    <div class="app-panel-grid">
+        <div class="app-section">
+            <h2 class="app-section-title mb-3">Profile</h2>
+            {% if form.non_field_errors %}
+            <div class="app-form-errors" role="alert">
+                {% for error in form.non_field_errors %}<p class="app-error">{{ error }}</p>{% endfor %}
             </div>
-            <div class="card-body">
-                <form method="post">
-                    {% csrf_token %}
-                    {{ form|crispy }}
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-primary">Update Profile</button>
+            {% endif %}
+            <form method="post" class="app-form">
+                {% csrf_token %}
+                <div class="app-form-grid">
+                    {% for field in form %}
+                    {% if field.is_hidden %}{{ field }}{% else %}
+                    <div class="app-field app-field-full {% if field.errors %}has-error{% endif %}">
+                        <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %}<span class="app-required" aria-hidden="true"> *</span>{% endif %}</label>
+                        {{ field|with_describedby }}
+                        {% if field.help_text %}<span class="app-help" id="{{ field.id_for_label }}-help">{{ field.help_text }}</span>{% endif %}
+                        {% for error in field.errors %}<span class="app-error" id="{{ field.id_for_label }}-error" role="alert">{{ error }}</span>{% endfor %}
                     </div>
-                </form>
-            </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                <div class="app-form-actions">
+                    <button type="submit" class="app-btn app-btn-primary">Update Profile</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="app-section">
+            <h2 class="app-section-title mb-3">Account Info</h2>
+            <dl class="app-definition-grid">
+                <div><dt>Username</dt><dd>{{ user.username }}</dd></div>
+                <div><dt>Email</dt><dd>{{ user.email|default:"—" }}</dd></div>
+                <div><dt>Role</dt><dd>{{ user.get_role_display }}</dd></div>
+                <div><dt>Staff Status</dt><dd>{{ user.is_staff|yesno:"Yes,No" }}</dd></div>
+                <div><dt>Active</dt><dd>{{ user.is_active|yesno:"Yes,No" }}</dd></div>
+                <div><dt>Date Joined</dt><dd>{{ user.date_joined|date:"F d, Y" }}</dd></div>
+            </dl>
         </div>
     </div>
-    
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">Account Info</h5>
-            </div>
-            <div class="card-body">
-                <p><strong>Username:</strong> {{ user.username }}</p>
-                <p><strong>Email:</strong> {{ user.email }}</p>
-                <p><strong>Role:</strong> {{ user.get_role_display }}</p>
-                <p><strong>Staff Status:</strong> {{ user.is_staff|yesno:"Yes,No" }}</p>
-                <p><strong>Active:</strong> {{ user.is_active|yesno:"Yes,No" }}</p>
-                <p><strong>Date Joined:</strong> {{ user.date_joined|date:"F d, Y" }}</p>
-            </div>
-        </div>
-    </div>
-</div>
 {% endblock %}

@@ -3,12 +3,12 @@
 <div class="alert-panel {{ position_class|default:'position-fixed' }}" style="{{ style|default:'top: 190px; right: 20px; z-index: 1030;' }}">
     <div class="card shadow-sm" style="width: 300px; max-height: 400px;">
         <!-- Panel Header -->
-        <div class="card-header bg-white d-flex justify-content-between align-items-center py-2">
+        <div class="card-header bg-white flex justify-between items-center py-2">
             <h6 class="mb-0">
                 {% include 'partials/_alert_badge.html' with count=alert_counts.total color='danger' show_pulse=True icon='bi-bell' %}
                 <span class="ms-2">Alerts</span>
             </h6>
-            <div class="d-flex gap-1">
+            <div class="flex gap-1">
                 <!-- Refresh Button -->
                 {% if show_refresh %}
                 <button class="btn btn-sm btn-light p-1 refresh-panel-btn" title="Refresh">
@@ -24,22 +24,22 @@
         </div>
         
         <!-- Panel Content -->
-        <div class="card-body p-0 {% if not is_expanded %}d-none{% endif %}" id="alertPanelContent">
+        <div class="card-body p-0 {% if not is_expanded %}hidden{% endif %}" id="alertPanelContent">
             <!-- Quick Stats -->
             {% if alert_counts and show_stats %}
             <div class="p-3 border-bottom">
                 <div class="row g-2 text-center">
                     <div class="col-4">
-                        <div class="small text-danger fw-bold">{{ alert_counts.total_critical|default:0 }}</div>
-                        <div class="small text-muted">Critical</div>
+                        <div class="small text-critical font-bold">{{ alert_counts.total_critical|default:0 }}</div>
+                        <div class="small text-slate-500 dark:text-slate-400">Critical</div>
                     </div>
                     <div class="col-4">
-                        <div class="small text-warning fw-bold">{{ alert_counts.total_warning|default:0 }}</div>
-                        <div class="small text-muted">Warning</div>
+                        <div class="small text-watch font-bold">{{ alert_counts.total_warning|default:0 }}</div>
+                        <div class="small text-slate-500 dark:text-slate-400">Warning</div>
                     </div>
                     <div class="col-4">
-                        <div class="small text-info fw-bold">{{ alert_counts.total_info|default:0 }}</div>
-                        <div class="small text-muted">Info</div>
+                        <div class="small text-info font-bold">{{ alert_counts.total_info|default:0 }}</div>
+                        <div class="small text-slate-500 dark:text-slate-400">Info</div>
                     </div>
                 </div>
             </div>
@@ -51,19 +51,19 @@
                     {% for alert in alerts|slice:":5" %}  <!-- Show max 5 alerts in panel -->
                         <div class="alert-item border-bottom p-2" data-alert-id="{{ alert.alert_id }}">
                             <!-- Alert Icon and Type -->
-                            <div class="d-flex align-items-start">
+                            <div class="flex align-items-start">
                                 <i class="bi {{ alert.type_icon }} text-{{ alert.urgency_class }} me-2 mt-1"></i>
                                 <div class="flex-grow-1">
                                     <!-- Alert Title -->
-                                    <div class="fw-bold small">{{ alert.title|truncatechars:30 }}</div>
+                                    <div class="font-bold small">{{ alert.title|truncatechars:30 }}</div>
                                     
                                     <!-- Alert Message -->
-                                    <div class="text-muted small" style="font-size: 0.75rem;">
+                                    <div class="text-slate-500 dark:text-slate-400 small" style="font-size: 0.75rem;">
                                         {{ alert.message|truncatechars:50 }}
                                     </div>
                                     
                                     <!-- Alert Time -->
-                                    <div class="text-muted small" style="font-size: 0.7rem;">
+                                    <div class="text-slate-500 dark:text-slate-400 small" style="font-size: 0.7rem;">
                                         {{ alert.created_at|timesince }} ago
                                     </div>
                                     
@@ -96,8 +96,8 @@
                 {% else %}
                     <!-- Empty State -->
                     <div class="text-center py-3">
-                        <i class="bi bi-check-circle text-success" style="font-size: 1.5rem;"></i>
-                        <div class="text-muted small mt-1">All caught up!</div>
+                        <i class="bi bi-check-circle text-ok" style="font-size: 1.5rem;"></i>
+                        <div class="text-slate-500 dark:text-slate-400 small mt-1">All caught up!</div>
                     </div>
                 {% endif %}
             </div>
@@ -108,19 +108,19 @@
     {% if not is_expanded %}
     <div class="card-body p-2 text-center" id="alertPanelMinimized">
         {% if alert_counts and alert_counts.total > 0 %}
-            <div class="d-flex justify-content-around text-center">
+            <div class="flex justify-content-around text-center">
                 <div>
-                    <div class="small text-danger fw-bold">{{ alert_counts.total_critical|default:0 }}</div>
+                    <div class="small text-critical font-bold">{{ alert_counts.total_critical|default:0 }}</div>
                 </div>
                 <div>
-                    <div class="small text-warning fw-bold">{{ alert_counts.total_warning|default:0 }}</div>
+                    <div class="small text-watch font-bold">{{ alert_counts.total_warning|default:0 }}</div>
                 </div>
                 <div>
-                    <div class="small text-info fw-bold">{{ alert_counts.total_info|default:0 }}</div>
+                    <div class="small text-info font-bold">{{ alert_counts.total_info|default:0 }}</div>
                 </div>
             </div>
         {% else %}
-            <div class="text-muted small">0 alerts</div>
+            <div class="text-slate-500 dark:text-slate-400 small">0 alerts</div>
         {% endif %}
     </div>
     {% endif %}
@@ -135,16 +135,16 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (toggleBtn && panelContent) {
         toggleBtn.addEventListener('click', function() {
-            const isExpanded = !panelContent.classList.contains('d-none');
+            const isExpanded = !panelContent.classList.contains('hidden');
             
             if (isExpanded) {
-                panelContent.classList.add('d-none');
-                if (panelMinimized) panelMinimized.classList.remove('d-none');
+                panelContent.classList.add('hidden');
+                if (panelMinimized) panelMinimized.classList.remove('hidden');
                 this.innerHTML = '<i class="bi bi-chevron-up"></i>';
                 this.title = 'Expand';
             } else {
-                panelContent.classList.remove('d-none');
-                if (panelMinimized) panelMinimized.classList.add('d-none');
+                panelContent.classList.remove('hidden');
+                if (panelMinimized) panelMinimized.classList.add('hidden');
                 this.innerHTML = '<i class="bi bi-chevron-down"></i>';
                 this.title = 'Collapse';
             }

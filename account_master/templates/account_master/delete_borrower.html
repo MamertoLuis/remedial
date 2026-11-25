@@ -1,11 +1,17 @@
 {% extends 'base.html' %}
 
+{% block title %}Delete Borrower{% endblock %}
+
 {% block content %}
-    <h1>Delete Borrower</h1>
-    <p>Are you sure you want to delete {{ borrower }}?</p>
-    <form method="post">
-        {% csrf_token %}
-        <button type="submit" class="btn btn-danger">Delete</button>
-        <a href="{% url 'borrower_detail' borrower.borrower_id %}" class="btn btn-secondary">Cancel</a>
-    </form>
+    <div class="app-section">
+        <h1 class="app-page-title">Delete Borrower</h1>
+        <p class="app-empty-message">Are you sure you want to delete {{ borrower }}? This action cannot be undone.</p>
+        <form method="post">
+            {% csrf_token %}
+            <div class="app-form-actions">
+                <a href="{% url 'borrower_detail' borrower.borrower_id %}" class="app-btn app-btn-secondary">Cancel</a>
+                <button type="submit" class="app-btn app-btn-danger">Delete</button>
+            </div>
+        </form>
+    </div>
 {% endblock %}

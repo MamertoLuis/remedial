@@ -1,106 +1,66 @@
 {% extends "base.html" %}
-{% load render_table from django_tables2 %}
+{% load ui_tags %}
 
-{% block title %}Account List{% endblock %}
+{% block title %}Loan Accounts{% endblock %}
 
 {% block content %}
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="mb-0">Account List</h1>
-        <a href="{% url 'create_account' %}" class="btn btn-primary">
-            <i class="bi bi-plus-circle me-1"></i> Create New Account
-        </a>
+    {% if core_data_edit_allowed %}
+        {% capture as create_account_url %}{% url 'create_account' %}{% endcapture %}
+        {% include 'partials/page_header.html' with page_title="Loan Accounts" page_subtitle="Track loan accounts and their status" record_count=table.page.paginator.count primary_action_url=create_account_url primary_action_label="Create New Account" %}
+    {% else %}
+        {% include 'partials/page_header.html' with page_title="Loan Accounts" page_subtitle="Track loan accounts and their status" record_count=table.page.paginator.count %}
+    {% endif %}
+
+    {% capture as filter_fields %}
+    <div class="app-field">
+        <label for="account_officer">Account Officer</label>
+        <select name="account_officer" id="account_officer">
+            <option value="" {% if not selected_officer %}selected{% endif %}>All Officers</option>
+            {% for officer in account_officers %}
+            <option value="{{ officer }}" {% if selected_officer == officer %}selected{% endif %}>{{ officer }}</option>
+            {% endfor %}
+        </select>
     </div>
-    
-    <div class="row">
-        <!-- Filter Panel (Left Sidebar) -->
-        <div class="col-md-3 mb-4">
-            <div class="card shadow-sm">
-                <div class="card-header bg-light">
-                    <h5 class="card-title mb-0"><i class="bi bi-funnel me-2"></i>Filters</h5>
-                </div>
-                <div class="card-body">
-                    <form method="get">
-                        <!-- Account Officer Filter -->
-                        <div class="mb-3">
-                            <label for="account_officer" class="form-label fw-bold text-muted small text-uppercase">Account Officer</label>
-                            <select name="account_officer" id="account_officer" class="form-select" onchange="this.form.submit()">
-                                <option value="" {% if not selected_officer %}selected{% endif %}>All Officers</option>
-                                {% for officer in account_officers %}
-                                    <option value="{{ officer }}" {% if selected_officer == officer %}selected{% endif %}>
-                                        {{ officer }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-
-                        <!-- Loan Status Filter -->
-                        <div class="mb-3">
-                            <label for="status" class="form-label fw-bold text-muted small text-uppercase">Loan Status</label>
-                            <select name="status" id="status" class="form-select" onchange="this.form.submit()">
-                                <option value="" {% if not selected_status %}selected{% endif %}>All Statuses</option>
-                                {% for value, label in status_choices %}
-                                    <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>
-                                        {{ label }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-
-                        <!-- Security Filter -->
-                        <div class="mb-4">
-                            <label for="security" class="form-label fw-bold text-muted small text-uppercase">Security</label>
-                            <select name="security" id="security" class="form-select" onchange="this.form.submit()">
-                                <option value="" {% if not selected_security %}selected{% endif %}>All Types</option>
-                                {% for value, label in security_choices %}
-                                    <option value="{{ value }}" {% if selected_security == value %}selected{% endif %}>
-                                        {{ label }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-
-                        <!-- Borrower Group Filter -->
-                        <div class="mb-4">
-                            <label for="borrower_group" class="form-label fw-bold text-muted small text-uppercase">Borrower Group</label>
-                            <select name="borrower_group" id="borrower_group" class="form-select" onchange="this.form.submit()">
-                                <option value="" {% if not selected_borrower_group %}selected{% endif %}>All Groups</option>
-                                <option value="blank" {% if selected_borrower_group == "blank" %}selected{% endif %}>(Blank)</option>
-                                {% for group in borrower_groups %}
-                                    <option value="{{ group }}" {% if selected_borrower_group == group %}selected{% endif %}>
-                                        {{ group }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-
-                        <!-- Transaction Type Filter -->
-                        <div class="mb-4">
-                            <label for="transaction_type" class="form-label fw-bold text-muted small text-uppercase">Transaction Type</label>
-                            <select name="transaction_type" id="transaction_type" class="form-select" onchange="this.form.submit()">
-                                <option value="" {% if not selected_transaction_type %}selected{% endif %}>All Types</option>
-                                {% for value, label in transaction_type_choices %}
-                                    <option value="{{ value }}" {% if selected_transaction_type == value %}selected{% endif %}>
-                                        {{ label }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-
-                        <div class="d-grid">
-                            <a href="{% url 'account_list' %}" class="btn btn-outline-secondary">Clear All Filters</a>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-
-        <!-- Table Area -->
-        <div class="col-md-9">
-            <div class="card shadow-sm">
-                <div class="card-body p-0">
-                    {% render_table table %}
-                </div>
-            </div>
-        </div>
+    <div class="app-field">
+        <label for="status">Loan Status</label>
+        <select name="status" id="status">
+            <option value="" {% if not selected_status %}selected{% endif %}>All Statuses</option>
+            {% for value, label in status_choices %}
+            <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
     </div>
+    <div class="app-field">
+        <label for="security">Security</label>
+        <select name="security" id="security">
+            <option value="" {% if not selected_security %}selected{% endif %}>All Types</option>
+            {% for value, label in security_choices %}
+            <option value="{{ value }}" {% if selected_security == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="app-field">
+        <label for="borrower_group">Borrower Group</label>
+        <select name="borrower_group" id="borrower_group">
+            <option value="" {% if not selected_borrower_group %}selected{% endif %}>All Groups</option>
+            <option value="blank" {% if selected_borrower_group == "blank" %}selected{% endif %}>(Blank)</option>
+            {% for group in borrower_groups %}
+            <option value="{{ group }}" {% if selected_borrower_group == group %}selected{% endif %}>{{ group }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="app-field">
+        <label for="transaction_type">Transaction Type</label>
+        <select name="transaction_type" id="transaction_type">
+            <option value="" {% if not selected_transaction_type %}selected{% endif %}>All Types</option>
+            {% for value, label in transaction_type_choices %}
+            <option value="{{ value }}" {% if selected_transaction_type == value %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    {% endcapture %}
+
+    {% include 'partials/filter_bar.html' with filter_fields=filter_fields|safe clear_url="/accounts/" hx_target='#table-container' %}
+
+    {% include 'partials/data_table.html' with table=table %}
 {% endblock %}

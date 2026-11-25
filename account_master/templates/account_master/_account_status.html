@@ -1,8 +1,11 @@
-<div id="account-status" hx-target="this" hx-swap="outerHTML">
-    <form hx-post="{% url 'update_account_status' account.loan_id %}">
-        {% csrf_token %}
-        <button type="submit" class="btn btn-outline-secondary btn-sm">
-            {{ account.get_status_display }} <i class="bi bi-arrow-repeat"></i>
-        </button>
-    </form>
+{% comment %}
+Account status chip + (admin) change-status trigger. The partial is also the
+response of the update_account_status HTMX swap, so it must re-render itself
+with the updated status.
+{% endcomment %}
+<div id="account-status" class="flex items-center gap-2" hx-target="this" hx-swap="outerHTML">
+    {% include 'partials/status_chip.html' with value=account.status label=account.get_status_display %}
+    {% if core_data_edit_allowed %}
+    <button type="button" class="app-btn app-btn-secondary app-btn-sm" data-modal-open="status-modal">Change status</button>
+    {% endif %}
 </div>

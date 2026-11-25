@@ -1,0 +1,12 @@
+{% load ui_filters %}
+{% comment %}
+KPI tile (ui-workspace). Context: label, value, subtext (opt), delta (opt),
+severity (opt: critical/watch/ok/neutral), url (opt — whole tile links),
+is_money (opt bool — abbreviates and exposes the full figure in a title).
+{% endcomment %}
+{% if url %}<a href="{{ url }}" class="kpi-tile kpi-link kpi-{{ severity|default:'neutral' }}">{% else %}<div class="kpi-tile kpi-{{ severity|default:'neutral' }}">{% endif %}
+    <span class="kpi-label">{{ label }}</span>
+    <span class="kpi-value tabular-nums">{% if is_money %}<span title="{{ value|peso }}">{{ value|peso_compact }}</span>{% else %}{{ value }}{% endif %}</span>
+    {% if subtext %}<span class="kpi-subtext">{{ subtext }}</span>{% endif %}
+    {% if delta %}<span class="kpi-delta">{{ delta }}</span>{% endif %}
+{% if url %}</a>{% else %}</div>{% endif %}

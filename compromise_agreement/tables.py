@@ -5,6 +5,7 @@ from .models import CompromiseAgreement, CompromiseInstallment
 
 
 class CompromiseAgreementTable(tables.Table):
+    collapse_columns = ["discount_amount", "discount_percentage"]
     borrower = tables.TemplateColumn(
         template_name="compromise_agreement/_borrower_column.html",
         verbose_name="Borrower",
@@ -22,7 +23,7 @@ class CompromiseAgreementTable(tables.Table):
 
     class Meta:
         model = CompromiseAgreement
-        template_name = "django_tables2/bootstrap5.html"
+        empty_text = "No records found."
         fields = (
             "compromise_id",
             "borrower",
@@ -37,6 +38,7 @@ class CompromiseAgreementTable(tables.Table):
 
 
 class CompromiseInstallmentTable(tables.Table):
+    collapse_columns = ["payment_date"]
     actions = tables.TemplateColumn(
         template_name="compromise_agreement/_installment_actions.html",
         verbose_name="Actions",
@@ -44,7 +46,7 @@ class CompromiseInstallmentTable(tables.Table):
 
     class Meta:
         model = CompromiseInstallment
-        template_name = "django_tables2/bootstrap5.html"
+        empty_text = "No records found."
         fields = (
             "installment_number",
             "due_date",

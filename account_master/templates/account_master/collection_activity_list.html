@@ -1,20 +1,22 @@
 {% extends "base.html" %}
-{% load render_table from django_tables2 %}
+{% load django_tables2 %}
+{% load ui_tags %}
 
 {% block title %}Collection Activities for {{ account.loan_id }}{% endblock %}
 
 {% block content %}
-    <h1>Collection Activities</h1>
-    <div class="card mb-3">
-        <div class="card-header">
-            Account Summary
-        </div>
-        <div class="card-body">
-            <h5 class="card-title"><a href="{% url 'account_detail' account.loan_id %}">Account ID: {{ account.loan_id }}</a></h5>
-            <p class="card-text"><strong>Borrower:</strong> <a href="{% url 'borrower_detail' account.borrower.borrower_id %}">{{ account.borrower }}</a></p>
-        </div>
+    {% capture as subtitle %}Account {{ account.loan_id }} · {{ account.borrower.full_name }}{% endcapture %}
+    {% if core_data_edit_allowed %}
+        {% capture as create_activity_url %}{% url 'create_collection_activity' account.loan_id %}{% endcapture %}
+        {% include 'partials/page_header.html' with page_title="Collection Activities" page_subtitle=subtitle record_count=table.page.paginator.count primary_action_url=create_activity_url primary_action_label="Add New Activity" %}
+    {% else %}
+        {% include 'partials/page_header.html' with page_title="Collection Activities" page_subtitle=subtitle record_count=table.page.paginator.count %}
+    {% endif %}
+
+    {% include 'partials/data_table.html' with table=table %}
+
+    <div class="flex gap-2 mt-3">
+        <a href="{% url 'account_detail' account.loan_id %}" class="app-btn app-btn-secondary">Back to Account Details</a>
+        <a href="{% url 'borrower_detail' account.borrower.borrower_id %}" class="app-btn app-btn-secondary">View Borrower</a>
     </div>
-    <a href="{% url 'account_detail' account.loan_id %}" class="btn btn-secondary mb-3">Back to Account Details</a>
-    <a href="{% url 'create_collection_activity' account.loan_id %}" class="btn btn-primary mb-3">Add New Activity</a>
-    {% render_table table %}
 {% endblock %}

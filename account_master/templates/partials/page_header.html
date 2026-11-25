@@ -1,0 +1,23 @@
+{% comment %}
+Page header for list/report pages (ui-workspace).
+Context: page_title (str), page_subtitle (str, optional), record_count (int, optional),
+primary_action (dict {url, label}, optional).
+{% endcomment %}
+<div class="app-page-header">
+    <div class="app-page-header-text">
+        <h1 class="app-page-title">{{ page_title }}</h1>
+        {% if page_subtitle %}<p class="app-page-subtitle">{{ page_subtitle }}</p>{% endif %}
+        {% if record_count is not None %}
+        <p class="app-page-count">{{ record_count }} record{{ record_count|pluralize }}</p>
+        {% endif %}
+    </div>
+    {% if primary_action %}
+    <a href="{{ primary_action.url }}" class="app-btn app-btn-primary">
+        {{ primary_action.label }}
+    </a>
+    {% elif primary_action_url %}
+    <a href="{{ primary_action_url }}" class="app-btn app-btn-primary">
+        {{ primary_action_label|default:"Action" }}
+    </a>
+    {% endif %}
+</div>

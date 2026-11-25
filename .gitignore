@@ -11,6 +11,10 @@ db.sqlite3
 doc/*.md
 !/README.md
 !/AGENTS.md
+!/DESIGN.md
+
+# Tailwind standalone CLI binary (platform-specific, fetched by `make css`)
+/tools/
 **/migrations/*.py
 !**/migrations/__init__.py
 **/__pycache__/

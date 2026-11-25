@@ -1,0 +1,12 @@
+{% comment %}
+Empty-state message for lists and sections (ui-workspace).
+Context: title (str, optional), message (str, optional), action_url (str, optional),
+action_label (str, optional). No illustrations, one action at most.
+{% endcomment %}
+<div class="app-empty">
+    <p class="app-empty-title">{{ title|default:"No records" }}</p>
+    {% if message %}<p class="app-empty-message">{{ message }}</p>{% endif %}
+    {% if action_url %}
+    <a href="{{ action_url }}" class="app-btn app-btn-secondary">{{ action_label|default:"View all" }}</a>
+    {% endif %}
+</div>

@@ -1,13 +1,11 @@
 {% extends "base.html" %}
-{% load crispy_forms_tags %}
 
 {% block title %}{% if object %}Update Compromise Installment{% else %}Create Compromise Installment{% endif %}{% endblock %}
 
 {% block content %}
-    <h1>{% if object %}Update Compromise Installment{% else %}Create Compromise Installment{% endif %}</h1>
-    <form method="post">
-        {% csrf_token %}
-        {{ form|crispy }}
-        <button type="submit" class="btn btn-primary">{% if object %}Update{% else %}Create{% endif %}</button>
-    </form>
+    {% if object %}
+        {% include 'partials/form_page.html' with page_title="Update Compromise Installment" page_subtitle="Installment "|add:object.installment_number form=form submit_label="Update" %}
+    {% else %}
+        {% include 'partials/form_page.html' with page_title="Create Compromise Installment" form=form submit_label="Create" %}
+    {% endif %}
 {% endblock %}

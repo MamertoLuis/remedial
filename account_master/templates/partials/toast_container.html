@@ -1,0 +1,25 @@
+{% comment %}
+Toast notices for the Django messages framework (ui-workspace).
+Rendered inside the base layout's #toast-container. Success toasts
+auto-dismiss; error toasts persist until dismissed manually.
+{% endcomment %}
+{% for message in messages %}
+<div class="app-toast toast-notice {{ message.tags }}" role="status" data-dismiss-ms="{% if message.tags == 'success' %}5000{% else %}0{% endif %}">
+    <span class="app-toast-msg">{{ message }}</span>
+    <button type="button" class="app-toast-close" aria-label="Dismiss notification"
+            onclick="this.closest('.app-toast').remove()">&times;</button>
+</div>
+{% endfor %}
+<script>
+    (function () {
+        document.querySelectorAll('#toast-container .app-toast[data-dismiss-ms]').forEach(function (t) {
+            var ms = parseInt(t.getAttribute('data-dismiss-ms'), 10);
+            if (ms > 0) {
+                setTimeout(function () {
+                    var node = t.closest('.app-toast');
+                    if (node && node.parentElement) { node.remove(); }
+                }, ms);
+            }
+        });
+    })();
+</script>

@@ -1,24 +1,20 @@
-{% load humanize %}
-<div class="row">
-    <div class="col-md-6">
-        <p><strong>Account ID:</strong> <a href="{% url 'account_detail' account.loan_id %}">{{ account.loan_id }}</a></p>
-        <p><strong>Borrower:</strong> <a href="{% url 'borrower_detail' account.borrower.borrower_id %}">{{ account.borrower.full_name }}</a></p>
-        <p><strong>Strategy Type:</strong> <a href="{% url 'remedial_strategy_detail' account.loan_id strategy.strategy_id %}">{{ strategy.get_strategy_type_display }}</a></p>
-        <p><strong>Original Total Exposure:</strong> ₱{{ object.original_total_exposure|floatformat:2|intcomma }}</p>
-        <p><strong>Approved Compromise Amount:</strong> ₱{{ object.approved_compromise_amount|floatformat:2|intcomma }}</p>
-        <p><strong>Total Amount Paid:</strong> ₱<span id="total-paid">{{ total_paid|floatformat:2|intcomma }}</span></p>
-        <p><strong>Remaining Balance:</strong> ₱<span id="remaining-balance">{{ remaining_balance|floatformat:2|intcomma }}</span></p>
-        <p><strong>Discount Amount:</strong> ₱{{ object.discount_amount|floatformat:2|intcomma }}</p>
-        <p><strong>Discount Percentage:</strong> {{ object.discount_percentage|floatformat:2 }}%</p>
-    </div>
-    <div class="col-md-6">
-        <p><strong>Status:</strong> <span class="badge bg-{% if object.status == 'ACTIVE' %}success{% elif object.status == 'COMPLETED' %}info{% elif object.status == 'SUPERSEDED' %}warning{% else %}danger{% endif %}">{{ object.get_status_display }}</span></p>
-        <p><strong>Approval Level:</strong> {{ object.get_approval_level_display }}</p>
-        <p><strong>Approval Date:</strong> {{ object.approval_date|date:"F d, Y" }}</p>
-        <p><strong>Installment Plan:</strong> {% if object.installment_flag %}Yes ({{ object.number_of_installments }} {{ object.get_payment_frequency_display }}){% else %}No{% endif %}</p>
-        {% if object.installment_flag %}
-            <p><strong>First Payment Due:</strong> {{ object.first_payment_date|date:"F d, Y" }}</p>
-        {% endif %}
-        <p><strong>Rescission Clause:</strong> {{ object.rescission_clause_flag|yesno }}</p>
-    </div>
-</div>
+{% load ui_filters %}
+<dl class="app-definition-grid">
+    <div><dt>Account ID</dt><dd><a href="{% url 'account_detail' account.loan_id %}" class="app-link">{{ account.loan_id }}</a></dd></div>
+    <div><dt>Borrower</dt><dd><a href="{% url 'borrower_detail' account.borrower.borrower_id %}" class="app-link">{{ account.borrower.full_name }}</a></dd></div>
+    <div><dt>Strategy Type</dt><dd><a href="{% url 'remedial_strategy_detail' account.loan_id strategy.strategy_id %}" class="app-link">{{ strategy.get_strategy_type_display }}</a></dd></div>
+    <div><dt>Status</dt><dd>{% include 'partials/status_chip.html' with value=object.status %}</dd></div>
+    <div><dt>Original Total Exposure</dt><dd class="tabular-nums">{{ object.original_total_exposure|peso }}</dd></div>
+    <div><dt>Approved Compromise Amount</dt><dd class="tabular-nums">{{ object.approved_compromise_amount|peso }}</dd></div>
+    <div><dt>Total Amount Paid</dt><dd class="tabular-nums"><span id="total-paid">{{ total_paid|peso }}</span></dd></div>
+    <div><dt>Remaining Balance</dt><dd class="tabular-nums"><span id="remaining-balance">{{ remaining_balance|peso }}</span></dd></div>
+    <div><dt>Discount Amount</dt><dd class="tabular-nums">{{ object.discount_amount|peso }}</dd></div>
+    <div><dt>Discount Percentage</dt><dd class="tabular-nums">{{ object.discount_percentage|floatformat:2 }}%</dd></div>
+    <div><dt>Approval Level</dt><dd>{{ object.get_approval_level_display }}</dd></div>
+    <div><dt>Approval Date</dt><dd>{{ object.approval_date|date:"F d, Y" }}</dd></div>
+    <div><dt>Installment Plan</dt><dd>{% if object.installment_flag %}Yes ({{ object.number_of_installments }} {{ object.get_payment_frequency_display }}){% else %}No{% endif %}</dd></div>
+    {% if object.installment_flag %}
+    <div><dt>First Payment Due</dt><dd>{{ object.first_payment_date|date:"F d, Y" }}</dd></div>
+    {% endif %}
+    <div><dt>Rescission Clause</dt><dd>{{ object.rescission_clause_flag|yesno }}</dd></div>
+</dl>

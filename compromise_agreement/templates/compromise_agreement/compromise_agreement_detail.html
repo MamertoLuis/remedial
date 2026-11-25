@@ -1,113 +1,101 @@
 {% extends "base.html" %}
-{% load humanize %}
-{% load django_tables2 %}
+{% load ui_filters %}
 
-{% block title %}Compromise Agreement Details{% endblock %}
+{% block title %}Compromise Agreement {{ object.compromise_id }}{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1>Compromise Agreement: {{ object.compromise_id }}</h1>
-    <div>
-        <a href="{% url 'compromise_agreement_update' object.pk %}" class="btn btn-sm btn-outline-primary">Edit Agreement</a>
-        <a href="{% url 'generate_term_sheet_pdf' object.pk %}" class="btn btn-sm btn-info" target="_blank">Print Term Sheet</a>
-        <a href="{% url 'remedial_strategy_detail' account.loan_id strategy.strategy_id %}" class="btn btn-secondary">Back to Strategy</a>
-    </div>
-</div>
-
-<!-- Error message container for HTMX -->
-<div id="htmx-error-container" class="mb-3"></div>
-
-<div class="card mb-4">
-    <div class="card-header">
-        <h5 class="mb-0">Agreement Details</h5>
-    </div>
-    <div class="card-body" id="agreement-summary">
-        {% include "compromise_agreement/_agreement_summary.html" with object=object account=account strategy=strategy total_paid=total_paid remaining_balance=remaining_balance %}
-    </div>
-</div>
-
-<div class="card mb-4">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">Installment Schedule</h5>
-        {% if object.installment_flag %}
-            <a href="{% url 'compromise_installment_create' object.pk %}" class="btn btn-sm btn-success">Add New Installment</a>
-        {% endif %}
-    </div>
-    <div class="card-body">
-        {% if installments_table.data %}
-            <div class="table-responsive">
-                <table class="table table-sm table-bordered">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Installment Number</th>
-                            <th>Due Date</th>
-                            <th class="text-end">Amount Due</th>
-                            <th class="text-end">Amount Paid</th>
-                            <th>Payment Date</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for record in installments_table.data %}
-                            <tr id="installment-row-{{ record.pk }}">
-                                <td>{{ record.installment_number }}</td>
-                                <td>{{ record.due_date|date:"M d, Y" }}</td>
-                                <td class="text-end">₱{{ record.amount_due|floatformat:2|intcomma }}</td>
-                                <td class="text-end">₱{{ record.amount_paid|floatformat:2|intcomma }}</td>
-                                <td>{{ record.payment_date|date:"M d, Y" }}</td>
-                                <td>
-                                    {% if record.status == 'PAID' %}
-                                        <span class="badge bg-success">{{ record.get_status_display }}</span>
-                                    {% else %}
-                                        <span class="badge bg-warning">{{ record.get_status_display }}</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% include "compromise_agreement/_installment_actions.html" with record=record %}
-                                </td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+    <!-- Entity header -->
+    <div class="app-entity-header app-section">
+        <div class="min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+                <h1 class="app-page-title mb-0">Compromise Agreement: {{ object.compromise_id }}</h1>
+                {% include 'partials/status_chip.html' with value=object.status %}
             </div>
+            <p class="app-entity-sub">
+                <a href="{% url 'account_detail' account.loan_id %}" class="app-link">{{ account.loan_id }}</a>
+                &middot; {{ account.borrower.full_name }}
+            </p>
+        </div>
+        <div class="flex gap-2 flex-wrap">
+            <a href="{% url 'remedial_strategy_detail' account.loan_id strategy.strategy_id %}" class="app-btn app-btn-secondary">Back to Strategy</a>
+            <a href="{% url 'generate_term_sheet_pdf' object.pk %}" class="app-btn app-btn-secondary" target="_blank">Print Term Sheet</a>
+            <a href="{% url 'compromise_agreement_update' object.pk %}" class="app-btn app-btn-primary">Edit Agreement</a>
+        </div>
+    </div>
+
+    <div id="htmx-error-container" class="app-form-errors" hidden></div>
+
+    <!-- Agreement summary -->
+    <div class="app-section mt-3">
+        <h2 class="app-section-title mb-3">Agreement Details</h2>
+        <div id="agreement-summary">
+            {% include "compromise_agreement/_agreement_summary.html" with object=object account=account strategy=strategy total_paid=total_paid remaining_balance=remaining_balance %}
+        </div>
+    </div>
+
+    <!-- Installment schedule -->
+    <div class="app-section mt-3">
+        <div class="app-section-head">
+            <h2 class="app-section-title">Installment Schedule</h2>
+            {% if object.installment_flag %}
+            <a href="{% url 'compromise_installment_create' object.pk %}" class="app-btn app-btn-secondary app-btn-sm">Add New Installment</a>
+            {% endif %}
+        </div>
+        {% if installments_table.data %}
+        <div class="app-table-scroll">
+            <table class="app-table" aria-label="Installment schedule">
+                <thead>
+                    <tr>
+                        <th scope="col">Installment Number</th>
+                        <th scope="col">Due Date</th>
+                        <th scope="col" class="text-right">Amount Due</th>
+                        <th scope="col" class="text-right">Amount Paid</th>
+                        <th scope="col">Payment Date</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for record in installments_table.data %}
+                    <tr class="app-table-row" id="installment-row-{{ record.pk }}">
+                        <td>{{ record.installment_number }}</td>
+                        <td>{{ record.due_date|date:"M d, Y" }}</td>
+                        <td class="text-right tabular-nums">{{ record.amount_due|peso }}</td>
+                        <td class="text-right tabular-nums">{{ record.amount_paid|peso }}</td>
+                        <td>{{ record.payment_date|date:"M d, Y" }}</td>
+                        <td>{% include 'partials/status_chip.html' with value=record.status %}</td>
+                        <td>{% include "compromise_agreement/_installment_actions.html" with record=record %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
         {% else %}
-            <p class="text-muted">No installments scheduled for this agreement.</p>
+        {% include 'partials/empty_state.html' with title="No installments scheduled" message="No installments scheduled for this agreement." %}
         {% endif %}
     </div>
-</div>
+{% endblock %}
 
-<!-- HTMX error handling -->
 {% block extra_js %}
+{% include 'partials/confirm_modal.html' with modal_id='mark-paid-modal' title='Mark installment as paid' message='Confirm that this installment has been fully paid. The payment date will be set to today.' form_action='#' confirm_label='Mark as Paid' %}
+
 <script>
-    // Handle HTMX errors
-    document.addEventListener('htmx:afterRequest', function(evt) {
-        const errorContainer = document.getElementById('htmx-error-container');
-        if (evt.detail.failed) {
-            const errorResponse = evt.detail.xhr.response;
-            if (errorContainer) {
-                errorContainer.innerHTML = errorResponse;
-                errorContainer.scrollIntoView({ behavior: 'smooth' });
-                
-                // Auto-hide error after 5 seconds
-                setTimeout(() => {
-                    errorContainer.innerHTML = '';
-                }, 5000);
-            }
+    document.addEventListener('htmx:afterRequest', function (evt) {
+        var errorContainer = document.getElementById('htmx-error-container');
+        if (evt.detail.failed && errorContainer) {
+            errorContainer.innerHTML = evt.detail.xhr.response;
+            errorContainer.hidden = false;
+            setTimeout(function () { errorContainer.innerHTML = ''; errorContainer.hidden = true; }, 5000);
         }
     });
-    
-    // After successful payment, update the summary
-    document.addEventListener('htmx:afterSwap', function(evt) {
-        // Check if this was a successful installment payment
+
+    document.addEventListener('htmx:afterSwap', function (evt) {
         if (evt.detail.target.id && evt.detail.target.id.startsWith('installment-row-')) {
-            // Fetch updated summary data
-            htmx.ajax('GET', `{% url 'compromise_agreement_detail' object.pk %}?summary_only=1`, {
+            htmx.ajax('GET', '{% url 'compromise_agreement_detail' object.pk %}?summary_only=1', {
                 target: '#agreement-summary',
                 swap: 'innerHTML'
             });
         }
     });
 </script>
-{% endblock %}
 {% endblock %}

@@ -2,8 +2,8 @@
 <tr>
     <td>{{ installment.installment_number }}</td>
     <td>{{ installment.due_date|date:"M d, Y" }}</td>
-    <td class="text-end">₱{{ installment.amount_due|floatformat:2|intcomma }}</td>
-    <td class="text-end">₱{{ installment.amount_paid|floatformat:2|intcomma }}</td>
+    <td class="text-right">₱{{ installment.amount_due|floatformat:2|intcomma }}</td>
+    <td class="text-right">₱{{ installment.amount_paid|floatformat:2|intcomma }}</td>
     <td>{{ installment.payment_date|date:"M d, Y" }}</td>
     <td>
         {% if installment.status == 'PAID' %}

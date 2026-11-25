@@ -1,61 +1,60 @@
 {% extends "base.html" %}
-{% load render_table from django_tables2 %}
+{% load django_tables2 %}
+{% load ui_tags %}
 
-{% block title %}Borrower Details{% endblock %}
+{% block title %}Borrower {{ borrower.borrower_id }}{% endblock %}
 
 {% block content %}
-    <h1>Borrower Details</h1>
-    
-    <div class="card mb-4">
-        <div class="card-header">
-            <h5>Personal Information</h5>
+    <!-- Entity header -->
+    <div class="app-entity-header app-section">
+        <div class="min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+                <h1 class="app-page-title mb-0">{{ borrower.full_name }}</h1>
+                {% include 'partials/status_chip.html' with value=borrower.borrower_type %}
+            </div>
+            <p class="app-entity-sub">
+                Borrower ID: <strong>{{ borrower.borrower_id }}</strong>
+                {% if borrower.borrower_group %}&middot; Group: {{ borrower.borrower_group }}{% endif %}
+            </p>
         </div>
-        <div class="card-body">
-            <table class="table">
-                <tbody>
-                    <tr>
-                        <th>Borrower ID</th>
-                        <td>{{ borrower.borrower_id }}</td>
-                    </tr>
-                    <tr>
-                        <th>Full Name</th>
-                        <td>{{ borrower.full_name }}</td>
-                    </tr>
-                    <tr>
-                        <th>Borrower Type</th>
-                        <td>{{ borrower.get_borrower_type_display }}</td>
-                    </tr>
-
-                    <tr>
-                        <th>Primary Address</th>
-                        <td>{{ borrower.primary_address }}</td>
-                    </tr>
-                    <tr>
-                        <th>Mobile</th>
-                        <td>{{ borrower.mobile }}</td>
-                    </tr>
-                    <tr>
-                        <th>Borrower Group</th>
-                        <td>{{ borrower.borrower_group|default:"N/A" }}</td>
-                    </tr>
-
-                </tbody>
-            </table>
+        <div class="flex gap-2 flex-wrap">
+            <a href="{% if back_url %}{{ back_url }}{% else %}{% url 'borrower_list' %}{% endif %}" class="app-btn app-btn-secondary">Back</a>
+            {% if core_data_edit_allowed %}
+            <a href="{% url 'update_borrower' borrower.borrower_id %}" class="app-btn app-btn-primary">Update</a>
+            <button type="button" class="app-btn app-btn-danger" data-modal-open="delete-borrower-modal">Delete</button>
+            {% endif %}
         </div>
     </div>
 
-<div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5>Associated Accounts</h5>
-            <a href="{% url 'create_account_for_borrower' borrower.borrower_id %}" class="btn btn-sm btn-success">Add Account</a>
-        </div>
-        <div class="card-body">
-            {% render_table table %}
-        </div>
+    <!-- Key facts -->
+    <div class="app-section mt-3">
+        <h2 class="app-section-title mb-3">Personal Information</h2>
+        <dl class="app-definition-grid">
+            <div><dt>Borrower ID</dt><dd>{{ borrower.borrower_id }}</dd></div>
+            <div><dt>Full Name</dt><dd>{{ borrower.full_name }}</dd></div>
+            <div><dt>Borrower Type</dt><dd>{{ borrower.get_borrower_type_display }}</dd></div>
+            <div><dt>Mobile</dt><dd>{{ borrower.mobile|default:"—" }}</dd></div>
+            <div><dt>Borrower Group</dt><dd>{{ borrower.borrower_group|default:"—" }}</dd></div>
+            <div><dt>Primary Address</dt><dd>{{ borrower.primary_address|default:"—" }}</dd></div>
+        </dl>
     </div>
 
-    <div class="mt-4">
-        <a href="{% if back_url %}{{ back_url }}{% else %}{% url 'borrower_list' %}{% endif %}" class="btn btn-secondary">Back to Borrower List</a>
-        <a href="{% url 'update_borrower' borrower.borrower_id %}" class="btn btn-primary">Update</a>
+    <!-- Related records -->
+    <div class="app-section mt-3">
+        <div class="app-section-head">
+            <h2 class="app-section-title">Associated Accounts</h2>
+            {% if core_data_edit_allowed %}
+            <a href="{% url 'create_account_for_borrower' borrower.borrower_id %}" class="app-btn app-btn-primary">Add Account</a>
+            {% endif %}
+        </div>
+        {% render_table table %}
     </div>
+{% endblock %}
+
+{% block extra_js %}
+{% if core_data_edit_allowed %}
+{% capture as delete_url %}{% url 'delete_borrower' borrower.borrower_id %}{% endcapture %}
+    {% include 'partials/confirm_modal.html' with modal_id='delete-borrower-modal' title='Delete borrower' message='Are you sure you want to delete this borrower? This action cannot be undone.' form_action=delete_url confirm_label='Delete borrower' %}
+
+{% endif %}
 {% endblock %}

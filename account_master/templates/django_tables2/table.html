@@ -1,0 +1,112 @@
+{% load django_tables2 %}
+{% load i18n l10n %}
+{% load ui_tags %}
+{% block table-wrapper %}
+<div class="table-container">
+    {% block table %}
+        <table {% render_attrs table.attrs class="app-table" %}>
+            {% block table.thead %}
+            {% if table.show_header %}
+                <thead {{ table.attrs.thead.as_html }}>
+                    <tr>
+                    {% for column in table.columns %}
+                        <th {{ column.attrs.th.as_html }} scope="col"{% if column.is_ordered %} aria-sort="{% if column.order_by_alias|slice:':1' == '-' %}descending{% else %}ascending{% endif %}"{% endif %}>
+                            {% if column.orderable %}
+                                {% querystring table.prefixed_order_by_field=column.order_by_alias.next as=sort_url %}
+                                <a href="{{ sort_url }}" hx-get="{{ sort_url }}" hx-target="#table-container" hx-push-url="true" hx-select="#table-container">{{ column.header }}</a>
+                            {% else %}
+                                {{ column.header }}
+                            {% endif %}
+                        </th>
+                    {% endfor %}
+                    </tr>
+                </thead>
+            {% endif %}
+            {% endblock table.thead %}
+            {% block table.tbody %}
+                <tbody {{ table.attrs.tbody.as_html }}>
+                {% for row in table.paginated_rows %}
+                    {% block table.tbody.row %}
+                    <tr class="app-table-row" {{ row.attrs.as_html }}>
+                        {% for column, cell in row.items %}
+                            <td {{ column.attrs.td.as_html }}{% if table.collapse_columns and column.name in table.collapse_columns %} class="app-cell-collapse"{% endif %}>{% if column.localize == None %}{{ cell }}{% else %}{% if column.localize %}{{ cell|localize }}{% else %}{{ cell|unlocalize }}{% endif %}{% endif %}</td>
+                        {% endfor %}
+                    </tr>
+                    {% if table.collapse_columns %}
+                    <tr class="app-row-details">
+                        <td colspan="{{ table.columns|length }}">
+                            <details>
+                                <summary>Details</summary>
+                                <dl class="app-collapsed-dl">
+                                    {% for column in table.columns %}
+                                    {% if column.name in table.collapse_columns %}
+                                    <dt>{{ column.header }}</dt>
+                                    <dd>{{ row|row_cell:column.name }}</dd>
+                                    {% endif %}
+                                    {% endfor %}
+                                </dl>
+                            </details>
+                        </td>
+                    </tr>
+                    {% endif %}
+                    {% endblock table.tbody.row %}
+                {% empty %}
+                    {% if table.empty_text %}
+                    {% block table.tbody.empty_text %}
+                    <tr class="app-table-empty-row">
+                        <td colspan="{{ table.columns|length }}">
+                            <div class="app-empty">
+                                <p class="app-empty-title">{{ table.empty_text }}</p>
+                                {% if request.GET %}<a class="app-btn app-btn-secondary" href="{{ request.path }}">Clear filters</a>{% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endblock table.tbody.empty_text %}
+                    {% endif %}
+                {% endfor %}
+                </tbody>
+            {% endblock table.tbody %}
+            {% block table.tfoot %}
+            {% if table.has_footer %}
+            <tfoot {{ table.attrs.tfoot.as_html }}>
+                <tr>
+                {% for column in table.columns %}
+                    <td {{ column.attrs.tf.as_html }}>{{ column.footer }}</td>
+                {% endfor %}
+                </tr>
+            </tfoot>
+            {% endif %}
+            {% endblock table.tfoot %}
+        </table>
+    {% endblock table %}
+
+    {% block pagination %}
+        {% if table.page and table.paginator.num_pages > 1 %}
+        <nav class="app-pagination" aria-label="Pagination">
+            {% if table.page.has_previous %}
+                {% querystring table.prefixed_page_field=table.page.previous_page_number as=prev_url %}
+                <a class="app-page-link" href="{{ prev_url }}" hx-get="{{ prev_url }}" hx-target="#table-container" hx-push-url="true" hx-select="#table-container">{% trans 'previous' %}</a>
+            {% else %}
+                <span class="app-page-link is-disabled" aria-disabled="true" tabindex="-1">{% trans 'previous' %}</span>
+            {% endif %}
+            {% for p in table.page|table_page_range:table.paginator %}
+                {% if p == table.page.number %}
+                    <span class="app-page-link is-current" aria-current="page">{{ p }}</span>
+                {% elif p == '...' %}
+                    <span class="app-page-link is-disabled" aria-hidden="true">…</span>
+                {% else %}
+                    {% querystring table.prefixed_page_field=p as=p_url %}
+                    <a class="app-page-link" href="{{ p_url }}" hx-get="{{ p_url }}" hx-target="#table-container" hx-push-url="true" hx-select="#table-container">{{ p }}</a>
+                {% endif %}
+            {% endfor %}
+            {% if table.page.has_next %}
+                {% querystring table.prefixed_page_field=table.page.next_page_number as=next_url %}
+                <a class="app-page-link" href="{{ next_url }}" hx-get="{{ next_url }}" hx-target="#table-container" hx-push-url="true" hx-select="#table-container">{% trans 'next' %}</a>
+            {% else %}
+                <span class="app-page-link is-disabled" aria-disabled="true" tabindex="-1">{% trans 'next' %}</span>
+            {% endif %}
+        </nav>
+        {% endif %}
+    {% endblock pagination %}
+</div>
+{% endblock table-wrapper %}

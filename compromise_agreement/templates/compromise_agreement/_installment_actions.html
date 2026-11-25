@@ -1,16 +1,16 @@
-{% if record.status == 'UNPAID' %}
-    <a href="{% url 'compromise_installment_update' record.pk %}" class="btn btn-sm btn-warning">Update</a>
-    <button type="button" 
-            class="btn btn-sm btn-success"
-            hx-post="{% url 'mark_installment_paid' record.pk %}"
-            hx-target="#installment-row-{{ record.pk }}"
-            hx-swap="outerHTML"
-            hx-indicator="#indicator-{{ record.pk }}">
-        <span class="btn-text">Paid</span>
-        <span id="indicator-{{ record.pk }}" class="htmx-indicator">
-            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-        </span>
-    </button>
-{% else %}
-    <a href="{% url 'compromise_installment_update' record.pk %}" class="btn btn-sm btn-warning">Update</a>
-{% endif %}
+{% comment %}
+Per-row installment actions. Mark-paid opens the shared confirm modal; the
+modal posts to mark_installment_paid as an HTMX request that swaps the row
+(behavior preserved from the pre-restyle hx-post button).
+{% endcomment %}
+<div class="flex gap-2">
+    <a href="{% url 'compromise_installment_update' record.pk %}" class="app-btn app-btn-secondary app-btn-sm">Update</a>
+    {% if record.status == 'UNPAID' %}
+    <button type="button" class="app-btn app-btn-primary app-btn-sm"
+            data-modal-open="mark-paid-modal"
+            data-action-url="{% url 'mark_installment_paid' record.pk %}"
+            data-hx-post="{% url 'mark_installment_paid' record.pk %}"
+            data-hx-target="#installment-row-{{ record.pk }}"
+            data-hx-swap="outerHTML">Mark Paid</button>
+    {% endif %}
+</div>

@@ -6,7 +6,7 @@
 
 {% block content %}
 <div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="flex justify-between items-center mb-3">
         <h1>Past Due Aging Summary</h1>
         <button class="btn btn-secondary" onclick="window.print()">
             <i class="bi bi-printer"></i> Print Report
@@ -35,8 +35,8 @@
                     <thead>
                         <tr>
                             <th>Aging</th>
-                            <th class="text-end">Amount</th>
-                            <th class="text-end">Accounts</th>
+                            <th class="text-right tabular-nums">Amount</th>
+                            <th class="text-right tabular-nums">Accounts</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -45,8 +45,8 @@
                                 {% if data %}
                                 <tr>
                                     <td>{{ aging_bucket }}</td>
-                                    <td class="text-end">{{ data.amount|floatformat:2 }}</td>
-                                    <td class="text-end">{{ data.accounts }}</td>
+                                    <td class="text-right tabular-nums">{{ data.amount|floatformat:2 }}</td>
+                                    <td class="text-right tabular-nums">{{ data.accounts }}</td>
                                 </tr>
                                 {% endif %}
                             {% endwith %}
@@ -64,8 +64,8 @@
                                         {% endif %}
                                     {% endwith %}
                                 {% endfor %}
-                                <th class="text-end">{{ total_officer_amount|floatformat:2 }}</th>
-                                <th class="text-end">{{ total_officer_accounts }}</th>
+                                <th class="text-right tabular-nums">{{ total_officer_amount|floatformat:2 }}</th>
+                                <th class="text-right tabular-nums">{{ total_officer_accounts }}</th>
                             {% endwith %}
                         </tr>
                     </tfoot>

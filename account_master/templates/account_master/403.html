@@ -3,21 +3,12 @@
 {% block title %}403 - Access Denied{% endblock %}
 
 {% block content %}
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header bg-danger text-white">
-                    <h4 class="mb-0">Access Denied</h4>
-                </div>
-                <div class="card-body">
-                    <p class="lead">You do not have permission to access this page.</p>
-                    <p class="text-muted">Only users with MANAGER or BOARD_MEMBER role can access this feature.</p>
-                    <hr>
-                    <a href="{% url 'dashboard' %}" class="btn btn-primary">Return to Dashboard</a>
-                </div>
-            </div>
-        </div>
+<div class="app-section">
+    <h1 class="app-page-title">Access Denied</h1>
+    <p class="app-empty-message">You do not have permission to access this page.</p>
+    <p class="app-empty-message">Only users with {{ required_roles|default:"MANAGER or BOARD_MEMBER" }} role can access this feature.</p>
+    <div class="flex gap-2 mt-3">
+        <a href="{% url 'dashboard' %}" class="app-btn app-btn-primary">Back to Dashboard</a>
     </div>
 </div>
 {% endblock %}

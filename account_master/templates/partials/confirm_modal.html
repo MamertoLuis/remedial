@@ -1,0 +1,95 @@
+{% comment %}
+Confirmation modal for destructive/status-changing actions (ui-workspace).
+Context: modal_id, title, message, form_action, extra_fields (opt safe HTML),
+confirm_label (opt), confirm_class (opt). Posts to the SAME URL and parameters
+as the plain action. Focus is trapped, Escape closes, Cancel does nothing.
+Open with: <button type="button" data-modal-open="{{ modal_id }}">.
+{% endcomment %}
+<div class="app-modal" id="{{ modal_id }}" role="dialog" aria-modal="true" aria-labelledby="{{ modal_id }}-title" tabindex="-1" hidden>
+    <div class="app-modal-backdrop" data-close-modal></div>
+    <div class="app-modal-panel">
+        <h3 id="{{ modal_id }}-title" class="app-modal-title">{{ title }}</h3>
+        <p class="app-modal-message">{{ message }}</p>
+        <form method="post" action="{{ form_action }}" {{ form_attrs|default:"" }}>
+            {% csrf_token %}
+            {{ extra_fields|safe }}
+            <div class="app-modal-actions">
+                <button type="button" class="app-btn app-btn-secondary" data-close-modal>Cancel</button>
+                <button type="submit" class="app-btn {% if confirm_class %}{{ confirm_class }}{% else %}app-btn-danger{% endif %}" {% if confirm_onclick %}onclick="{{ confirm_onclick }}"{% endif %}>{{ confirm_label|default:"Confirm" }}</button>
+            </div>
+        </form>
+    </div>
+</div>
+<script>
+(function () {
+    if (window.__appModalsWired) return;
+    window.__appModalsWired = true;
+    window.appModalOpen = openModal;
+    window.appModalClose = closeModal;
+
+    function openModal(id, trigger) {
+        var modal = document.getElementById(id);
+        if (!modal) return;
+        if (trigger) {
+            var form = modal.querySelector('form');
+            if (form) {
+                if (trigger.hasAttribute('data-action-url')) {
+                    form.action = trigger.getAttribute('data-action-url');
+                }
+                if (trigger.hasAttribute('data-hx-post')) {
+                    form.setAttribute('hx-post', trigger.getAttribute('data-hx-post'));
+                }
+                if (trigger.hasAttribute('data-hx-target')) {
+                    form.setAttribute('hx-target', trigger.getAttribute('data-hx-target'));
+                }
+                if (trigger.hasAttribute('data-hx-swap')) {
+                    form.setAttribute('hx-swap', trigger.getAttribute('data-hx-swap'));
+                }
+            }
+        }
+        modal.hidden = false;
+        document.body.classList.add('modal-open');
+        var focusable = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+        modal._lastFocus = trigger;
+        if (focusable.length) focusable[0].focus();
+        modal._focusable = focusable;
+    }
+
+    function closeModal(modal) {
+        modal.hidden = true;
+        document.body.classList.remove('modal-open');
+        if (modal._lastFocus && modal._lastFocus.focus) modal._lastFocus.focus();
+    }
+
+    document.addEventListener('click', function (e) {
+        var opener = e.target.closest('[data-modal-open]');
+        if (opener) {
+            e.preventDefault();
+            openModal(opener.getAttribute('data-modal-open'), opener);
+            return;
+        }
+        if (e.target.closest('[data-close-modal]')) {
+            var modal = e.target.closest('.app-modal');
+            if (modal) closeModal(modal);
+        }
+    });
+
+    document.addEventListener('keydown', function (e) {
+        var open = document.querySelector('.app-modal:not([hidden])');
+        if (!open) return;
+        if (e.key === 'Escape') {
+            closeModal(open);
+            return;
+        }
+        if (e.key !== 'Tab') return;
+        var focusable = open._focusable;
+        if (!focusable || !focusable.length) return;
+        var first = focusable[0], last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+            e.preventDefault(); last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+            e.preventDefault(); first.focus();
+        }
+    });
+})();
+</script>

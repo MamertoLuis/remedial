@@ -1,11 +1,9 @@
 {% extends 'base.html' %}
-{% load crispy_forms_tags %}
+{% load ui_tags %}
+
+{% block title %}Update Borrower{% endblock %}
 
 {% block content %}
-    <h1>Update Borrower</h1>
-    <form method="post">
-        {% csrf_token %}
-        {{ form|crispy }}
-        <button type="submit" class="btn btn-primary">Save</button>
-    </form>
+    {% capture as cancel_url %}{% url 'borrower_detail' form.instance.borrower_id %}{% endcapture %}
+    {% include 'partials/form_page.html' with page_title="Update Borrower" page_subtitle=form.instance.full_name form=form cancel_url=cancel_url submit_label="Save Changes" %}
 {% endblock %}

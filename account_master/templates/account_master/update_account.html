@@ -1,12 +1,9 @@
 {% extends "base.html" %}
-{% load crispy_forms_tags %}
+{% load ui_tags %}
+
 {% block title %}Update Account{% endblock %}
 
 {% block content %}
-    <h1>Update Account</h1>
-    <form method="post">
-        {% csrf_token %}
-        {{ form|crispy }}
-        <button type="submit" class="btn btn-primary">Submit</button>
-    </form>
+    {% capture as cancel_url %}{% url 'account_detail' form.instance.loan_id %}{% endcapture %}
+    {% include 'partials/form_page.html' with page_title="Update Account" page_subtitle=form.instance.loan_id form=form cancel_url=cancel_url submit_label="Save Changes" %}
 {% endblock %}

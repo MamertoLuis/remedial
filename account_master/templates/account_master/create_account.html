@@ -1,12 +1,7 @@
 {% extends "base.html" %}
-{% load crispy_forms_tags %}
+
 {% block title %}Create Account{% endblock %}
 
 {% block content %}
-    <h1>Create Account</h1>
-    <form method="post">
-        {% csrf_token %}
-        {{ form|crispy }}
-        <button type="submit" class="btn btn-primary">Submit</button>
-    </form>
+    {% include 'partials/form_page.html' with page_title="Create Account" page_subtitle="Add a new loan account" form=form cancel_url="/accounts/" submit_label="Save Account" %}
 {% endblock %}

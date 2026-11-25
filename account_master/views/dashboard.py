@@ -27,6 +27,7 @@ def dashboard(request):
 
     context = {
         "kpis": kpis,
+        "needs_attention": DashboardService.get_needs_attention(limit=20),
         "activities": recent_activities,
         "alert_counts": alert_counts,
         "active_alerts": active_alerts,

@@ -2,7 +2,7 @@
 
 <div class="context-header">
     <div class="container-fluid">
-        <div class="row align-items-center">
+        <div class="row items-center">
             <!-- Entity Identifier Section -->
             <div class="col-md-4">
                 {% if entity_type == 'borrower' %}
@@ -59,52 +59,56 @@
                     {% if entity_type == 'borrower' %}
                         {% if borrower.total_exposure %}
                             <div class="col-6">
-                                <small class="text-muted d-block">Total Exposure</small>
-                                <div class="fw-bold">{{ borrower.total_exposure|floatformat:2 }}</div>
+                                <small class="text-slate-500 dark:text-slate-400 block">Total Exposure</small>
+                                <div class="font-bold">{{ borrower.total_exposure|floatformat:2 }}</div>
                             </div>
                             <div class="col-6">
-                                <small class="text-muted d-block">Active Loans</small>
-                                <div class="fw-bold">{{ borrower.total_loans }}</div>
+                                <small class="text-slate-500 dark:text-slate-400 block">Active Loans</small>
+                                <div class="font-bold">{{ borrower.total_loans }}</div>
                             </div>
                         {% endif %}
                     {% elif entity_type == 'loan' %}
                         <div class="col-6">
-                            <small class="text-muted d-block">Balance</small>
-                            <div class="fw-bold">{{ loan.outstanding_balance|default:loan.principal_amount|floatformat:2 }}</div>
+                            <small class="text-slate-500 dark:text-slate-400 block">Balance</small>
+                            <div class="font-bold">{{ loan.outstanding_balance|default:loan.principal_amount|floatformat:2 }}</div>
                         </div>
                         {% if loan.current_delinquency %}
                             <div class="col-6">
-                                <small class="text-muted d-block">Provision</small>
-                                <div class="fw-bold">{{ loan.current_delinquency.provision_percentage }}%</div>
+                                <small class="text-slate-500 dark:text-slate-400 block">Provision</small>
+                                <div class="font-bold">{{ loan.current_delinquency.provision_percentage }}%</div>
                             </div>
                         {% endif %}
                     {% elif entity_type == 'compromise' %}
                         <div class="col-6">
-                            <small class="text-muted d-block">Original Amount</small>
-                            <div class="fw-bold">{{ agreement.original_amount|floatformat:2 }}</div>
+                            <small class="text-slate-500 dark:text-slate-400 block">Original Amount</small>
+                            <div class="font-bold">{{ agreement.original_amount|floatformat:2 }}</div>
                         </div>
                         <div class="col-6">
-                            <small class="text-muted d-block">Discounted</small>
-                            <div class="fw-bold">{{ agreement.discounted_amount|floatformat:2 }}</div>
+                            <small class="text-slate-500 dark:text-slate-400 block">Discounted</small>
+                            <div class="font-bold">{{ agreement.discounted_amount|floatformat:2 }}</div>
                         </div>
                     {% endif %}
                 </div>
             </div>
             
             <!-- Primary Actions Section -->
-            <div class="col-md-4 text-end">
+            <div class="col-md-4 text-right">
                 <div class="primary-actions">
                     {% if entity_type == 'borrower' %}
+                        {% if core_data_edit_allowed %}
                         <a href="{{ borrower.get_edit_url }}" class="btn btn-outline-primary btn-sm">
                             <i class="bi bi-pencil"></i> Edit
                         </a>
                         <a href="{% url 'create_account_for_borrower' borrower.borrower_id %}" class="btn btn-success btn-sm">
                             <i class="bi bi-plus-circle"></i> Add Loan
                         </a>
+                        {% endif %}
                     {% elif entity_type == 'loan' %}
+                        {% if core_data_edit_allowed %}
                         <a href="{{ loan.get_edit_url }}" class="btn btn-outline-primary btn-sm">
                             <i class="bi bi-pencil"></i> Edit
                         </a>
+                        {% endif %}
                         <a href="{% url 'create_collection_activity' loan.loan_id %}" class="btn btn-success btn-sm">
                             <i class="bi bi-telephone-plus"></i> Add Activity
                         </a>

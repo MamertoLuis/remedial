@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% comment %}
+Minimal shell for auth pages (login, signup, password reset): no sidebar,
+no top bar — a centered card on the surface color.
+{% endcomment %}
+{% block shell %}
+<div class="min-h-screen flex items-center justify-center p-4 bg-slate-50 dark:bg-slate-950">
+    <div class="w-full max-w-md">
+        {% block content %}{% endblock %}
+    </div>
+</div>
+{% endblock %}

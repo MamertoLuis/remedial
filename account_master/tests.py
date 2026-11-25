@@ -233,22 +233,23 @@ class AccountDetailViewTests(TestCase):
 
         # Check Latest Exposure Card
         self.assertContains(response, "Latest Exposure")
-        self.assertContains(response, "As of:")
+        self.assertContains(response, "As of")
         self.assertContains(response, self.latest_exposure.as_of_date.strftime("%b"))
         self.assertContains(response, str(self.latest_exposure.as_of_date.day))
         self.assertContains(response, str(self.latest_exposure.as_of_date.year))
-        self.assertContains(response, "Total: ₱86,650.00")
-        self.assertContains(response, "Principal: ₱85,000.00")
-        self.assertContains(response, "Interest: ₱1,500.00")
+        self.assertContains(response, "₱86,650.00")
+        self.assertContains(response, "₱85,000.00")
+        self.assertContains(response, "₱1,500.00")
 
         # Check Latest Delinquency Card
         self.assertContains(response, "Latest Delinquency")
-        self.assertContains(response, "As of:")
+        self.assertContains(response, "As of")
         self.assertContains(response, self.latest_delinquency.as_of_date.strftime("%b"))
         self.assertContains(response, str(self.latest_delinquency.as_of_date.day))
         self.assertContains(response, str(self.latest_delinquency.as_of_date.year))
+        self.assertContains(response, "Days Past Due")
         self.assertContains(
-            response, f"{self.latest_delinquency.days_past_due} Days Past Due"
+            response, str(self.latest_delinquency.days_past_due)
         )
         self.assertContains(
             response, self.latest_delinquency.get_aging_bucket_display()
@@ -259,7 +260,7 @@ class AccountDetailViewTests(TestCase):
 
         # Check Current Remedial Strategy Card
         self.assertContains(response, "Current Strategy")
-        self.assertContains(response, "Start Date:")
+        self.assertContains(response, "Start Date")
         self.assertContains(
             response, self.current_strategy.strategy_start_date.strftime("%b")
         )
@@ -285,7 +286,7 @@ class AccountDetailViewTests(TestCase):
         # Check some data in historical tables (using the exact string from the rendered HTML)
         self.assertContains(response, "85,000.00")  # Latest exposure in table
         self.assertContains(response, "90,000.00")  # Historical exposure in table
-        self.assertContains(response, "Bucket: 30")  # Latest delinquency in card
+        self.assertContains(response, "Bucket")  # Latest delinquency in card
         self.assertContains(
             response, "Intensive Collection"
         )  # Historical strategy in table
@@ -878,6 +879,13 @@ class AlertAPITests(TestCase):
             status=Alert.Status.NEW,
             created_by=self.user,
         )
+
+        # The global ui-workspace context processor caches alert counts per
+        # user; invalidate so the freshly created alert is reflected.
+        from django.core.cache import cache
+        from account_master.services.alert_service import AlertService
+
+        cache.delete(AlertService.get_cache_key("alert_counts", self.user.id))
 
         # Make API request
         response = self.client.post("/api/alerts/refresh/")

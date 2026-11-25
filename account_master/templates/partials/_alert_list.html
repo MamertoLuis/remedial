@@ -2,9 +2,9 @@
 
 <div class="alert-list {{ container_class|default:'' }}">
     <!-- Alert List Header -->
-    <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="flex justify-between items-center mb-3">
         <h5 class="mb-0">{{ title|default:'Alerts' }}</h5>
-        <div class="d-flex gap-2">
+        <div class="flex gap-2">
             <!-- Filter Dropdown -->
             {% if show_filters %}
             <div class="dropdown">
@@ -20,12 +20,12 @@
                     <li><hr class="dropdown-divider"></li>
                     <li>
                         <a class="dropdown-item {% if selected_type == 'CRITICAL' %}active{% endif %}" href="#" data-alert-type="CRITICAL">
-                            <i class="bi bi-exclamation-triangle-fill text-danger me-2"></i>Critical
+                            <i class="bi bi-exclamation-triangle-fill text-critical me-2"></i>Critical
                         </a>
                     </li>
                     <li>
                         <a class="dropdown-item {% if selected_type == 'WARNING' %}active{% endif %}" href="#" data-alert-type="WARNING">
-                            <i class="bi bi-exclamation-circle-fill text-warning me-2"></i>Warning
+                            <i class="bi bi-exclamation-circle-fill text-watch me-2"></i>Warning
                         </a>
                     </li>
                     <li>
@@ -35,7 +35,7 @@
                     </li>
                     <li>
                         <a class="dropdown-item {% if selected_type == 'SUCCESS' %}active{% endif %}" href="#" data-alert-type="SUCCESS">
-                            <i class="bi bi-check-circle-fill text-success me-2"></i>Success
+                            <i class="bi bi-check-circle-fill text-ok me-2"></i>Success
                         </a>
                     </li>
                 </ul>
@@ -65,7 +65,7 @@
             <div class="card bg-light border-0">
                 <div class="card-body text-center py-2">
                     <div class="h6 mb-0">{{ alert_counts.total|default:0 }}</div>
-                    <small class="text-muted">Total</small>
+                    <small class="text-slate-500 dark:text-slate-400">Total</small>
                 </div>
             </div>
         </div>
@@ -73,7 +73,7 @@
             <div class="card bg-danger bg-opacity-10 border-danger border-0">
                 <div class="card-body text-center py-2">
                     <div class="h6 mb-0">{{ alert_counts.total_critical|default:0 }}</div>
-                    <small class="text-danger">Critical</small>
+                    <small class="text-critical">Critical</small>
                 </div>
             </div>
         </div>
@@ -81,7 +81,7 @@
             <div class="card bg-warning bg-opacity-10 border-warning border-0">
                 <div class="card-body text-center py-2">
                     <div class="h6 mb-0">{{ alert_counts.total_warning|default:0 }}</div>
-                    <small class="text-warning">Warning</small>
+                    <small class="text-watch">Warning</small>
                 </div>
             </div>
         </div>
@@ -107,19 +107,19 @@
         {% else %}
             <!-- Empty State -->
             <div class="text-center py-4">
-                <i class="bi bi-bell-slash text-muted" style="font-size: 2rem;"></i>
-                <h6 class="text-muted mt-2">{{ empty_message|default:'No alerts to display' }}</h6>
-                <p class="text-muted small">{{ empty_subtext|default:'Alerts will appear here when triggered.' }}</p>
+                <i class="bi bi-bell-slash text-slate-500 dark:text-slate-400" style="font-size: 2rem;"></i>
+                <h6 class="text-slate-500 dark:text-slate-400 mt-2">{{ empty_message|default:'No alerts to display' }}</h6>
+                <p class="text-slate-500 dark:text-slate-400 small">{{ empty_subtext|default:'Alerts will appear here when triggered.' }}</p>
             </div>
         {% endif %}
     </div>
     
     <!-- Loading State -->
-    <div class="loading-state d-none text-center py-4">
+    <div class="loading-state hidden text-center py-4">
         <div class="spinner-border text-primary" role="status">
             <span class="visually-hidden">Loading...</span>
         </div>
-        <p class="text-muted mt-2">Loading alerts...</p>
+        <p class="text-slate-500 dark:text-slate-400 mt-2">Loading alerts...</p>
     </div>
 </div>
 

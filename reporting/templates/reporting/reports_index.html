@@ -3,14 +3,20 @@
 {% block title %}{{ title }}{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <h1>{{ title }}</h1>
-    <div class="list-group">
-        {% for report in reports %}
-            <a href="{% url report.url_name %}" class="list-group-item list-group-item-action">
-                {{ report.name }}
-            </a>
-        {% endfor %}
+    {% include 'partials/page_header.html' with page_title=title page_subtitle="Portfolio and performance reports" %}
+    <div class="app-section">
+        {% if reports %}
+        <ul class="app-search-list">
+            {% for report in reports %}
+            <li>
+                <a href="{% url report.url_name %}" class="app-search-item">
+                    <span class="app-search-title">{{ report.name }}</span>
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        {% include 'partials/empty_state.html' with title="No reports available" %}
+        {% endif %}
     </div>
-</div>
 {% endblock %}

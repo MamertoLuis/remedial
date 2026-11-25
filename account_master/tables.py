@@ -31,6 +31,11 @@ class BackLinkColumn(tables.LinkColumn):
 
 class BorrowerTable(tables.Table):
     borrower_id = BackLinkColumn("borrower_detail", args=[tables.A("borrower_id")])
+    delete = tables.TemplateColumn(
+        template_name="account_master/_delete_borrower_action.html",
+        verbose_name="Actions",
+        orderable=False,
+    )
 
     class Meta:
         model = Borrower
@@ -41,7 +46,8 @@ class BorrowerTable(tables.Table):
             "mobile",
             "borrower_group",
         )
-        attrs = {"class": "table table-striped"}
+        attrs = {"class": "app-table"}
+        empty_text = "No records found."
 
 
 class LoanAccountTable(tables.Table):
@@ -64,7 +70,8 @@ class LoanAccountTable(tables.Table):
             "account_officer_id",
             "outstanding_balance",
         )
-        attrs = {"class": "table table-striped"}
+        attrs = {"class": "app-table"}
+        empty_text = "No records found."
 
     def render_outstanding_balance(self, value):
         if value is not None:
@@ -82,6 +89,7 @@ class LoanAccountTable(tables.Table):
 
 
 class CollectionActivityLogTable(tables.Table):
+    collapse_columns = ["remarks"]
     actions = tables.LinkColumn(
         "update_collection_activity",
         args=[tables.A("account.loan_id"), tables.A("activity_id")],
@@ -101,7 +109,8 @@ class CollectionActivityLogTable(tables.Table):
             "next_action_date",
             "actions",
         )
-        attrs = {"class": "table table-striped"}
+        attrs = {"class": "app-table"}
+        empty_text = "No records found."
 
 
 class DashboardCollectionActivityTable(tables.Table):
@@ -110,7 +119,8 @@ class DashboardCollectionActivityTable(tables.Table):
     class Meta:
         model = CollectionActivityLog
         fields = ("activity_date", "account", "activity_type", "staff_assigned")
-        attrs = {"class": "table table-striped"}
+        attrs = {"class": "app-table"}
+        empty_text = "No records found."
         orderable = False
 
 
@@ -127,10 +137,12 @@ class BorrowerAccountTable(tables.Table):
             "original_principal",
             "interest_rate",
         )
-        attrs = {"class": "table table-striped"}
+        attrs = {"class": "app-table"}
+        empty_text = "No records found."
 
 
 class ExposureTable(tables.Table):
+    collapse_columns = ["shouldbepay"]
     class Meta:
         model = Exposure
         fields = (
@@ -142,7 +154,8 @@ class ExposureTable(tables.Table):
             "shouldbepay",
             "actualpay",
         )
-        attrs = {"class": "table table-striped"}
+        attrs = {"class": "app-table"}
+        empty_text = "No records found."
         order_by = ("-as_of_date",)
 
     def render_principal_outstanding(self, value):
@@ -172,7 +185,8 @@ class DelinquencyStatusTable(tables.Table):
             "npl_flag",
             "npl_date",
         )
-        attrs = {"class": "table table-striped"}
+        attrs = {"class": "app-table"}
+        empty_text = "No records found."
         order_by = ("-as_of_date",)
 
 
@@ -190,5 +204,6 @@ class RemedialStrategyTable(tables.Table):
             "strategy_status",
             "strategy_outcome",
         )
-        attrs = {"class": "table table-striped"}
+        attrs = {"class": "app-table"}
+        empty_text = "No records found."
         order_by = ("-strategy_start_date",)

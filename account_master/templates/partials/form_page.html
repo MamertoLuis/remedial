@@ -1,0 +1,38 @@
+{% load ui_tags %}
+{% comment %}
+Standard form page layout (ui-workspace). Context:
+- page_title (str), page_subtitle (opt),
+- form (Django form),
+- cancel_url (opt — secondary Cancel link),
+- submit_label (opt, default "Save"),
+- form_action (opt — custom POST action; defaults to the current URL).
+Labels above fields, two columns on desktop (one below 768px), errors in
+critical red linked via aria-describedby, non_field_errors at the top.
+{% endcomment %}
+{% include 'partials/page_header.html' with page_title=page_title page_subtitle=page_subtitle %}
+
+{% if form.non_field_errors %}
+<div class="app-form-errors" role="alert">
+    {% for error in form.non_field_errors %}<p class="app-error">{{ error }}</p>{% endfor %}
+</div>
+{% endif %}
+
+<form method="post" {% if form_action %}action="{{ form_action }}"{% endif %} class="app-form">
+    {% csrf_token %}
+    <div class="app-form-grid">
+        {% for field in form %}
+            {% if field.is_hidden %}{{ field }}{% else %}
+            <div class="app-field {% if field.field.widget.input_type == 'textarea' %}app-field-full{% endif %} {% if field.errors %}has-error{% endif %}">
+                <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %}<span class="app-required" aria-hidden="true"> *</span>{% endif %}</label>
+                {{ field|with_describedby }}
+                {% if field.help_text %}<span class="app-help" id="{{ field.id_for_label }}-help">{{ field.help_text }}</span>{% endif %}
+                {% for error in field.errors %}<span class="app-error" id="{{ field.id_for_label }}-error" role="alert">{{ error }}</span>{% endfor %}
+            </div>
+            {% endif %}
+        {% endfor %}
+    </div>
+    <div class="app-form-actions">
+        {% if cancel_url %}<a href="{{ cancel_url }}" class="app-btn app-btn-secondary">Cancel</a>{% endif %}
+        <button type="submit" class="app-btn app-btn-primary">{{ submit_label|default:"Save" }}</button>
+    </div>
+</form>

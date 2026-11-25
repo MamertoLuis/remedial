@@ -774,6 +774,59 @@ class DashboardService:
         }
 
     @classmethod
+    def get_needs_attention(cls, limit=20):
+        """Return the accounts that most need attention.
+
+        Read-only triage feed for the dashboard: accounts currently PAST_DUE or
+        NPL, annotated with their latest-exposure outstanding balance, latest
+        delinquency days past due, and active strategy type, ordered by days
+        past due descending and limited to ``limit`` rows. Does not change any
+        existing KPI query or calculation.
+        """
+        cache_key = cls.get_cache_key("needs_attention", limit)
+        result = cache.get(cache_key)
+
+        if result is None:
+            try:
+                latest_exposure_subquery = (
+                    Exposure.objects.filter(account_id=OuterRef("pk"))
+                    .order_by("-as_of_date")
+                    .values("principal_outstanding")[:1]
+                )
+                latest_dpd_subquery = (
+                    DelinquencyStatus.objects.filter(account_id=OuterRef("pk"))
+                    .order_by("-as_of_date")
+                    .values("days_past_due")[:1]
+                )
+                active_strategy_subquery = (
+                    RemedialStrategy.objects.filter(
+                        account_id=OuterRef("pk"),
+                        strategy_status="ACTIVE",
+                    )
+                    .order_by("-strategy_start_date")
+                    .values("strategy_type")[:1]
+                )
+
+                result = list(
+                    LoanAccount.objects.filter(status__in=["PAST_DUE", "NPL"])
+                    .select_related("borrower")
+                    .annotate(
+                        outstanding_balance=Subquery(latest_exposure_subquery),
+                        days_past_due=Subquery(latest_dpd_subquery),
+                        active_strategy_type=Subquery(active_strategy_subquery),
+                    )
+                    .exclude(days_past_due__isnull=True)
+                    .order_by("-days_past_due")[:limit]
+                )
+                cache.set(cache_key, result, cls.CACHE_TIMEOUT)
+
+            except Exception as e:
+                logger.error(f"Error calculating needs attention: {e}")
+                result = []
+
+        return result
+
+    @classmethod
     def clear_cache(cls):
         """Clear all dashboard cache."""
         try:

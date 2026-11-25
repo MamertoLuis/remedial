@@ -1,54 +1,53 @@
 {% extends "base.html" %}
-{% load humanize %}
 {% load django_tables2 %}
 
 {% block title %}Remedial Strategy Details{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h1>Strategy: {{ strategy.get_strategy_type_display }}</h1>
-    <a href="{% url 'account_detail' account.loan_id %}" class="btn btn-secondary">Back to Account Details</a>
-</div>
-
-<div class="card mb-4">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">Strategy Details</h5>
-        <a href="{% url 'update_remedial_strategy' account.loan_id strategy.strategy_id %}" class="btn btn-sm btn-outline-primary">Update Strategy</a>
-    </div>
-    <div class="card-body">
-        <div class="row">
-            <div class="col-md-6">
-                <p><strong>Account ID:</strong> <a href="{% url 'account_detail' strategy.account.loan_id %}">{{ strategy.account.loan_id }}</a></p>
-                <p><strong>Borrower:</strong> <a href="{% url 'borrower_detail' strategy.account.borrower.borrower_id %}">{{ strategy.account.borrower.full_name }}</a></p>
-                <p><strong>Strategy Type:</strong> {{ strategy.get_strategy_type_display }}</p>
+    <div class="app-entity-header app-section">
+        <div class="min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+                <h1 class="app-page-title mb-0">{{ strategy.get_strategy_type_display }}</h1>
+                {% include 'partials/status_chip.html' with value=strategy.strategy_status %}
             </div>
-            <div class="col-md-6">
-                <p><strong>Start Date:</strong> {{ strategy.strategy_start_date|date:"M d, Y" }}</p>
-                <p><strong>Status:</strong> <span class="badge bg-{% if strategy.strategy_status == 'ACTIVE' %}success{% elif strategy.strategy_status == 'COMPLETED' %}info{% else %}secondary{% endif %}">{{ strategy.get_strategy_status_display }}</span></p>
-            </div>
+            <p class="app-entity-sub">
+                <a href="{% url 'account_detail' strategy.account.loan_id %}" class="app-link">{{ strategy.account.loan_id }}</a>
+                &middot; <a href="{% url 'borrower_detail' strategy.account.borrower.borrower_id %}" class="app-link">{{ strategy.account.borrower.full_name }}</a>
+            </p>
         </div>
-        {% if strategy.strategy_outcome %}
-        <hr>
-        <p><strong>Outcome:</strong></p>
-        <p>{{ strategy.strategy_outcome|linebreaks }}</p>
-        {% endif %}
+        <div class="flex gap-2 flex-wrap">
+            <a href="{% url 'account_detail' account.loan_id %}" class="app-btn app-btn-secondary">Back to Account</a>
+            <a href="{% url 'update_remedial_strategy' account.loan_id strategy.strategy_id %}" class="app-btn app-btn-primary">Update Strategy</a>
+        </div>
     </div>
-</div>
 
-<div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">Compromise Agreements</h5>
-        {% if strategy.strategy_status == 'ACTIVE' and strategy.strategy_type in "Compromise,Legal Action" %}
-            <a href="{% url 'compromise_agreement_create' strategy.strategy_id %}" class="btn btn-sm btn-success">Add New Agreement</a>
+    <div class="app-section mt-3">
+        <h2 class="app-section-title mb-3">Strategy Details</h2>
+        <dl class="app-definition-grid">
+            <div><dt>Account ID</dt><dd><a href="{% url 'account_detail' strategy.account.loan_id %}" class="app-link">{{ strategy.account.loan_id }}</a></dd></div>
+            <div><dt>Borrower</dt><dd><a href="{% url 'borrower_detail' strategy.account.borrower.borrower_id %}" class="app-link">{{ strategy.account.borrower.full_name }}</a></dd></div>
+            <div><dt>Strategy Type</dt><dd>{{ strategy.get_strategy_type_display }}</dd></div>
+            <div><dt>Start Date</dt><dd>{{ strategy.strategy_start_date|date:"M d, Y" }}</dd></div>
+        </dl>
+        {% if strategy.strategy_outcome %}
+        <div class="mt-3">
+            <h3 class="app-section-title">Outcome</h3>
+            <p class="app-empty-message">{{ strategy.strategy_outcome|linebreaks }}</p>
+        </div>
         {% endif %}
     </div>
-    <div class="card-body">
+
+    <div class="app-section mt-3">
+        <div class="app-section-head">
+            <h2 class="app-section-title">Compromise Agreements</h2>
+            {% if strategy.strategy_status == 'ACTIVE' and strategy.strategy_type in "Compromise,Legal Action" %}
+            <a href="{% url 'compromise_agreement_create' strategy.strategy_id %}" class="app-btn app-btn-primary app-btn-sm">Add New Agreement</a>
+            {% endif %}
+        </div>
         {% if compromise_agreements_table.data %}
             {% render_table compromise_agreements_table %}
         {% else %}
-            <p class="text-muted">No compromise agreements are associated with this strategy.</p>
+            {% include 'partials/empty_state.html' with title="No compromise agreements" message="No compromise agreements are associated with this strategy." %}
         {% endif %}
     </div>
-</div>
-
 {% endblock %}
