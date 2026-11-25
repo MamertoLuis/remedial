@@ -27,7 +27,10 @@ SECRET_KEY = os.environ.get(
 # Development settings override this to True.
 DEBUG = os.environ.get("DEBUG", "False").lower() in ("1", "true", "yes")
 
-ALLOWED_HOSTS = []
+# In development, permit local hosts so the admin (e.g. the "Add user" page)
+# does not return a 400 Bad Request. Production settings override this through
+# the ALLOWED_HOSTS environment variable.
+ALLOWED_HOSTS = (["localhost", "127.0.0.1", "[::1]"] if DEBUG else [])
 
 
 # Application definition

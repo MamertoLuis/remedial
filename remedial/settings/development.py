@@ -3,6 +3,12 @@ from .base import *
 # Development specific settings
 DEBUG = True
 
+# Send emails to the terminal instead of a real SMTP server so signup / password
+# reset flows (which alloc-based allauth uses to deliver verification emails) do
+# not crash with a connection-refused error during local development.
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+DEFAULT_FROM_EMAIL = "noreply@localhost"
+
 # You can override other settings here for development
 # For example, using a different database, email backend, etc.
 # EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
