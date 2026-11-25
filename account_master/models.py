@@ -641,6 +641,7 @@ class AlertRule(AuditableModel):
         COLLECTION_INACTIVITY = "COLLECTION_INACTIVITY", _("Collection Inactivity")
         NPL_RATIO = "NPL_RATIO", _("NPL Ratio")
         PROVISION_COVERAGE = "PROVISION_COVERAGE", _("Provision Coverage")
+        NOTICE_OVERDUE = "NEXT_NOTICE_OVERDUE", _("Next Notice Overdue")
 
     class ComparisonOperator(models.TextChoices):
         GREATER_THAN = ">", _("Greater than")
@@ -845,6 +846,151 @@ class AlertLog(AuditableModel):
 
     def __str__(self):
         return str(f"{self.alert.title} - {self.action_taken}")
+
+
+# ============================================================================
+# NOTICE ESCALATION LADDER MODELS (judgment plane)
+# ============================================================================
+
+
+class EscalationStage(AuditableModel):
+    """
+    Fixed ladder template of ordered escalation stages (judgment plane).
+
+    Durations are tunable in Django admin; stage order is by ``stage_no``.
+    """
+
+    stage_no = models.PositiveIntegerField(
+        unique=True, help_text=_("Ladder position (1 = first stage)")
+    )
+    label = models.CharField(max_length=100, help_text=_("Stage label e.g. First Demand"))
+    duration_days = models.PositiveIntegerField(
+        help_text=_("Days until the next notice is due")
+    )
+    is_terminal = models.BooleanField(
+        default=False,
+        help_text=_("Last escalation stage; issuing a notice here closes the ladder"),
+    )
+
+    class Meta:
+        ordering = ["stage_no"]
+        verbose_name = _("Escalation Stage")
+        verbose_name_plural = _("Escalation Stages")
+
+    def __str__(self):
+        return str(f"{self.stage_no}. {self.label}")
+
+
+class EscalationState(AuditableModel):
+    """
+    One escalation position per loan account.
+
+    Carries the current stage, the date the stage started, the computed
+    next-notice due date, and a lifecycle status. An account holds at most
+    one open (PENDING/ACTIVE/PAUSED) state at a time.
+    """
+
+    class Status(models.TextChoices):
+        PENDING = "PENDING", _("Pending")
+        ACTIVE = "ACTIVE", _("Active")
+        PAUSED = "PAUSED", _("Paused")
+        CLOSED = "CLOSED", _("Closed")
+
+    class CloseReason(models.TextChoices):
+        CURED = "cured", _("Cured")
+        ARRANGEMENT = "arrangement", _("Arrangement approved")
+        TERMINAL = "terminal", _("Terminal stage")
+
+    escalation_id = models.AutoField(primary_key=True)
+    account = models.ForeignKey(
+        LoanAccount, on_delete=models.CASCADE, related_name="escalation_states"
+    )
+    current_stage = models.ForeignKey(
+        EscalationStage,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="escalation_states",
+    )
+    stage_started_on = models.DateField()
+    next_notice_due = models.DateField(null=True, blank=True)
+    status = models.CharField(
+        max_length=10, choices=Status.choices, default=Status.PENDING
+    )
+    closed_reason = models.CharField(
+        max_length=20, choices=CloseReason.choices, null=True, blank=True
+    )
+
+    class Meta:
+        ordering = ["-stage_started_on"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["account"],
+                condition=models.Q(status__in=["PENDING", "ACTIVE", "PAUSED"]),
+                name="uniq_open_escalation_state_per_account",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["status"]),
+            models.Index(fields=["account", "status"]),
+            models.Index(fields=["next_notice_due"]),
+        ]
+
+    @property
+    def is_open(self):
+        return self.status in [
+            self.Status.PENDING,
+            self.Status.ACTIVE,
+            self.Status.PAUSED,
+        ]
+
+    def __str__(self):
+        return str(f"Escalation ({self.get_status_display()}) - {self.account.loan_id}")
+
+
+class Notice(AuditableModel):
+    """
+    History of notices issued against an account's escalation ladder.
+    """
+
+    class Method(models.TextChoices):
+        LETTER = "Letter", _("Letter")
+        EMAIL = "Email", _("Email")
+        SMS = "SMS", _("SMS")
+        PHONE = "Phone", _("Phone Call")
+
+    notice_id = models.AutoField(primary_key=True)
+    account = models.ForeignKey(
+        LoanAccount, on_delete=models.CASCADE, related_name="notices"
+    )
+    stage = models.ForeignKey(
+        EscalationStage,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="notices",
+    )
+    issued_on = models.DateField()
+    method = models.CharField(max_length=20, choices=Method.choices)
+    issued_by = models.ForeignKey(
+        get_user_model(),
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="issued_notices",
+    )
+    reference_no = models.CharField(max_length=50, blank=True, default="")
+
+    class Meta:
+        ordering = ["-issued_on"]
+        indexes = [
+            models.Index(fields=["account", "issued_on"]),
+        ]
+
+    def __str__(self):
+        return str(
+            f"{self.get_method_display()} notice issued {self.issued_on} for {self.account.loan_id}"
+        )
 
 
 # Import signals at the end to avoid circular imports

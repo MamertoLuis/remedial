@@ -10,6 +10,9 @@ from .models import (
     Alert,
     AlertRule,
     AlertLog,
+    EscalationStage,
+    EscalationState,
+    Notice,
 )
 from . import services
 from .services.provision_service import create_provision_entry
@@ -152,6 +155,51 @@ class RemedialStrategyAdmin(admin.ModelAdmin):
     search_fields = ("account__loan_id",)
     list_filter = ("strategy_type", "strategy_status")
     date_hierarchy = "strategy_start_date"
+
+
+@admin.register(EscalationStage)
+class EscalationStageAdmin(admin.ModelAdmin):
+    list_display = (
+        "stage_no",
+        "label",
+        "duration_days",
+        "is_terminal",
+        "updated_at",
+    )
+    list_display_links = ("stage_no", "label")
+    list_editable = ("duration_days", "is_terminal")
+    list_filter = ("is_terminal",)
+    ordering = ("stage_no",)
+
+
+@admin.register(EscalationState)
+class EscalationStateAdmin(admin.ModelAdmin):
+    list_display = (
+        "account",
+        "current_stage",
+        "stage_started_on",
+        "next_notice_due",
+        "status",
+        "closed_reason",
+    )
+    search_fields = ("account__loan_id", "account__borrower__full_name")
+    list_filter = ("status", "closed_reason")
+    date_hierarchy = "stage_started_on"
+
+
+@admin.register(Notice)
+class NoticeAdmin(admin.ModelAdmin):
+    list_display = (
+        "account",
+        "stage",
+        "issued_on",
+        "method",
+        "issued_by",
+        "reference_no",
+    )
+    search_fields = ("account__loan_id", "reference_no")
+    list_filter = ("method", "issued_on")
+    date_hierarchy = "issued_on"
 
 
 @admin.register(Alert)

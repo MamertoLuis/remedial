@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block title %}Issue Notice - {{ account.loan_id }}{% endblock %}
+
+{% block content %}
+    <div class="app-section">
+        <div class="app-section-head">
+            <h1 class="app-section-title">Issue Escalation Notice</h1>
+            <a href="{% url 'escalation_ladder_detail' account.loan_id %}" class="app-btn app-btn-secondary app-btn-sm">Back to Ladder</a>
+        </div>
+        <p class="app-entity-sub mb-3">
+            <a href="{% url 'account_detail' account.loan_id %}" class="app-link">Account {{ account.loan_id }}</a>
+            &middot; {{ account.borrower.full_name }}
+        </p>
+
+        {% if escalation_state %}
+        <dl class="app-definition-grid mb-3">
+            <div><dt>Current stage</dt><dd>{% if escalation_state.current_stage %}{{ escalation_state.current_stage.label }} (stage {{ escalation_state.current_stage.stage_no }}){% else %}—{% endif %}</dd></div>
+            <div><dt>Status</dt><dd>{% include 'partials/status_chip.html' with value=escalation_state.status %}</dd></div>
+            {% if escalation_state.next_notice_due %}
+            <div><dt>Next notice due</dt><dd>{{ escalation_state.next_notice_due }}</dd></div>
+            {% endif %}
+        </dl>
+
+        <form method="post" class="app-form">
+            {% csrf_token %}
+            <div class="app-form-grid">
+                <div class="app-field app-field-full">
+                    <label for="method">Notice Method</label>
+                    <select name="method" id="method" required>
+                        {% for value, label in methods %}
+                        <option value="{{ value }}">{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="app-form-actions">
+                <a href="{% url 'escalation_ladder_detail' account.loan_id %}" class="app-btn app-btn-secondary">Cancel</a>
+                <button type="submit" class="app-btn app-btn-primary">Issue Notice</button>
+            </div>
+        </form>
+        {% else %}
+        {% include 'partials/empty_state.html' with title="No open escalation position" message="This account has no open escalation position to issue a notice for." %}
+        <a href="{% url 'escalation_ladder_detail' account.loan_id %}" class="app-btn app-btn-secondary">Back to Ladder</a>
+        {% endif %}
+    </div>
+{% endblock %}

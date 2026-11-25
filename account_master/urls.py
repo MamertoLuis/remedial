@@ -127,4 +127,15 @@ urlpatterns = [
         views.generate_ecl_provision,
         name="generate_ecl_provision",
     ),
+    # Notice escalation ladder URLs
+    path(
+        "account/<str:loan_id>/escalation/",
+        views.escalation_ladder_detail,
+        name="escalation_ladder_detail",
+    ),
+    path(
+        "account/<str:loan_id>/escalation/issue/",
+        views.issue_escalation_notice,
+        name="issue_escalation_notice",
+    ),
 ]

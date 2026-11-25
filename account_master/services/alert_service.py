@@ -412,6 +412,9 @@ class AlertService:
             elif rule.rule_type == AlertRule.RuleType.PROVISION_COVERAGE:
                 alerts.extend(cls._check_provision_coverage(rule))
 
+            elif rule.rule_type == AlertRule.RuleType.NOTICE_OVERDUE:
+                alerts.extend(cls._check_notice_overdue(rule))
+
         except Exception as e:
             logger.error(f"Error evaluating rule {rule.name}: {e}")
 
@@ -699,6 +702,63 @@ class AlertService:
 
         except Exception as e:
             logger.error(f"Error checking provision coverage: {e}")
+
+        return alerts
+
+    @classmethod
+    def _check_notice_overdue(cls, rule):
+        """
+        Raise an alert for open ACTIVE escalation states whose
+        ``next_notice_due`` has passed.
+
+        Advisory only: it never advances the ladder (the system never
+        advances without an officer action).
+        """
+        from ..models import EscalationState
+
+        alerts = []
+        today = timezone.now().date()
+
+        overdue_states = (
+            EscalationState.objects.filter(
+                status=EscalationState.Status.ACTIVE,
+                next_notice_due__lt=today,
+            )
+            .select_related("account", "account__borrower", "current_stage")
+        )
+
+        for state in overdue_states:
+            # One open alert per account for this condition.
+            existing_alert = Alert.objects.filter(
+                entity_type=Alert.EntityType.ACCOUNT,
+                entity_id=state.account.loan_id,
+                status__in=[Alert.Status.NEW, Alert.Status.ACKNOWLEDGED],
+                title__startswith="Next Notice Overdue",
+            ).exists()
+            if existing_alert:
+                continue
+
+            stage_label = (
+                state.current_stage.label if state.current_stage else "current stage"
+            )
+            title = f"Next Notice Overdue - {state.account.loan_id}"
+            message = (
+                f"The next escalation notice for account {state.account.loan_id} "
+                f"({stage_label}) was due on {state.next_notice_due}. "
+                "Issue the notice to advance the ladder; the stage is unchanged."
+            )
+            alert = rule.trigger_alert(
+                entity_type=Alert.EntityType.ACCOUNT,
+                entity_id=state.account.loan_id,
+                title=title,
+                message=message,
+                metadata={
+                    "next_notice_due": state.next_notice_due.isoformat(),
+                    "escalation_id": state.escalation_id,
+                },
+            )
+            if alert:
+                alerts.append(alert)
 
         return alerts
 

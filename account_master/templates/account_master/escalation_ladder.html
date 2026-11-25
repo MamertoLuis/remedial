@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Escalation Ladder - {{ account.loan_id }}{% endblock %}
+
+{% block content %}
+    <div class="app-entity-header app-section">
+        <div class="min-w-0">
+            <h1 class="app-page-title mb-0">Notice Escalation Ladder</h1>
+            <p class="app-entity-sub">
+                <a href="{% url 'account_detail' account.loan_id %}" class="app-link">Account {{ account.loan_id }}</a>
+                &middot; <a href="{% url 'borrower_detail' account.borrower.borrower_id %}" class="app-link">{{ account.borrower.full_name }}</a>
+                &middot; {% include 'partials/status_chip.html' with value=account.status %}
+            </p>
+        </div>
+        <div class="flex gap-2 flex-wrap">
+            <a href="{% url 'account_detail' account.loan_id %}" class="app-btn app-btn-secondary">Back to Account</a>
+            {% if escalation_state %}
+            <a href="{% url 'issue_escalation_notice' account.loan_id %}" class="app-btn app-btn-primary">Issue Notice</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="app-section mt-3">
+        <h2 class="app-section-title mb-3">Current Escalation Position</h2>
+        {% if escalation_state %}
+        <dl class="app-definition-grid">
+            <div><dt>Stage</dt><dd>{% if escalation_state.current_stage %}{{ escalation_state.current_stage.label }} (stage {{ escalation_state.current_stage.stage_no }}){% else %}—{% endif %}</dd></div>
+            <div><dt>Status</dt><dd>{% include 'partials/status_chip.html' with value=escalation_state.status %}</dd></div>
+            <div><dt>Stage started on</dt><dd>{{ escalation_state.stage_started_on }}</dd></div>
+            <div><dt>Next notice due</dt><dd>{{ escalation_state.next_notice_due|default:"—" }}</dd></div>
+            {% if escalation_state.closed_reason %}
+            <div><dt>Closed reason</dt><dd>{{ escalation_state.closed_reason }}</dd></div>
+            {% endif %}
+        </dl>
+        {% else %}
+        {% include 'partials/empty_state.html' with title="No open escalation position" message="This account has no open escalation position." %}
+        {% endif %}
+    </div>
+
+    <div class="app-section mt-3">
+        <h2 class="app-section-title mb-3">Notice History</h2>
+        {% if notices %}
+        <div class="app-table-scroll">
+            <table class="app-table" aria-label="Notice history for this account">
+                <thead>
+                    <tr>
+                        <th scope="col">Issued On</th>
+                        <th scope="col">Stage</th>
+                        <th scope="col">Method</th>
+                        <th scope="col">Issued By</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for notice in notices %}
+                    <tr class="app-table-row">
+                        <td>{{ notice.issued_on }}</td>
+                        <td>{% if notice.stage %}{{ notice.stage.label }}{% else %}—{% endif %}</td>
+                        <td>{{ notice.get_method_display }}</td>
+                        <td>{% if notice.issued_by %}{{ notice.issued_by.get_full_name|default:notice.issued_by.username }}{% else %}—{% endif %}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        {% include 'partials/empty_state.html' with title="No notices issued" message="No notices have been issued yet." %}
+        {% endif %}
+    </div>
+{% endblock %}

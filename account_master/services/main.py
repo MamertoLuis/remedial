@@ -12,6 +12,7 @@ from ..models import (
     ECLProvisionHistory,
 )
 from .ecl_service import update_ecl_provision
+from .escalation_service import sync_escalation_on_snapshot
 
 
 def upsert_borrower(*, borrower_id: str, defaults: dict) -> tuple[Borrower, bool]:
@@ -123,7 +124,8 @@ def _auto_create_delinquency_status(
         defaults=defaults,
     )
 
-    _update_loan_account_status(account, classification)
+    derived_status = _update_loan_account_status(account, classification)
+    sync_escalation_on_snapshot(account, derived_status)
 
 
 def upsert_delinquency_status(
@@ -157,7 +159,8 @@ def upsert_delinquency_status(
         },
     )
 
-    _update_loan_account_status(account, classification)
+    derived_status = _update_loan_account_status(account, classification)
+    sync_escalation_on_snapshot(account, derived_status)
 
     return obj, created
 
@@ -226,6 +229,8 @@ def _update_loan_account_status(account: LoanAccount, classification: str) -> No
     if account.status != new_status:
         account.status = new_status
         account.save(update_fields=["status", "updated_at"])
+
+    return new_status
 
 
 def create_collection_activity(
