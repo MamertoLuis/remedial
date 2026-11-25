@@ -65,7 +65,7 @@ class AlertListViewTests(TestCase):
     def test_alert_list_page_loads(self):
         """Test that the alert list page loads successfully."""
         # Login user
-        self.client.login(email="testuser@example.com", password="testpassword")
+        self.client.force_login(self.user)
 
         # Get alert list page
         response = self.client.get(reverse("alert_list"))
@@ -79,7 +79,7 @@ class AlertListViewTests(TestCase):
     def test_alert_list_filtering(self):
         """Test that alert filtering works."""
         # Login user
-        self.client.login(email="testuser@example.com", password="testpassword")
+        self.client.force_login(self.user)
 
         # Filter by critical alerts only
         response = self.client.get(reverse("alert_list") + "?alert_type=CRITICAL")

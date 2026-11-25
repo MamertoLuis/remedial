@@ -250,7 +250,7 @@ class CompromiseAgreementTests(TestCase):
 
     def test_installment_regeneration_skipped_when_paid(self):
         """Test that installment regeneration is skipped when installments have been paid."""
-        self.client.login(email="testuser@example.com", password="testpassword")
+        self.client.force_login(self.user)
 
         paid_installment = CompromiseInstallment.objects.create(
             compromise_agreement=self.compromise_agreement,
@@ -299,7 +299,7 @@ class CompromiseAgreementTests(TestCase):
 
     def test_installment_regeneration_works_when_no_payments(self):
         """Test that installment regeneration works when no installments have been paid."""
-        self.client.login(email="testuser@example.com", password="testpassword")
+        self.client.force_login(self.user)
 
         initial_installment_count = CompromiseInstallment.objects.count()
 

@@ -865,7 +865,7 @@ class AlertAPITests(TestCase):
     def test_refresh_alerts_api(self):
         """Test the refresh alerts AJAX endpoint."""
         # Login user
-        self.client.login(email="testuser@example.com", password="testpassword")
+        self.client.force_login(self.user)
 
         # Create test alert
         Alert.objects.create(
@@ -895,7 +895,7 @@ class AlertAPITests(TestCase):
     def test_acknowledge_alert_api(self):
         """Test the acknowledge alert AJAX endpoint."""
         # Login user
-        self.client.login(email="testuser@example.com", password="testpassword")
+        self.client.force_login(self.user)
 
         # Create test alert
         alert = Alert.objects.create(
@@ -929,7 +929,7 @@ class AlertAPITests(TestCase):
     def test_resolve_alert_api(self):
         """Test the resolve alert AJAX endpoint."""
         # Login user
-        self.client.login(email="testuser@example.com", password="testpassword")
+        self.client.force_login(self.user)
 
         # Create test alert
         alert = Alert.objects.create(
@@ -963,7 +963,7 @@ class AlertAPITests(TestCase):
     def test_dismiss_alert_api(self):
         """Test the dismiss alert AJAX endpoint."""
         # Login user
-        self.client.login(email="testuser@example.com", password="testpassword")
+        self.client.force_login(self.user)
 
         # Create test alert
         alert = Alert.objects.create(
@@ -1016,7 +1016,7 @@ class AlertAPITests(TestCase):
     def test_api_invalid_methods(self):
         """Test that API endpoints validate request methods."""
         # Login user
-        self.client.login(email="testuser@example.com", password="testpassword")
+        self.client.force_login(self.user)
 
         # Create test alert
         alert = Alert.objects.create(
@@ -1041,7 +1041,7 @@ class AlertAPITests(TestCase):
     def test_api_missing_alert_id(self):
         """Test that API endpoints validate required parameters."""
         # Login user
-        self.client.login(email="testuser@example.com", password="testpassword")
+        self.client.force_login(self.user)
 
         # Make API request without alert_id
         response = self.client.post(
