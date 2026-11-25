@@ -91,10 +91,13 @@ class RemedialStrategy(AuditableModel):
             ).exclude(pk=self.pk).update(strategy_status=self.StrategyStatus.CANCELLED)
 
             # Supersede any active compromise agreements for the same account
-            # This part needs to be checked when CompromiseAgreement model is present
-            # self.account.compromise_agreements.filter(status="ACTIVE").exclude(
-            #     strategy=self
-            # ).update(status="SUPERSEDED")
+            # (excluding any linked to this strategy), keeping at most one
+            # active repayment arrangement.
+            self.account.compromise_agreements.filter(
+                status="ACTIVE"
+            ).exclude(
+                strategy_id=self.pk
+            ).update(status="SUPERSEDED")
 
     def __str__(self):
         return str(f"{self.strategy_type} for {self.account.loan_id}")

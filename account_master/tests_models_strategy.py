@@ -102,6 +102,38 @@ class RemedialStrategyModelTest(TestCase):
         # agreement should be superseded
         self.assertEqual(agreement.status, "SUPERSEDED")
 
+    def test_save_does_not_supersede_own_compromise_agreement(self):
+        """An ACTIVE strategy must not supersede its own compromise agreement."""
+        strategy = RemedialStrategy.objects.create(
+            account=self.account,
+            strategy_type="Intensive Collection",
+            strategy_start_date=datetime.date(2023, 6, 1),
+            strategy_status=RemedialStrategy.StrategyStatus.ACTIVE,
+        )
+        agreement = CompromiseAgreement.objects.create(
+            strategy=strategy,
+            account=self.account,
+            original_total_exposure=Decimal("10000.00"),
+            approved_compromise_amount=Decimal("9000.00"),
+            approval_level="MANAGER",
+            approval_date=datetime.date(2023, 6, 15),
+            status="ACTIVE",
+        )
+        # Re-saving the same ACTIVE strategy must leave its own agreement alone.
+        strategy.save()
+        agreement.refresh_from_db()
+        self.assertEqual(agreement.status, "ACTIVE")
+
+    def test_save_noop_without_active_compromise_agreement(self):
+        """Saving an ACTIVE strategy with no active agreement changes nothing."""
+        RemedialStrategy.objects.create(
+            account=self.account,
+            strategy_type="Restructuring",
+            strategy_start_date=datetime.date(2023, 7, 1),
+            strategy_status=RemedialStrategy.StrategyStatus.ACTIVE,
+        )
+        self.assertEqual(CompromiseAgreement.objects.count(), 0)
+
     def test_unique_active_strategy_per_account_constraint(self):
         # The save method automatically cancels other active strategies,
         # so we can't easily trigger the constraint by just calling create().
