@@ -35,6 +35,14 @@ class Borrower(AuditableModel):
         ("COOP", "Cooperative"),
     ]
 
+    #: Import provenance: rows written by the iAccs import are tagged
+    #: ``IACCS``; every other writer (CSV commands, app paths, dev loaders)
+    #: tags ``CSV``. CSV imports must not modify ``IACCS``-tagged records.
+    SOURCE_CHOICES = [
+        ("IACCS", "iAccs import"),
+        ("CSV", "CSV or app write"),
+    ]
+
     borrower_id = models.CharField(max_length=20, primary_key=True)
     borrower_type = models.CharField(
         max_length=10, choices=BORROWER_TYPE_CHOICES, default="PERSON"
@@ -682,6 +690,9 @@ class Exposure(AuditableModel):
     snapshot_type = models.CharField(
         max_length=10, choices=SNAPSHOT_TYPE, default="EVENT"
     )
+    source = models.CharField(
+        max_length=5, choices=Borrower.SOURCE_CHOICES, default="CSV"
+    )
 
     principal_outstanding = models.DecimalField(max_digits=18, decimal_places=2)
     accrued_interest = models.DecimalField(max_digits=18, decimal_places=2)
@@ -757,6 +768,9 @@ class DelinquencyStatus(AuditableModel):
     as_of_date = models.DateField()
     snapshot_type = models.CharField(
         max_length=10, choices=SNAPSHOT_TYPE, default="EVENT"
+    )
+    source = models.CharField(
+        max_length=5, choices=Borrower.SOURCE_CHOICES, default="CSV"
     )
 
     days_past_due = models.IntegerField(default=0)

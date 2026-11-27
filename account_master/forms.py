@@ -103,6 +103,9 @@ class DelinquencyStatusForm(forms.ModelForm):
     class Meta:
         model = DelinquencyStatus
         fields = "__all__"
+        #: Import provenance is set by the import paths (IACCS/CSV), never by
+        #: this form; the model default ``CSV`` applies to operator edits.
+        exclude = ("source",)
 
         widgets = {
             "as_of_date": forms.DateInput(attrs={"type": "date"}),

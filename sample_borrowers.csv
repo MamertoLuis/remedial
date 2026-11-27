@@ -1,0 +1,4 @@
+borrower_id,full_name,borrower_type,primary_address,mobile,borrower_group
+B-0001,Maria Santos,PERSON,123 Mabini Street Makati City,0917-123-4567,
+B-0002,Juan Dela Cruz,PERSON,456 Rizal Avenue Quezon City,0917-234-5678,
+B-0003,Luzviminda Trading Corp,CORP,789 Bonifacio Drive Manila,0917-345-6789,

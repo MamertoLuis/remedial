@@ -58,6 +58,7 @@ def upsert_loan_account(*, loan_id: str, defaults: dict) -> tuple[LoanAccount, b
     account_officer_id = defaults.get("account_officer_id")
     status = defaults.get("status", "PERFORMING")
     loan_security = defaults.get("loan_security", "UNSECURED")
+    transaction_type = defaults.get("transaction_type")
 
     obj, created = LoanAccount.objects.update_or_create(
         loan_id=loan_id,
@@ -71,6 +72,7 @@ def upsert_loan_account(*, loan_id: str, defaults: dict) -> tuple[LoanAccount, b
             "loan_security": loan_security,
             "account_officer_id": account_officer_id,
             "status": status,
+            "transaction_type": transaction_type,
         },
     )
     return obj, created
@@ -88,6 +90,7 @@ def upsert_exposure(
     accrued_penalty = defaults.get("accrued_penalty", Decimal("0.00"))
     days_past_due = defaults.get("days_past_due", 0)
     snapshot_type = defaults.get("snapshot_type", "EVENT")
+    source = defaults.get("source", "CSV")
 
     obj, created = Exposure.objects.update_or_create(
         account=account,
@@ -98,16 +101,17 @@ def upsert_exposure(
             "accrued_penalty": accrued_penalty,
             "days_past_due": days_past_due,
             "snapshot_type": snapshot_type,
+            "source": source,
         },
     )
 
-    _auto_create_delinquency_status(account, as_of_date, days_past_due)
+    _auto_create_delinquency_status(account, as_of_date, days_past_due, source=source)
 
     return obj, created
 
 
 def _auto_create_delinquency_status(
-    account: LoanAccount, as_of_date: date, days_past_due: int
+    account: LoanAccount, as_of_date: date, days_past_due: int, source: str = "CSV"
 ) -> None:
     """
     Auto-create or update DelinquencyStatus from Exposure data.
@@ -123,6 +127,7 @@ def _auto_create_delinquency_status(
         "classification": classification,
         "npl_flag": npl_flag,
         "snapshot_type": "EVENT",
+        "source": source,
     }
 
     DelinquencyStatus.objects.update_or_create(
@@ -149,6 +154,7 @@ def upsert_delinquency_status(
     npl_flag = defaults.get("npl_flag", False)
     npl_date = defaults.get("npl_date")
     snapshot_type = defaults.get("snapshot_type", "EVENT")
+    source = defaults.get("source", "CSV")
 
     if aging_bucket is None or aging_bucket == "":
         aging_bucket = derive_aging_bucket(days_past_due)
@@ -163,6 +169,7 @@ def upsert_delinquency_status(
             "npl_flag": npl_flag,
             "npl_date": npl_date,
             "snapshot_type": snapshot_type,
+            "source": source,
         },
     )
 

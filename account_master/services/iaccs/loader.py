@@ -168,6 +168,97 @@ def fetch_schedules(conn, branch: int, cutoff: date) -> Dict[Tuple, List[tuple]]
     return schedules
 
 
+_SCHEDULE_BY_KEY_SQL = """
+SELECT
+    BR_CODE,
+    SLT_CODE,
+    REF_NO,
+    CLIENTID,
+    DUEDATE,
+    PRINDUE,
+    INTDUE
+FROM amortsched
+WHERE SLC_CODE = %(slc)s
+  AND BR_CODE = %(br)s
+  AND SLT_CODE = %(slt)s
+  AND REF_NO = %(ref)s
+  AND CLIENTID = %(clientid)s
+  AND DUEDATE <= %(cutoff)s
+ORDER BY DUEDATE
+"""
+
+_AGGREGATES_BY_KEY_SQL = """
+SELECT
+    SUM(CASE WHEN d.SLE_CODE = %(principal)s AND d.AMT > 0
+             THEN d.AMT ELSE 0 END) AS total_advanced,
+    SUM(CASE WHEN d.SLE_CODE = %(principal)s THEN d.AMT ELSE 0 END) AS outstanding
+FROM sldtl d
+WHERE d.SLC_CODE = %(slc)s
+  AND d.SL_BRCODE = %(br)s
+  AND d.SLT_CODE = %(slt)s
+  AND d.REF_NO = %(ref)s
+  AND d.SL_CLIENTID = %(clientid)s
+  AND d.TR_DATE <= %(cutoff)s
+  AND d.SLE_CODE = %(principal)s
+GROUP BY d.SL_BRCODE, d.SLT_CODE, d.REF_NO, d.SL_CLIENTID
+"""
+
+
+def fetch_loan_schedule(
+    conn, loan_key: Tuple[int, int, int, int], cutoff: date
+) -> List[Tuple[date, Decimal, Decimal]]:
+    """Repayment schedule rows for a single loan key, ordered by due date.
+
+    Row shape is ``(due_date, principal_due, interest_due)`` matching the
+    per-branch :func:`fetch_schedules` output, so the same
+    :func:`mapper.compute_schedule_dpd` consumption applies.
+    """
+    br, slt, ref, clientid = loan_key
+    rows = query(
+        conn,
+        _SCHEDULE_BY_KEY_SQL,
+        {
+            "slc": mapper.LOAN_SLC_CODE,
+            "br": br,
+            "slt": slt,
+            "ref": ref,
+            "clientid": clientid,
+            "cutoff": cutoff,
+        },
+    )
+    return [(row["DUEDATE"], row["PRINDUE"], row["INTDUE"]) for row in rows]
+
+
+def fetch_loan_repayments(
+    conn, loan_key: Tuple[int, int, int, int], cutoff: date
+) -> Decimal:
+    """Principal repaid for a single loan key through *cutoff*.
+
+    Repaid is ``total_advanced - outstanding`` under the same
+    ``SLE_CODE = principal`` convention as :func:`fetch_loan_aggregates`.
+    """
+    br, slt, ref, clientid = loan_key
+    rows = query(
+        conn,
+        _AGGREGATES_BY_KEY_SQL,
+        {
+            "slc": mapper.LOAN_SLC_CODE,
+            "br": br,
+            "slt": slt,
+            "ref": ref,
+            "clientid": clientid,
+            "cutoff": cutoff,
+            "principal": mapper.SLE_PRINCIPAL,
+        },
+    )
+    if not rows:
+        return Decimal("0")
+    row = rows[0]
+    advanced = row["total_advanced"] or Decimal("0")
+    outstanding = row["outstanding"] or Decimal("0")
+    return Decimal(advanced) - Decimal(outstanding)
+
+
 def fetch_branches(conn) -> List[int]:
     """Distinct live branches for the loan portfolio (SLC=12)."""
     rows = query(conn, _BRANCH_SQL, {"slc": mapper.LOAN_SLC_CODE})

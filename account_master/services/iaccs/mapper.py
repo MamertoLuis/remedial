@@ -44,6 +44,22 @@ def render_loan_id(br_code: int, slt_code: int, ref_no: int, client_id: int) -> 
     )
 
 
+def parse_loan_id(loan_id: str) -> Tuple[int, int, int, int]:
+    """Parse a rendered ``loan_id`` back into ``(br, slt, ref, clientid)``.
+
+    Accepts the canonical five-part form produced by :func:`render_loan_id`
+    (for example ``"01-12-08-1428-1289"``). SLC is validated against
+    ``LOAN_SLC_CODE`` so a legacy or foreign key shape fails loudly.
+    """
+    parts = str(loan_id).split("-")
+    if len(parts) != 5:
+        raise ValueError(f"loan_id '{loan_id}' is not a five-part loan key")
+    br, slc, slt, ref, clientid = parts
+    if int(slc) != LOAN_SLC_CODE:
+        raise ValueError(f"loan_id '{loan_id}' does not carry SLC code {LOAN_SLC_CODE}")
+    return int(br), int(slt), int(ref), int(clientid)
+
+
 def render_borrower_id(branch_code: int, client_id: int) -> str:
     """Render the borrower id from the ``(ClientIDBrCode, ClientID)`` key.
 
@@ -153,6 +169,7 @@ def build_exposure_defaults(
         "accrued_penalty": Decimal("0.00"),
         "days_past_due": dpd,
         "snapshot_type": "EVENT",
+        "source": "IACCS",
     }
 
 
