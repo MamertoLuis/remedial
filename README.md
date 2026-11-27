@@ -28,6 +28,27 @@ uv run python manage.py runserver
 
 The app is served at <http://127.0.0.1:8000/>.
 
+### User accounts and roles
+
+Role assignment is restricted to the administrator. The user model enforces
+the invariant `is_staff == (role == SYSTEM_ADMINISTRATOR)` in the Django admin
+UI:
+
+- Only System Administrator accounts hold `is_staff` (and usually
+  `is_superuser`); the Account Officer, Manager, and Board Member roles are
+  never staff and can never access `/admin/`.
+- A role is assigned once at account creation and changed only through Django
+  admin by the System Administrator. The self-service profile page
+  (`/profile/`) edits only name and email and exposes no role control.
+
+Two account-creation paths:
+
+- `uv run python manage.py createsuperuser` — the SYSTEM_ADMINISTRATOR role is
+  assigned automatically by data migration `0003` for superuser accounts.
+- Django admin (Users → Add user) with the role set to System Administrator —
+  `is_staff` is set automatically; saving an account whose role and `is_staff`
+  disagree is rejected.
+
 ## Configuration
 
 Settings are split by environment and selected with `DJANGO_SETTINGS_MODULE`:
