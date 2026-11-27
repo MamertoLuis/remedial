@@ -6,10 +6,17 @@ from .main import (
     create_collection_activity,
     create_remedial_strategy,
     take_snapshot,
-    _derive_aging_bucket,
-    _derive_classification,
     _update_loan_account_status,
 )
+from .classification import (
+    derive_aging_bucket,
+    derive_classification,
+    derive_status,
+)
+
+# Backward-compatible aliases for the previously private helper names.
+_derive_aging_bucket = derive_aging_bucket
+_derive_classification = derive_classification
 from .provision_service import *
 from .ecl_service import (
     _get_provision_rate_for_classification,

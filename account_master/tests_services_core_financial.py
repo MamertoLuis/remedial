@@ -7,6 +7,9 @@ from account_master.services import (
     upsert_delinquency_status,
     _derive_aging_bucket,
     _derive_classification,
+    derive_aging_bucket,
+    derive_classification,
+    derive_status,
     take_snapshot,
 )
 
@@ -108,6 +111,66 @@ class CoreFinancialServicesTests(TestCase):
         self.assertEqual(_derive_classification(181), "D")
         self.assertEqual(_derive_classification(360), "D")
         self.assertEqual(_derive_classification(361), "L")
+        # Public names mirror the private aliases (single source of truth).
+        self.assertIs(derive_classification, _derive_classification)
+        self.assertIs(derive_aging_bucket, _derive_aging_bucket)
+
+    def test_derive_status_mapping_and_sentinels(self):
+        self.assertEqual(derive_status("C", decimal.Decimal("500.00")), "PERFORMING")
+        self.assertEqual(derive_status("SM", decimal.Decimal("500.00")), "PAST_DUE")
+        self.assertEqual(derive_status("SS", decimal.Decimal("500.00")), "NPL")
+        self.assertEqual(derive_status("D", decimal.Decimal("500.00")), "NPL")
+        self.assertEqual(derive_status("L", decimal.Decimal("500.00")), "NPL")
+        # Sentinel balances override classification.
+        self.assertEqual(derive_status("SS", decimal.Decimal("1.00")), "WRITEOFF")
+        self.assertEqual(derive_status("SS", decimal.Decimal("0.00")), "CLOSED")
+        # Unknown classification defaults to performing.
+        self.assertEqual(derive_status("X", decimal.Decimal("500.00")), "PERFORMING")
+        # No exposure (None balance) still maps by classification.
+        self.assertEqual(derive_status("SM", None), "PAST_DUE")
+
+    def test_npl_boundary_at_91_days_upsert(self):
+        """Exactly 90 DPD is SM/PAST_DUE; 91+ is SS/NPL (integration)."""
+        # 90 days: past due but NOT NPL.
+        upsert_exposure(
+            account=self.loan_account,
+            as_of_date=self.as_of_date,
+            defaults={
+                "principal_outstanding": decimal.Decimal("5000.00"),
+                "accrued_interest": decimal.Decimal("100.00"),
+                "accrued_penalty": decimal.Decimal("0.00"),
+                "days_past_due": 90,
+            },
+        )
+        d90 = DelinquencyStatus.objects.get(
+            account=self.loan_account, as_of_date=self.as_of_date
+        )
+        self.assertEqual(d90.classification, "SM")
+        self.assertEqual(d90.aging_bucket, "61-90")
+        self.assertFalse(d90.npl_flag)
+        self.loan_account.refresh_from_db()
+        self.assertEqual(self.loan_account.status, "PAST_DUE")
+
+        # 95 days: NPL.
+        later = self.as_of_date + datetime.timedelta(days=1)
+        upsert_exposure(
+            account=self.loan_account,
+            as_of_date=later,
+            defaults={
+                "principal_outstanding": decimal.Decimal("5000.00"),
+                "accrued_interest": decimal.Decimal("100.00"),
+                "accrued_penalty": decimal.Decimal("0.00"),
+                "days_past_due": 95,
+            },
+        )
+        d95 = DelinquencyStatus.objects.get(
+            account=self.loan_account, as_of_date=later
+        )
+        self.assertEqual(d95.classification, "SS")
+        self.assertEqual(d95.aging_bucket, "91-120")
+        self.assertTrue(d95.npl_flag)
+        self.loan_account.refresh_from_db()
+        self.assertEqual(self.loan_account.status, "NPL")
 
     def test_take_snapshot(self):
         exposure_data = {

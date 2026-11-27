@@ -13,6 +13,11 @@ from ..models import (
 )
 from .ecl_service import update_ecl_provision
 from .escalation_service import sync_escalation_on_snapshot
+from .classification import (
+    derive_aging_bucket,
+    derive_classification,
+    derive_status,
+)
 
 
 def upsert_borrower(*, borrower_id: str, defaults: dict) -> tuple[Borrower, bool]:
@@ -106,8 +111,8 @@ def _auto_create_delinquency_status(
     Auto-create or update DelinquencyStatus from Exposure data.
     Derives classification and aging_bucket based on rules.
     """
-    aging_bucket = _derive_aging_bucket(days_past_due)
-    classification = _derive_classification(days_past_due)
+    aging_bucket = derive_aging_bucket(days_past_due)
+    classification = derive_classification(days_past_due)
     npl_flag = classification in ["SS", "D", "L"]
 
     defaults = {
@@ -144,7 +149,7 @@ def upsert_delinquency_status(
     snapshot_type = defaults.get("snapshot_type", "EVENT")
 
     if aging_bucket is None or aging_bucket == "":
-        aging_bucket = _derive_aging_bucket(days_past_due)
+        aging_bucket = derive_aging_bucket(days_past_due)
 
     obj, created = DelinquencyStatus.objects.update_or_create(
         account=account,
@@ -165,66 +170,19 @@ def upsert_delinquency_status(
     return obj, created
 
 
-def _derive_aging_bucket(days_past_due: int) -> str:
-    """
-    Derive aging bucket based on days past due.
-    """
-    if days_past_due == 0:
-        return "Current"
-    elif 1 <= days_past_due <= 30:
-        return "1-30"
-    elif 31 <= days_past_due <= 60:
-        return "31-60"
-    elif 61 <= days_past_due <= 90:
-        return "61-90"
-    elif 91 <= days_past_due <= 120:
-        return "91-120"
-    elif 121 <= days_past_due <= 180:
-        return "121-180"
-    elif 181 <= days_past_due <= 360:
-        return "181-360"
-    else:
-        return "Over 360"
-
-
-def _derive_classification(days_past_due: int) -> str:
-    """
-    Derive suggested classification based on days past due.
-    This is a suggested value - MANAGER can override.
-    """
-    if days_past_due == 0:
-        return "C"
-    elif 1 <= days_past_due <= 90:
-        return "SM"
-    elif 91 <= days_past_due <= 180:
-        return "SS"
-    elif 181 <= days_past_due <= 360:
-        return "D"
-    else:
-        return "L"
-
-
-def _update_loan_account_status(account: LoanAccount, classification: str) -> None:
+def _update_loan_account_status(account: LoanAccount, classification: str) -> str:
     """
     Update LoanAccount.status based on delinquency classification.
+
+    Uses the shared ``derive_status`` rule (sentinel balances override the
+    classification mapping); returns the derived status.
     """
     latest_exposure = account.exposures.order_by("-as_of_date").first()
     outstanding_balance = (
         latest_exposure.principal_outstanding if latest_exposure else None
     )
 
-    if outstanding_balance == Decimal("1.00"):
-        new_status = "WRITEOFF"
-    elif outstanding_balance == Decimal("0.00"):
-        new_status = "CLOSED"
-    elif classification in ["C"]:
-        new_status = "PERFORMING"
-    elif classification in ["SM"]:
-        new_status = "PAST_DUE"
-    elif classification in ["SS", "D", "L"]:
-        new_status = "NPL"
-    else:
-        new_status = "PERFORMING"
+    new_status = derive_status(classification, outstanding_balance)
 
     if account.status != new_status:
         account.status = new_status

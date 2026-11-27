@@ -17,7 +17,10 @@
         {% include 'partials/kpi_tile.html' with label="NPL Ratio" value=ratio|add:"%" subtext="Non-performing loans" severity="critical" %}
         {% endwith %}
         {% include 'partials/kpi_tile.html' with label="Total NPL" value=kpis.total_npl severity="critical" is_money=True url="/accounts/?status=NPL" subtext="Non-performing loans" %}
-        {% include 'partials/kpi_tile.html' with label="Total Past Due" value=kpis.total_past_due_loans severity="critical" is_money=True url="/accounts/?status=PAST_DUE" subtext="Overdue accounts" %}
+        {% include 'partials/kpi_tile.html' with label="Total Past Due" value=kpis.total_past_due_loans severity="critical" is_money=True url="/accounts/?status=PAST_DUE" subtext="Overdue incl. NPL" %}
+        {% with ratio=kpis.past_due_ratio|floatformat:2 %}
+        {% include 'partials/kpi_tile.html' with label="Past Due Ratio" value=ratio|add:"%" subtext="Past-due incl. NPL" severity="critical" %}
+        {% endwith %}
         {% include 'partials/kpi_tile.html' with label="Total Loan Portfolio" value=kpis.total_loan_portfolio severity="neutral" is_money=True url="/portfolio/" subtext="Outstanding principal" %}
         {% include 'partials/kpi_tile.html' with label="Total Remedial" value=kpis.total_remedial severity="neutral" is_money=True url="/accounts/?remedial_status=active" subtext="Under remedial strategies" %}
         {% include 'partials/kpi_tile.html' with label="Active Remedial Strategy" value=kpis.accounts_with_active_remedial_strategy_count severity="neutral" url="/accounts/?remedial_status=active" subtext="Accounts" %}

@@ -87,7 +87,11 @@ def past_due_aging_summary(request):
         .values("principal_outstanding")[:1]
     )
 
-    past_due_accounts = LoanAccount.objects.filter(status="PAST_DUE").annotate(
+    # Umbrella past-due definition: PAST_DUE plus NPL (portfolio-metrics), so
+    # the 91-120 through Over 360 buckets can populate.
+    past_due_accounts = LoanAccount.objects.filter(
+        status__in=["PAST_DUE", "NPL"]
+    ).annotate(
         current_exposure=Coalesce(latest_exposure_subquery, Decimal(0))
     )
 
@@ -336,8 +340,10 @@ def loan_officer_performance_summary(request):
             total=Sum("latest_principal_outstanding")
         )["total"] or Decimal(0)
 
-        # Past due balance
-        past_due_balance = accounts_with_exposure.filter(status="PAST_DUE").aggregate(
+        # Past due balance (umbrella: PAST_DUE plus NPL, portfolio-metrics)
+        past_due_balance = accounts_with_exposure.filter(
+            status__in=["PAST_DUE", "NPL"]
+        ).aggregate(
             total=Sum("latest_principal_outstanding")
         )["total"] or Decimal(0)
 

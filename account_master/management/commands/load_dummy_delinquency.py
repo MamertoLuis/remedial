@@ -1,5 +1,9 @@
 from django.core.management.base import BaseCommand
 from account_master.models import Borrower, LoanAccount, DelinquencyStatus
+from account_master.services.classification import (
+    derive_aging_bucket,
+    derive_classification,
+)
 from datetime import date, timedelta
 import random
 
@@ -74,32 +78,11 @@ class Command(BaseCommand):
                     current_dpd + random.randint(5, 15), 400
                 )  # Max DPD of 400 for simulation
 
-                # Determine aging bucket, classification, and NPL flag
-                aging_bucket = None
-                classification = None
-                npl_flag = False
-                npl_date = None
-
-                if current_dpd >= 360:
-                    aging_bucket = "360+"
-                    classification = "L"  # Loss
-                elif current_dpd >= 180:
-                    aging_bucket = "180"
-                    classification = "D"  # Doubtful
-                elif current_dpd >= 90:
-                    aging_bucket = "90"
-                    classification = "SS"  # Substandard
-                    npl_flag = True
-                    npl_date = as_of_date  # NPL Date is when it first hits 90 DPD
-                elif current_dpd >= 60:
-                    aging_bucket = "60"
-                    classification = "SM"  # Especially Mentioned
-                elif current_dpd >= 30:
-                    aging_bucket = "30"
-                    classification = "SM"
-                else:
-                    # Performing or very early past due
-                    classification = "C"
+                # Derive aging bucket, classification, and NPL flag via the
+                # shared rule (NPL starts at 91+ DPD; buckets are range labels).
+                classification = derive_classification(current_dpd)
+                npl_flag = classification in ("SS", "D", "L")
+                npl_date = as_of_date if npl_flag else None  # NPL date = first NPL snapshot
 
                 # Only create record if it's actually past due for relevant classification
                 if current_dpd > 0:  # Only record if there's actual delinquency
@@ -107,12 +90,10 @@ class Command(BaseCommand):
                         account=account,
                         as_of_date=as_of_date,
                         days_past_due=current_dpd,
-                        aging_bucket=aging_bucket,
+                        aging_bucket=derive_aging_bucket(current_dpd),
                         classification=classification,
                         npl_flag=npl_flag,
-                        npl_date=npl_date
-                        if npl_flag
-                        else None,  # Ensure NPL date is set only if NPL
+                        npl_date=npl_date,
                     )
                     self.stdout.write(
                         f"  Created delinquency for {account.loan_id} on {as_of_date} (DPD: {current_dpd})"

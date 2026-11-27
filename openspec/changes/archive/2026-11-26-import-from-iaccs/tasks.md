@@ -36,7 +36,7 @@
 ## 7. Integration Verification
 
 - [x] 7.1 Run a full `--dry-run` against the live `iaccs-mysql` container for branch 1 at a chosen cutoff — verify the report matches `loan_data.py` counts (9,141 loans) with no rows written, and sample-compare DPD values against the URBD extractor on the same loans
-- [ ] 7.2 Run the full test suite (`uv run python manage.py test`) and `make audit` — verify all pass with 100% compliance
+- [x] 7.2 Run the full test suite (`uv run python manage.py test`) and `make audit` — verify all pass with 100% compliance
 
 ## Workflow follow-up
 

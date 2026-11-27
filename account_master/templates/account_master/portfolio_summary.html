@@ -78,8 +78,6 @@
                                     {% include 'partials/status_chip.html' with value='PERFORMING' label='Current' %}
                                 {% elif item.name == 'Past Due' %}
                                     {% include 'partials/status_chip.html' with value='PAST_DUE' label='Past Due' %}
-                                {% elif item.name == 'NPL' %}
-                                    {% include 'partials/status_chip.html' with value='NPL' %}
                                 {% elif item.name == 'Written Off' %}
                                     {% include 'partials/status_chip.html' with value='WRITEOFF' label='Written Off' %}
                                 {% else %}
@@ -89,6 +87,13 @@
                             <td class="text-right tabular-nums">{{ item.balance|peso }}</td>
                             <td class="text-right tabular-nums">{{ item.percentage|floatformat:2 }}%</td>
                         </tr>
+                        {% if item.npl %}
+                        <tr class="app-table-row">
+                            <td class="pl-8">{% include 'partials/status_chip.html' with value='NPL' %}</td>
+                            <td class="text-right tabular-nums">{{ item.npl.balance|peso }}</td>
+                            <td class="text-right tabular-nums">{{ item.npl.percentage|floatformat:2 }}%</td>
+                        </tr>
+                        {% endif %}
                         {% empty %}
                         <tr><td colspan="3" class="text-center text-slate-500 dark:text-slate-400 py-4">No data available</td></tr>
                         {% endfor %}

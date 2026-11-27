@@ -103,8 +103,9 @@ class DashboardService:
                     principal=Subquery(latest_exposure_subquery)
                 ).exclude(principal__isnull=True)
 
+                # Umbrella past-due definition: PAST_DUE plus NPL (portfolio-metrics).
                 total_past_due = accounts_with_principal.filter(
-                    status="PAST_DUE"
+                    status__in=["PAST_DUE", "NPL"]
                 ).aggregate(total=Sum("principal"))["total"] or Decimal("0.00")
 
                 result = total_past_due
@@ -187,19 +188,41 @@ class DashboardService:
                     ).aggregate(total=Sum("principal"))["total"] or Decimal("0.00")
                     status_data[display_name] = status_balance
 
-                result = []
-                for display_name in ["Current", "Past Due", "NPL", "Written Off"]:
-                    balance = status_data.get(display_name, Decimal("0.00"))
-                    percentage = (
-                        (balance / total_portfolio * 100) if total_portfolio > 0 else 0
+                def pct(balance):
+                    return (
+                        round(float(balance / total_portfolio * 100), 2)
+                        if total_portfolio > 0
+                        else 0
                     )
-                    result.append(
-                        {
-                            "name": display_name,
-                            "balance": balance,
-                            "percentage": round(float(percentage), 2),
-                        }
-                    )
+
+                # Umbrella-nested layout: NPL sits inside the Past Due slice.
+                current = status_data.get("Current", Decimal("0.00"))
+                past_due = status_data.get("Past Due", Decimal("0.00"))
+                npl = status_data.get("NPL", Decimal("0.00"))
+                written_off = status_data.get("Written Off", Decimal("0.00"))
+
+                result = [
+                    {
+                        "name": "Current",
+                        "balance": current,
+                        "percentage": pct(current),
+                    },
+                    {
+                        "name": "Past Due",
+                        "balance": past_due + npl,
+                        "percentage": pct(past_due + npl),
+                        "npl": {
+                            "name": "NPL",
+                            "balance": npl,
+                            "percentage": pct(npl),
+                        },
+                    },
+                    {
+                        "name": "Written Off",
+                        "balance": written_off,
+                        "percentage": pct(written_off),
+                    },
+                ]
 
                 cache.set(cache_key, result, cls.CACHE_TIMEOUT)
 
@@ -360,17 +383,61 @@ class DashboardService:
         return result
 
     @classmethod
+    def get_active_portfolio_count(cls):
+        """Count the active portfolio: all accounts except CLOSED and WRITEOFF.
+
+        Shared denominator for the Past Due and NPL ratios (portfolio-metrics).
+        """
+        return LoanAccount.objects.exclude(
+            status__in=["CLOSED", "WRITEOFF"]
+        ).count()
+
+    @classmethod
+    def get_past_due_ratio(cls):
+        """
+        Calculate the Past Due Ratio.
+
+        Past due (umbrella) = accounts with status 'PAST_DUE' or 'NPL';
+        denominator = active portfolio (excludes CLOSED and WRITEOFF).
+        """
+        cache_key = cls.get_cache_key("past_due_ratio")
+        result = cache.get(cache_key)
+
+        if result is None:
+            try:
+                total_active = cls.get_active_portfolio_count()
+
+                if total_active == 0:
+                    return 0.0
+
+                past_due_accounts = LoanAccount.objects.filter(
+                    status__in=["PAST_DUE", "NPL"]
+                ).count()
+
+                past_due_ratio = (past_due_accounts / total_active) * 100
+                result = round(float(past_due_ratio), 2)
+                cache.set(cache_key, result, cls.CACHE_TIMEOUT)
+
+            except Exception as e:
+                logger.error(f"Error calculating Past Due Ratio: {e}")
+                result = 0.0
+
+        return result
+
+    @classmethod
     def get_npl_ratio(cls):
         """
         Calculate NPL ratio (Non-Performing Loans ratio).
         NPL = Accounts with status 'NPL'.
+        Denominator = active portfolio (excludes CLOSED and WRITEOFF),
+        shared with the Past Due Ratio.
         """
         cache_key = cls.get_cache_key("npl_ratio")
         result = cache.get(cache_key)
 
         if result is None:
             try:
-                total_accounts = LoanAccount.objects.exclude(status="CLOSED").count()
+                total_accounts = cls.get_active_portfolio_count()
 
                 if total_accounts == 0:
                     return 0.0
@@ -713,6 +780,7 @@ class DashboardService:
                     "total_loan_portfolio": cls.get_total_portfolio_exposure(),
                     "total_past_due_loans": cls.get_total_past_due_loans(),
                     "total_npl": cls.get_total_npl_amount(),
+                    "past_due_ratio": cls.get_past_due_ratio(),
                     "npl_ratio": cls.get_npl_ratio(),
                     "total_remedial": cls.get_total_remedial_amount(),
                     "total_legal": cls.get_total_legal_amount(),
@@ -753,6 +821,7 @@ class DashboardService:
             "total_loan_portfolio": Decimal("0.00"),
             "total_past_due_loans": Decimal("0.00"),
             "total_npl": Decimal("0.00"),
+            "past_due_ratio": 0.0,
             "npl_ratio": 0.0,
             "total_remedial": Decimal("0.00"),
             "total_legal": Decimal("0.00"),
