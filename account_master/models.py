@@ -441,6 +441,23 @@ class StrategyAction(AuditableModel):
             return self.status == self.ActionStatus.APPROVED
         return self.status in [self.ActionStatus.SELECTED, self.ActionStatus.APPROVED]
 
+    @property
+    def is_in_flight(self):
+        """True while the action's planning fields are editable (not terminal)."""
+        return self.status in [
+            self.ActionStatus.SELECTED,
+            self.ActionStatus.PENDING_APPROVAL,
+            self.ActionStatus.APPROVED,
+        ]
+
+    @property
+    def is_skippable(self):
+        """True when the officer may skip the action with a reason."""
+        return self.status in [
+            self.ActionStatus.SELECTED,
+            self.ActionStatus.APPROVED,
+        ]
+
     def request_approval(self):
         """Hold a gated action in the pending-approval state (D3)."""
         if not self.requires_approval:

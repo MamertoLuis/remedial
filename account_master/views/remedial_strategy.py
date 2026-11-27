@@ -160,6 +160,33 @@ def _handle_strategy_post(request, strategy):
             executed_on=request.POST.get("executed_on") or None,
             officer=request.user,
         )
+    elif action_kind == "update":
+        if _deny_board_mutations(request):
+            raise ValidationError("Board members have read-only access.")
+        action = strategy.actions.filter(
+            action_id=request.POST.get("action_id")
+        ).first()
+        if action is None:
+            raise ValidationError("Unknown action.")
+        strategy_service.update_action_planning(
+            action=action,
+            assignee=request.POST.get("assignee", ""),
+            due_date=request.POST.get("due_date") or None,
+            officer=request.user,
+        )
+    elif action_kind == "skip":
+        if _deny_board_mutations(request):
+            raise ValidationError("Board members have read-only access.")
+        action = strategy.actions.filter(
+            action_id=request.POST.get("action_id")
+        ).first()
+        if action is None:
+            raise ValidationError("Unknown action.")
+        strategy_service.skip_action(
+            action=action,
+            outcome=request.POST.get("outcome", ""),
+            officer=request.user,
+        )
     elif action_kind == "fail":
         if _deny_board_mutations(request):
             raise ValidationError("Board members have read-only access.")

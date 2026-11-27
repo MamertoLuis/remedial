@@ -1533,3 +1533,196 @@ class EndToEndIntegrationTest(TestCase):
         self.assertEqual(
             StrategyAssessment.objects.filter(strategy__account=account).count(), 2
         )
+
+
+class ActionEditingTests(TestCase):
+    """Editing planning fields, outcome lock, and skip-with-reason for actions."""
+
+    def setUp(self):
+        self.officer, self.manager, _board = make_users()
+        self.account = make_account(loan_id="L-EDIT")
+        self.strategy = make_strategy(self.account)
+        self.entry = StrategyActionCatalogEntry.objects.create(
+            strategy_type="Intensive Collection",
+            code="IC-EDIT",
+            name="Call",
+            ordering=1,
+            requires_approval=False,
+        )
+        self.gated_entry = StrategyActionCatalogEntry.objects.create(
+            strategy_type="Intensive Collection",
+            code="IC-EDIT-GATED",
+            name="Commitment",
+            ordering=2,
+            requires_approval=True,
+        )
+
+    def _action(self, status, catalog=None):
+        return StrategyAction.objects.create(
+            catalog_entry=catalog or self.entry,
+            strategy=self.strategy,
+            status=status,
+            created_by=self.officer,
+            updated_by=self.officer,
+        )
+
+    def test_edit_planning_accepted_in_non_terminal_statuses(self):
+        for status in (
+            StrategyAction.ActionStatus.SELECTED,
+            StrategyAction.ActionStatus.PENDING_APPROVAL,
+            StrategyAction.ActionStatus.APPROVED,
+        ):
+            with self.subTest(status=status):
+                action = self._action(status)
+                strategy_service.update_action_planning(
+                    action=action,
+                    assignee="Officer B",
+                    due_date="2026-12-01",
+                    officer=self.officer,
+                )
+                action.refresh_from_db()
+                self.assertEqual(action.assignee, "Officer B")
+                self.assertEqual(action.due_date, datetime.date(2026, 12, 1))
+
+    def test_edit_planning_rejected_in_terminal_statuses(self):
+        for status in (
+            StrategyAction.ActionStatus.EXECUTED,
+            StrategyAction.ActionStatus.SKIPPED,
+            StrategyAction.ActionStatus.REJECTED,
+        ):
+            with self.subTest(status=status):
+                action = self._action(status)
+                with self.assertRaises(ValidationError):
+                    strategy_service.update_action_planning(
+                        action=action,
+                        assignee="Changed",
+                        due_date=None,
+                        officer=self.officer,
+                    )
+                action.refresh_from_db()
+                self.assertEqual(action.assignee, "")
+
+    def test_skip_non_gated_selected_action(self):
+        action = self._action(StrategyAction.ActionStatus.SELECTED)
+        strategy_service.skip_action(
+            action=action,
+            outcome="Resolved via other channel",
+            officer=self.officer,
+        )
+        action.refresh_from_db()
+        self.assertEqual(action.status, StrategyAction.ActionStatus.SKIPPED)
+        self.assertEqual(action.outcome, "Resolved via other channel")
+
+    def test_skip_approved_gated_action(self):
+        action = self._action(
+            StrategyAction.ActionStatus.APPROVED, catalog=self.gated_entry
+        )
+        strategy_service.skip_action(
+            action=action,
+            outcome="Manager redeployed staff",
+            officer=self.officer,
+        )
+        action.refresh_from_db()
+        self.assertEqual(action.status, StrategyAction.ActionStatus.SKIPPED)
+
+    def test_skip_rejected_in_ineligible_statuses(self):
+        cases = [
+            (StrategyAction.ActionStatus.PENDING_APPROVAL, self.gated_entry),
+            (StrategyAction.ActionStatus.REJECTED, self.gated_entry),
+            (StrategyAction.ActionStatus.EXECUTED, self.entry),
+            (StrategyAction.ActionStatus.SKIPPED, self.entry),
+        ]
+        for status, catalog in cases:
+            with self.subTest(status=status):
+                action = self._action(status, catalog=catalog)
+                with self.assertRaises(ValidationError):
+                    strategy_service.skip_action(
+                        action=action, outcome="x", officer=self.officer
+                    )
+
+    def test_update_path_never_writes_outcome(self):
+        action = self._action(StrategyAction.ActionStatus.EXECUTED)
+        action.outcome = "Already completed"
+        action.save(update_fields=["outcome"])
+        with self.assertRaises(ValidationError):
+            strategy_service.update_action_planning(
+                action=action, assignee="Y", officer=self.officer
+            )
+        action.refresh_from_db()
+        self.assertEqual(action.outcome, "Already completed")
+
+    def test_template_renders_edit_controls_only_for_in_flight_actions(self):
+        selected = self._action(StrategyAction.ActionStatus.SELECTED)
+        executed = self._action(StrategyAction.ActionStatus.EXECUTED)
+        self.client.force_login(self.officer)
+        response = self.client.get(
+            reverse(
+                "remedial_strategy_detail",
+                args=[self.account.loan_id, self.strategy.strategy_id],
+            )
+        )
+        self.assertEqual(response.status_code, 200)
+        content = response.content.decode()
+        # Only the SELECTED (in-flight, skippable) action is editable; the
+        # EXECUTED action gets neither an update nor a skip control.
+        self.assertEqual(content.count('value="update"'), 1)
+        self.assertEqual(content.count('value="skip"'), 1)
+
+    def test_view_update_and_skip(self):
+        action = self._action(StrategyAction.ActionStatus.SELECTED)
+        url = reverse(
+            "remedial_strategy_detail",
+            args=[self.account.loan_id, self.strategy.strategy_id],
+        )
+        self.client.force_login(self.officer)
+        response = self.client.post(
+            url,
+            {
+                "action": "update",
+                "action_id": action.action_id,
+                "assignee": "Zoe",
+                "due_date": "2026-12-01",
+            },
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        action.refresh_from_db()
+        self.assertEqual(action.assignee, "Zoe")
+        self.assertEqual(action.due_date, datetime.date(2026, 12, 1))
+        # Skip the same action.
+        response = self.client.post(
+            url,
+            {
+                "action": "skip",
+                "action_id": action.action_id,
+                "outcome": "Borrower already paid",
+            },
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        action.refresh_from_db()
+        self.assertEqual(action.status, StrategyAction.ActionStatus.SKIPPED)
+        self.assertEqual(action.outcome, "Borrower already paid")
+
+    def test_board_member_update_post_is_rejected(self):
+        board = User.objects.create_user(
+            username="board-edit", password="pass", role=User.Role.BOARD_MEMBER
+        )
+        self.client.force_login(board)
+        action = self._action(StrategyAction.ActionStatus.SELECTED)
+        response = self.client.post(
+            reverse(
+                "remedial_strategy_detail",
+                args=[self.account.loan_id, self.strategy.strategy_id],
+            ),
+            {
+                "action": "update",
+                "action_id": action.action_id,
+                "assignee": "Nope",
+                "due_date": "",
+            },
+            follow=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        action.refresh_from_db()
+        self.assertEqual(action.assignee, "")

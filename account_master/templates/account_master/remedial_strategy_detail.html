@@ -159,7 +159,27 @@
                                 <input type="text" name="remarks" placeholder="Remarks" class="app-input app-input-sm">
                                 <button type="submit" class="app-btn app-btn-primary app-btn-sm">Log &amp; Execute</button>
                             </form>
-                            {% else %}
+                            {% endif %}
+                            {% if action.is_in_flight %}
+                            <form method="post" class="inline-form mt-1">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="update">
+                                <input type="hidden" name="action_id" value="{{ action.action_id }}">
+                                <input type="text" name="assignee" value="{{ action.assignee }}" placeholder="Assignee" class="app-input app-input-sm">
+                                <input type="date" name="due_date" value="{{ action.due_date|date:"Y-m-d" }}" class="app-input app-input-sm">
+                                <button type="submit" class="app-btn app-btn-primary app-btn-sm">Update</button>
+                            </form>
+                            {% if action.is_skippable %}
+                            <form method="post" class="inline-form mt-1">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="skip">
+                                <input type="hidden" name="action_id" value="{{ action.action_id }}">
+                                <input type="text" name="outcome" placeholder="Skip reason" class="app-input app-input-sm">
+                                <button type="submit" class="app-btn app-btn-secondary app-btn-sm">Skip</button>
+                            </form>
+                            {% endif %}
+                            {% endif %}
+                            {% if not action.is_released_for_execution and not action.is_in_flight %}
                             <span class="app-muted">{{ action.get_status_display }}</span>
                             {% endif %}
                         </td>

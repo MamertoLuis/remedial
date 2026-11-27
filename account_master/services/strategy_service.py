@@ -320,6 +320,49 @@ def execute_action_and_log_activity(
     return {"action": action, "activity": activity}
 
 
+# Terminal action statuses: once reached, planning fields and outcome are locked.
+TERMINAL_ACTION_STATUSES = [
+    StrategyAction.ActionStatus.EXECUTED,
+    StrategyAction.ActionStatus.SKIPPED,
+    StrategyAction.ActionStatus.REJECTED,
+]
+
+
+def update_action_planning(*, action, assignee="", due_date=None, officer=None):
+    """Edit an action's planning fields while it is not terminal.
+
+    ``assignee`` and ``due_date`` may be changed while the action is in
+    SELECTED, PENDING_APPROVAL, or APPROVED. Once the action is EXECUTED,
+    SKIPPED, or REJECTED the fields are locked. No outcome is accepted here,
+    keeping the outcome lock structural (only execute/skip write outcome).
+    """
+    if action.status in TERMINAL_ACTION_STATUSES:
+        raise ValidationError(
+            f"Planning fields cannot be edited on a "
+            f"{action.get_status_display()} action."
+        )
+    action.assignee = assignee
+    action.due_date = due_date
+    action.updated_by = officer
+    action.save(
+        update_fields=["assignee", "due_date", "updated_by", "updated_at"]
+    )
+    return action
+
+
+def skip_action(*, action, outcome="", officer=None):
+    """Skip a non-pending, non-terminal action, recording a reason.
+
+    Reuses the model's ``skip``, which allows SELECTED (non-gated) and
+    APPROVED (gated) actions and rejects PENDING_APPROVAL, REJECTED,
+    EXECUTED, and already-SKIPPED actions.
+    """
+    action.skip(outcome=outcome)
+    action.updated_by = officer
+    action.save(update_fields=["updated_by", "updated_at"])
+    return action
+
+
 # ---------------------------------------------------------------------------
 # Approval workflow (manager sole approver; board read-only)
 # ---------------------------------------------------------------------------
