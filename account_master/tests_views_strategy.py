@@ -98,14 +98,36 @@ class StrategyAndCollectionViewsTest(TestCase):
             "account": self.account.loan_id,
             "strategy_type": "Compromise",
             "strategy_start_date": "2023-07-01",
-            "strategy_status": "ACTIVE",
-            "strategy_outcome": "Pending",
+            "as_of_date": "2023-07-01",
+            "officer_rationale": "Borrower ceased payments after business closure",
+            "financial_condition": "WEAK",
+            "willingness_to_pay": "MEDIUM",
+            "recovery_outlook": "LOW",
         }
         response = self.client.post(url, data)
         self.assertRedirects(
             response, reverse("account_detail", args=[self.account.loan_id])
         )
         self.assertTrue(
+            RemedialStrategy.objects.filter(strategy_type="Compromise").exists()
+        )
+
+    def test_create_remedial_strategy_requires_rationale(self):
+        self.client.force_login(self.user)
+        url = reverse("create_remedial_strategy", args=[self.account.loan_id])
+        data = {
+            "account": self.account.loan_id,
+            "strategy_type": "Compromise",
+            "strategy_start_date": "2023-07-01",
+            "as_of_date": "2023-07-01",
+            "officer_rationale": "",
+            "financial_condition": "WEAK",
+            "willingness_to_pay": "MEDIUM",
+            "recovery_outlook": "LOW",
+        }
+        response = self.client.post(url, data)
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(
             RemedialStrategy.objects.filter(strategy_type="Compromise").exists()
         )
 

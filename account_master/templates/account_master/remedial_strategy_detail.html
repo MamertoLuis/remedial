@@ -37,6 +37,198 @@
         {% endif %}
     </div>
 
+    {% if is_manager %}
+    <div class="app-section mt-3">
+        <a href="{% url 'approval_queue' %}" class="app-btn app-btn-primary app-btn-sm">Manager Approval Queue</a>
+    </div>
+    {% endif %}
+
+    {% if assessment %}
+    <div class="app-section mt-3">
+        <h2 class="app-section-title mb-3">Assessment Snapshot <span class="app-muted">(as of {{ assessment.as_of_date|date:"M d, Y" }})</span></h2>
+        <dl class="app-definition-grid">
+            <div><dt>Days Past Due</dt><dd>{{ assessment.days_past_due }}</dd></div>
+            <div><dt>Aging Bucket</dt><dd>{{ assessment.aging_bucket|default:"—" }}</dd></div>
+            <div><dt>Classification</dt><dd>{{ assessment.classification|default:"—" }}</dd></div>
+            <div><dt>Outstanding Exposure</dt><dd>{{ assessment.outstanding_exposure }}</dd></div>
+            <div><dt>Financial Condition</dt><dd>{{ assessment.get_financial_condition_display }}</dd></div>
+            <div><dt>Willingness to Pay</dt><dd>{{ assessment.get_willingness_to_pay_display }}</dd></div>
+            <div><dt>Recovery Assessment</dt><dd>{{ assessment.get_recovery_outlook_display }}{% if assessment.expected_recovery %} (expected recovery {{ assessment.expected_recovery }}){% endif %}</dd></div>
+            <div><dt>Guarantors</dt><dd>{% for g in assessment.guarantors.all %}{{ g.full_name }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</dd></div>
+            <div><dt>Collaterals</dt><dd>{% for c in assessment.collaterals.all %}{{ c.get_collateral_type_display }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}</dd></div>
+        </dl>
+        <div class="mt-3">
+            <h3 class="app-section-title">Officer Rationale</h3>
+            <p class="app-empty-message">{{ assessment.officer_rationale|linebreaks }}</p>
+        </div>
+        {% if assessment.collection_history_summary %}
+        <div class="mt-3">
+            <h3 class="app-section-title">Collection History Summary</h3>
+            <p class="app-empty-message">{{ assessment.collection_history_summary }}</p>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% if strategy.strategy_status == 'ACTIVE' %}
+    <div class="app-section mt-3">
+        <div class="app-section-head">
+            <h2 class="app-section-title">Action Catalog</h2>
+        </div>
+        {% if catalog %}
+            <table class="app-table">
+                <thead>
+                    <tr>
+                        <th>Action</th>
+                        <th>Requires Approval</th>
+                        {% if not is_board_member %}<th></th>{% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in catalog %}
+                    <tr>
+                        <td>{{ entry.name }}</td>
+                        <td>{% include 'partials/status_chip.html' with value=entry.requires_approval|yesno:'GATED,DIRECT' label=entry.requires_approval|yesno:'Gated,Direct' %}</td>
+                        {% if not is_board_member %}
+                        <td>
+                            <form method="post" class="inline-form">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="select">
+                                <input type="hidden" name="catalog_entry_id" value="{{ entry.catalog_entry_id }}">
+                                <input type="text" name="assignee" placeholder="Assignee" class="app-input app-input-sm">
+                                <input type="date" name="due_date" class="app-input app-input-sm">
+                                <button type="submit" class="app-btn app-btn-primary app-btn-sm">Select</button>
+                            </form>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            {% include 'partials/empty_state.html' with title="No action catalog" message="No actions are defined for this strategy type." %}
+        {% endif %}
+    </div>
+
+    <div class="app-section mt-3">
+        <div class="app-section-head">
+            <h2 class="app-section-title">Tracked Actions</h2>
+        </div>
+        {% if actions %}
+            <table class="app-table">
+                <thead>
+                    <tr>
+                        <th>Action</th>
+                        <th>Status</th>
+                        <th>Assignee</th>
+                        <th>Due Date</th>
+                        <th>Outcome</th>
+                        {% if not is_board_member %}<th></th>{% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for action in actions %}
+                    <tr>
+                        <td>{{ action.catalog_entry.name }} <span class="app-muted">({{ action.catalog_entry.code }})</span></td>
+                        <td>{% include 'partials/status_chip.html' with value=action.status label=action.get_status_display %}</td>
+                        <td>{{ action.assignee|default:"—" }}</td>
+                        <td>{{ action.due_date|date:"M d, Y"|default:"—" }}</td>
+                        <td>{{ action.outcome|default:"—" }}</td>
+                        {% if not is_board_member %}
+                        <td>
+                            {% if action.is_released_for_execution %}
+                            <form method="post" class="inline-form">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="execute">
+                                <input type="hidden" name="action_id" value="{{ action.action_id }}">
+                                <input type="text" name="outcome" placeholder="Outcome" class="app-input app-input-sm">
+                                <button type="submit" class="app-btn app-btn-primary app-btn-sm">Execute</button>
+                            </form>
+                            <form method="post" class="inline-form mt-1">
+                                {% csrf_token %}
+                                <input type="hidden" name="action" value="log_execute">
+                                <input type="hidden" name="action_id" value="{{ action.action_id }}">
+                                <input type="text" name="outcome" placeholder="Outcome" class="app-input app-input-sm">
+                                <select name="activity_type" class="app-input app-input-sm">
+                                    <option value="">Activity type...</option>
+                                    <option value="Call">Call</option>
+                                    <option value="Visit">Visit</option>
+                                    <option value="Demand Letter">Demand Letter</option>
+                                    <option value="Negotiation">Negotiation</option>
+                                </select>
+                                <input type="text" name="remarks" placeholder="Remarks" class="app-input app-input-sm">
+                                <button type="submit" class="app-btn app-btn-primary app-btn-sm">Log &amp; Execute</button>
+                            </form>
+                            {% else %}
+                            <span class="app-muted">{{ action.get_status_display }}</span>
+                            {% endif %}
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            {% include 'partials/empty_state.html' with title="No actions selected" message="Select an action from the catalog to get started." %}
+        {% endif %}
+    </div>
+
+    {% if approvals %}
+    <div class="app-section mt-3">
+        <h2 class="app-section-title mb-3">Approvals</h2>
+        <table class="app-table">
+            <thead>
+                <tr>
+                    <th>Action</th>
+                    <th>Decision</th>
+                    <th>Approver</th>
+                    <th>Conditions</th>
+                    <th>Decided At</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for approval in approvals %}
+                <tr>
+                    <td>{{ approval.action.catalog_entry.name }}</td>
+                    <td>{% include 'partials/status_chip.html' with value=approval.decision label=approval.get_decision_display %}</td>
+                    <td>{{ approval.approver.username }}</td>
+                    <td>{{ approval.conditions|default:"—" }}</td>
+                    <td>{{ approval.decided_at }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    {% if not is_board_member %}
+    <div class="app-section mt-3">
+        <div class="app-section-head">
+            <h2 class="app-section-title">Officer Actions</h2>
+        </div>
+        <div class="app-section-body">
+            <form method="post" class="app-form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="fail">
+                <div class="app-form-grid">
+                    <div class="app-field app-field-full">
+                        <label for="fail-outcome">Declared Outcome</label>
+                        <textarea id="fail-outcome" name="outcome" placeholder="Reason the strategy is declared failed"></textarea>
+                    </div>
+                    {% if strategy.strategy_type in 'Compromise,Restructuring' %}
+                    <div class="app-field app-field-full">
+                        <label for="fail-conditions">Unmet Approval Conditions</label>
+                        <textarea id="fail-conditions" name="unmet_conditions_note" placeholder="Conditions attached to the approval that were not met"></textarea>
+                    </div>
+                    {% endif %}
+                </div>
+                <button type="submit" class="app-btn app-btn-danger">Declare Failure</button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+    {% endif %}
+
     <div class="app-section mt-3">
         <div class="app-section-head">
             <h2 class="app-section-title">Compromise Agreements</h2>

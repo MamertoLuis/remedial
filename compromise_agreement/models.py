@@ -14,10 +14,12 @@ class CompromiseAgreement(models.Model):
         BOARD = "BOARD", _("Board")
 
     class CompromiseStatus(models.TextChoices):
+        PENDING_APPROVAL = "PENDING_APPROVAL", _("Pending Approval")
         ACTIVE = "ACTIVE", _("Active")
         COMPLETED = "COMPLETED", _("Completed")
         RESCINDED = "RESCINDED", _("Rescinded")
         SUPERSEDED = "SUPERSEDED", _("Superseded")
+        UNSUCCESSFUL = "UNSUCCESSFUL", _("Unsuccessful")
 
     class PaymentFrequency(models.TextChoices):
         WEEKLY = "WEEKLY", _("Weekly")
@@ -44,7 +46,7 @@ class CompromiseAgreement(models.Model):
     installment_flag = models.BooleanField(default=False)
     rescission_clause_flag = models.BooleanField(default=True)
     status = models.CharField(
-        max_length=10, choices=CompromiseStatus.choices, default=CompromiseStatus.ACTIVE
+        max_length=20, choices=CompromiseStatus.choices, default=CompromiseStatus.ACTIVE
     )
 
     # Fields for installment schedule generation

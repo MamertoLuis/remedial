@@ -1,6 +1,7 @@
 from datetime import date
 from decimal import Decimal
 from typing import Optional
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from ..models import (
     Borrower,
@@ -9,6 +10,7 @@ from ..models import (
     DelinquencyStatus,
     CollectionActivityLog,
     RemedialStrategy,
+    StrategyAction,
     ECLProvisionHistory,
 )
 from .ecl_service import update_ecl_provision
@@ -191,6 +193,27 @@ def _update_loan_account_status(account: LoanAccount, classification: str) -> st
     return new_status
 
 
+def _validate_evidence_action(account, action):
+    """Validate an evidence link: same account and an ACTIVE strategy.
+
+    An evidence activity may only cite an action whose strategy belongs to
+    the same account and is ACTIVE. Returns the resolved ``StrategyAction``.
+    """
+    if action is None:
+        return None
+    if isinstance(action, int):
+        action = StrategyAction.objects.get(pk=action)
+    if action.strategy.account_id != account.pk:
+        raise ValidationError(
+            "An evidence activity may only link an action of the same account."
+        )
+    if action.strategy.strategy_status != RemedialStrategy.StrategyStatus.ACTIVE:
+        raise ValidationError(
+            "An evidence activity may only link an action of an ACTIVE strategy."
+        )
+    return action
+
+
 def create_collection_activity(
     *,
     account: LoanAccount,
@@ -200,8 +223,11 @@ def create_collection_activity(
     **kwargs,
 ) -> CollectionActivityLog:
     """
-    Create a new CollectionActivityLog entry.
+    Create a new CollectionActivityLog entry, validating any evidence link.
     """
+    action = kwargs.get("action")
+    if action is not None:
+        kwargs["action"] = _validate_evidence_action(account, action)
     return CollectionActivityLog.objects.create(
         account=account,
         activity_date=activity_date,

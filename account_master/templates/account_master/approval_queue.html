@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% load django_tables2 %}
+
+{% block title %}Manager Approval Queue{% endblock %}
+
+{% block content %}
+    <div class="app-entity-header app-section">
+        <div class="min-w-0">
+            <h1 class="app-page-title mb-0">Approval Queue</h1>
+            <p class="app-entity-sub">Pending approval-gated actions across accounts</p>
+        </div>
+    </div>
+
+    <div class="app-section mt-3">
+        {% if pending_actions %}
+            <table class="app-table">
+                <thead>
+                    <tr>
+                        <th>Action</th>
+                        <th>Account</th>
+                        <th>Strategy</th>
+                        <th>Assignee</th>
+                        <th>Decision</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for action in pending_actions %}
+                    <tr>
+                        <td>{{ action.catalog_entry.name }} <span class="app-muted">({{ action.catalog_entry.code }})</span></td>
+                        <td>
+                            <a href="{% url 'account_detail' action.strategy.account.loan_id %}" class="app-link">{{ action.strategy.account.loan_id }}</a>
+                        </td>
+                        <td>
+                            <a href="{% url 'remedial_strategy_detail' action.strategy.account.loan_id action.strategy.strategy_id %}" class="app-link">{{ action.strategy.get_strategy_type_display }}</a>
+                        </td>
+                        <td>{{ action.assignee|default:"—" }}</td>
+                        <td>
+                            <form method="post" class="app-form-inline">
+                                {% csrf_token %}
+                                <input type="hidden" name="action_id" value="{{ action.action_id }}">
+                                <input type="text" name="conditions" placeholder="Conditions (e.g. 20% downpayment in 10 days)" class="app-input app-input-sm">
+                                <input type="text" name="comments" placeholder="Comments" class="app-input app-input-sm">
+                                <button type="submit" name="decision" value="approve" class="app-btn app-btn-primary app-btn-sm">Approve</button>
+                                <button type="submit" name="decision" value="reject" class="app-btn app-btn-secondary app-btn-sm">Reject</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            {% include 'partials/empty_state.html' with title="Queue is empty" message="No approval-gated actions are awaiting a manager decision." %}
+        {% endif %}
+    </div>
+{% endblock %}

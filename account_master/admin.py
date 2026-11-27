@@ -13,6 +13,12 @@ from .models import (
     EscalationStage,
     EscalationState,
     Notice,
+    Guarantor,
+    Collateral,
+    StrategyAssessment,
+    StrategyActionCatalogEntry,
+    StrategyAction,
+    StrategyApproval,
 )
 from . import services
 from .services.provision_service import create_provision_entry
@@ -155,6 +161,95 @@ class RemedialStrategyAdmin(admin.ModelAdmin):
     search_fields = ("account__loan_id",)
     list_filter = ("strategy_type", "strategy_status")
     date_hierarchy = "strategy_start_date"
+
+
+@admin.register(StrategyActionCatalogEntry)
+class StrategyActionCatalogEntryAdmin(admin.ModelAdmin):
+    list_display = (
+        "strategy_type",
+        "code",
+        "name",
+        "ordering",
+        "requires_approval",
+    )
+    list_display_links = ("code", "name")
+    list_editable = ("ordering", "requires_approval")
+    list_filter = ("strategy_type", "requires_approval")
+    search_fields = ("code", "name")
+    ordering = ("strategy_type", "ordering")
+
+
+@admin.register(StrategyAction)
+class StrategyActionAdmin(admin.ModelAdmin):
+    list_display = (
+        "action_id",
+        "strategy",
+        "catalog_entry",
+        "status",
+        "assignee",
+        "due_date",
+        "executed_on",
+    )
+    list_filter = ("status", "catalog_entry__strategy_type")
+    search_fields = (
+        "strategy__account__loan_id",
+        "catalog_entry__code",
+        "assignee",
+    )
+
+
+@admin.register(StrategyApproval)
+class StrategyApprovalAdmin(admin.ModelAdmin):
+    list_display = (
+        "approval_id",
+        "action",
+        "approver",
+        "decision",
+        "decided_at",
+        "conditions",
+    )
+    list_filter = ("decision",)
+    search_fields = ("action__strategy__account__loan_id", "approver__username")
+
+
+@admin.register(StrategyAssessment)
+class StrategyAssessmentAdmin(admin.ModelAdmin):
+    list_display = (
+        "assessment_id",
+        "strategy",
+        "as_of_date",
+        "financial_condition",
+        "willingness_to_pay",
+        "recovery_outlook",
+    )
+    list_filter = ("financial_condition", "willingness_to_pay", "recovery_outlook")
+    search_fields = ("strategy__account__loan_id", "officer_rationale")
+
+
+@admin.register(Guarantor)
+class GuarantorAdmin(admin.ModelAdmin):
+    list_display = (
+        "full_name",
+        "account",
+        "guarantee_amount",
+        "guarantee_type",
+        "is_enforceable",
+    )
+    list_filter = ("guarantee_type", "is_enforceable")
+    search_fields = ("full_name", "account__loan_id", "identity")
+
+
+@admin.register(Collateral)
+class CollateralAdmin(admin.ModelAdmin):
+    list_display = (
+        "collateral_id",
+        "account",
+        "collateral_type",
+        "appraised_value",
+        "as_of_date",
+    )
+    list_filter = ("collateral_type",)
+    search_fields = ("account__loan_id", "description")
 
 
 @admin.register(EscalationStage)

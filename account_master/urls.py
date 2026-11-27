@@ -85,6 +85,11 @@ urlpatterns = [
         views.remedial_strategy_detail,
         name="remedial_strategy_detail",
     ),
+    path(
+        "approvals/",
+        views.approval_queue,
+        name="approval_queue",
+    ),
     path("search/", views.search, name="search"),
     # Alert management URLs
     path("alerts/", alert_list.alert_list, name="alert_list"),

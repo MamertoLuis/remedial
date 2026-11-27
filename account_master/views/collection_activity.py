@@ -28,7 +28,7 @@ def collection_activity_list(request, loan_id):
 def create_collection_activity(request, loan_id):
     account = LoanAccount.objects.get(loan_id=loan_id)
     if request.method == "POST":
-        form = CollectionActivityLogForm(request.POST)
+        form = CollectionActivityLogForm(request.POST, account=account)
         if form.is_valid():
             activity_data = form.cleaned_data
             create_collection_activity_service(
@@ -45,7 +45,7 @@ def create_collection_activity(request, loan_id):
             )
             return redirect("collection_activity_list", loan_id=account.loan_id)
     else:
-        form = CollectionActivityLogForm(initial={"account": account})
+        form = CollectionActivityLogForm(initial={"account": account}, account=account)
     return render(
         request,
         "account_master/create_collection_activity.html",
@@ -60,14 +60,14 @@ def update_collection_activity(request, loan_id, activity_id):
         CollectionActivityLog, activity_id=activity_id, account=account
     )
     if request.method == "POST":
-        form = CollectionActivityLogForm(request.POST, instance=activity)
+        form = CollectionActivityLogForm(request.POST, instance=activity, account=account)
         if form.is_valid():
             activity = form.save(commit=False)
             activity.updated_by = request.user
             activity.save()
             return redirect("collection_activity_list", loan_id=loan_id)
     else:
-        form = CollectionActivityLogForm(instance=activity)
+        form = CollectionActivityLogForm(instance=activity, account=account)
     return render(
         request,
         "account_master/update_collection_activity.html",

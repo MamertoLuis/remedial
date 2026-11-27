@@ -8,6 +8,9 @@ from account_master.models import (
     Borrower,
     LoanAccount,
     RemedialStrategy,
+    CollectionActivityLog,
+    StrategyAction,
+    StrategyActionCatalogEntry,
     Alert,
     AlertLog,
 )
@@ -188,3 +191,67 @@ class AlertLogModelTest(TestCase):
         )
         self.assertEqual(log.alert, self.alert)
         self.assertIn(log, self.alert.logs.all())
+
+
+class CollectionActivityEvidenceModelTest(TestCase):
+    """The evidence link between a collection activity and a strategy action."""
+
+    def setUp(self):
+        self.borrower = Borrower.objects.create(
+            borrower_id="B-EV",
+            full_name="John Doe",
+            primary_address="123 Main St",
+            mobile="1234567890",
+        )
+        self.account = LoanAccount.objects.create(
+            loan_id="L-EV",
+            borrower=self.borrower,
+            booking_date=datetime.date(2023, 1, 1),
+            maturity_date=datetime.date(2024, 1, 1),
+            original_principal=Decimal("10000.00"),
+            interest_rate=Decimal("5.00"),
+            loan_type="Personal",
+            status="NPL",
+        )
+        self.strategy = RemedialStrategy.objects.create(
+            account=self.account,
+            strategy_type="Intensive Collection",
+            strategy_start_date=datetime.date(2023, 6, 1),
+            strategy_status=RemedialStrategy.StrategyStatus.ACTIVE,
+        )
+        self.entry = StrategyActionCatalogEntry.objects.create(
+            strategy_type="Intensive Collection",
+            code="IC-EVIDENCE",
+            name="Call",
+            ordering=10,
+            requires_approval=False,
+        )
+        self.action = StrategyAction.objects.create(
+            catalog_entry=self.entry,
+            strategy=self.strategy,
+            status=StrategyAction.ActionStatus.SELECTED,
+        )
+
+    def test_activity_can_carry_an_action_link(self):
+        activity = CollectionActivityLog.objects.create(
+            account=self.account,
+            activity_date=datetime.date(2023, 6, 5),
+            activity_type="Call",
+            remarks="Called borrower",
+            action=self.action,
+        )
+        self.assertEqual(activity.action, self.action)
+        self.assertIn(activity, self.action.evidence_activities.all())
+
+    def test_deleting_the_action_nulls_the_link_and_keeps_the_diary_row(self):
+        activity = CollectionActivityLog.objects.create(
+            account=self.account,
+            activity_date=datetime.date(2023, 6, 5),
+            activity_type="Call",
+            remarks="Called borrower",
+            action=self.action,
+        )
+        self.action.delete()
+        activity.refresh_from_db()
+        self.assertIsNone(activity.action)
+        self.assertEqual(activity.remarks, "Called borrower")

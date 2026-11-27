@@ -56,13 +56,15 @@ class Borrower(AuditableModel):
 
 
 class RemedialStrategy(AuditableModel):
+    # Stored values are stable identifiers; the display labels are the
+    # recommended six names (display-only refinement, non-breaking, 5.5).
     STRATEGY_TYPE_CHOICES = [
         ("Intensive Collection", _("Intensive Collection")),
-        ("Restructuring", _("Restructuring")),
-        ("Compromise", _("Compromise")),
-        ("Foreclosure", _("Foreclosure")),
+        ("Restructuring", _("Loan Restructuring / Rehabilitation")),
+        ("Compromise", _("Compromise Settlement")),
+        ("Foreclosure", _("Collateral Recovery / Foreclosure")),
         ("Legal Action", _("Legal Action")),
-        ("Write-Off", _("Write-Off")),
+        ("Write-Off", _("Write-Off / Post-Write-off Recovery")),
     ]
 
     class StrategyStatus(models.TextChoices):
@@ -191,6 +193,355 @@ class LoanAccount(AuditableModel):
         ).exists()
 
 
+# ============================================================================
+# REMEDIAL STRATEGY FRAMEWORK MODELS
+# ============================================================================
+
+
+class Guarantor(AuditableModel):
+    """
+    Guarantor entity attached to a loan account.
+
+    Account-level entity (persists across recommendations); an assessment
+    references the guarantors relied upon at decision time.
+    """
+
+    class GuaranteeType(models.TextChoices):
+        SOLIDARY = "SOLIDARY", _("Solidary")
+        JOINT = "JOINT", _("Joint")
+        CORPORATE = "CORPORATE", _("Corporate")
+
+    guarantor_id = models.AutoField(primary_key=True)
+    account = models.ForeignKey(
+        LoanAccount, on_delete=models.CASCADE, related_name="guarantors"
+    )
+    full_name = models.CharField(max_length=200)
+    identity = models.CharField(
+        max_length=100, blank=True, help_text=_("Identity document number or other identifier")
+    )
+    guarantee_amount = models.DecimalField(max_digits=18, decimal_places=2)
+    guarantee_type = models.CharField(
+        max_length=20,
+        choices=GuaranteeType.choices,
+        default=GuaranteeType.SOLIDARY,
+    )
+    is_enforceable = models.BooleanField(
+        default=True, help_text=_("Whether the guarantee is legally enforceable")
+    )
+
+    class Meta:
+        ordering = ["full_name"]
+        verbose_name = _("Guarantor")
+
+    def __str__(self):
+        return str(f"{self.full_name} ({self.account.loan_id})")
+
+
+class Collateral(AuditableModel):
+    """
+    Collateral entity attached to a loan account.
+
+    Account-level entity (persists across recommendations); an assessment
+    references the collaterals relied upon at decision time.
+    """
+
+    COLLATERAL_TYPE_CHOICES = [
+        ("REAL_ESTATE", _("Real Estate")),
+        ("VEHICLE", _("Vehicle")),
+        ("EQUIPMENT", _("Equipment")),
+        ("INVENTORY", _("Inventory")),
+        ("DEPOSIT", _("Cash/Deposit")),
+        ("OTHER", _("Other")),
+    ]
+
+    collateral_id = models.AutoField(primary_key=True)
+    account = models.ForeignKey(
+        LoanAccount, on_delete=models.CASCADE, related_name="collaterals"
+    )
+    description = models.TextField()
+    collateral_type = models.CharField(
+        max_length=30, choices=COLLATERAL_TYPE_CHOICES, default="OTHER"
+    )
+    appraised_value = models.DecimalField(max_digits=18, decimal_places=2)
+    as_of_date = models.DateField()
+
+    class Meta:
+        ordering = ["-as_of_date"]
+        verbose_name = _("Collateral")
+
+    def __str__(self):
+        return str(f"{self.get_collateral_type_display()} for {self.account.loan_id}")
+
+
+class StrategyAssessment(AuditableModel):
+    """
+    Assessment snapshot justifying a strategy recommendation.
+
+    Freezes the seven decision inputs as of the recommendation date:
+    delinquency, outstanding exposure, borrower financial condition,
+    willingness to pay, guarantor information, collection history summary
+    and recovery assessment, together with the officer's rationale.
+    Re-captured on every escalation; prior snapshots stay unchanged.
+    """
+
+    FINANCIAL_CONDITION_CHOICES = [
+        ("STRONG", _("Strong")),
+        ("ADEQUATE", _("Adequate")),
+        ("WEAK", _("Weak")),
+        ("CRITICAL", _("Critical")),
+    ]
+
+    WILLINGNESS_TO_PAY_CHOICES = [
+        ("HIGH", _("High")),
+        ("MEDIUM", _("Medium")),
+        ("LOW", _("Low")),
+    ]
+
+    RECOVERY_OUTLOOK_CHOICES = [
+        ("HIGH", _("High")),
+        ("MEDIUM", _("Medium")),
+        ("LOW", _("Low")),
+        ("NONE", _("None")),
+    ]
+
+    assessment_id = models.AutoField(primary_key=True)
+    strategy = models.OneToOneField(
+        RemedialStrategy, on_delete=models.CASCADE, related_name="assessment"
+    )
+    as_of_date = models.DateField()
+    officer_rationale = models.TextField()
+
+    # Structured judgments (ordered scales + supporting notes)
+    financial_condition = models.CharField(
+        max_length=20, choices=FINANCIAL_CONDITION_CHOICES, default="ADEQUATE"
+    )
+    financial_condition_note = models.TextField(blank=True)
+    willingness_to_pay = models.CharField(
+        max_length=10, choices=WILLINGNESS_TO_PAY_CHOICES, default="MEDIUM"
+    )
+    willingness_note = models.TextField(blank=True)
+    recovery_outlook = models.CharField(
+        max_length=10, choices=RECOVERY_OUTLOOK_CHOICES, default="MEDIUM"
+    )
+    recovery_assessment_note = models.TextField(
+        blank=True, help_text=_("Basis for the recovery assessment")
+    )
+    expected_recovery = models.DecimalField(
+        max_digits=18, decimal_places=2, null=True, blank=True
+    )
+
+    # Copied snapshot values (historical justification survives later edits)
+    days_past_due = models.IntegerField(default=0)
+    aging_bucket = models.CharField(max_length=10, blank=True)
+    classification = models.CharField(max_length=20, blank=True)
+    outstanding_exposure = models.DecimalField(
+        max_digits=18, decimal_places=2, default=Decimal("0.00")
+    )
+    collection_history_summary = models.TextField(blank=True)
+
+    # Entity references relied upon at decision time
+    guarantors = models.ManyToManyField(
+        Guarantor, blank=True, related_name="assessments"
+    )
+    collaterals = models.ManyToManyField(
+        Collateral, blank=True, related_name="assessments"
+    )
+
+    class Meta:
+        ordering = ["-as_of_date"]
+        verbose_name = _("Strategy Assessment")
+
+    def __str__(self):
+        return str(f"Assessment for {self.strategy} as of {self.as_of_date}")
+
+
+class StrategyActionCatalogEntry(AuditableModel):
+    """
+    Reusable action template per strategy type (ladder template/instance
+    pattern, mirroring ``EscalationStage``).
+    """
+
+    catalog_entry_id = models.AutoField(primary_key=True)
+    strategy_type = models.CharField(
+        max_length=50, choices=RemedialStrategy.STRATEGY_TYPE_CHOICES
+    )
+    code = models.CharField(max_length=50)
+    name = models.CharField(max_length=200)
+    ordering = models.PositiveIntegerField(default=0)
+    requires_approval = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ["strategy_type", "ordering", "code"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["strategy_type", "code"], name="uniq_catalog_entry_per_type_code"
+            )
+        ]
+        verbose_name = _("Strategy Action Catalog Entry")
+
+    def __str__(self):
+        return str(f"{self.get_strategy_type_display()} - {self.name}")
+
+
+class StrategyAction(AuditableModel):
+    """
+    Per-strategy instance of a catalog action with a tracked lifecycle.
+
+    Status machine (design D3):
+      SELECTED -> PENDING_APPROVAL (gated only) -> APPROVED | REJECTED
+      SELECTED/APPROVED -> EXECUTED | SKIPPED
+    """
+
+    class ActionStatus(models.TextChoices):
+        SELECTED = "SELECTED", _("Selected")
+        PENDING_APPROVAL = "PENDING_APPROVAL", _("Pending Approval")
+        APPROVED = "APPROVED", _("Approved")
+        REJECTED = "REJECTED", _("Rejected")
+        EXECUTED = "EXECUTED", _("Executed")
+        SKIPPED = "SKIPPED", _("Skipped")
+
+    action_id = models.AutoField(primary_key=True)
+    catalog_entry = models.ForeignKey(
+        StrategyActionCatalogEntry,
+        on_delete=models.PROTECT,
+        related_name="instances",
+    )
+    strategy = models.ForeignKey(
+        RemedialStrategy, on_delete=models.CASCADE, related_name="actions"
+    )
+    status = models.CharField(
+        max_length=20, choices=ActionStatus.choices, default=ActionStatus.SELECTED
+    )
+    assignee = models.CharField(
+        max_length=100, blank=True, help_text=_("Staff assigned to the action")
+    )
+    due_date = models.DateField(null=True, blank=True)
+    outcome = models.TextField(blank=True)
+    executed_on = models.DateField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-action_id"]
+        verbose_name = _("Strategy Action")
+
+    def __str__(self):
+        return str(f"{self.catalog_entry.code} on {self.strategy}")
+
+    @property
+    def requires_approval(self):
+        return self.catalog_entry.requires_approval
+
+    @property
+    def action_code(self):
+        return self.catalog_entry.code
+
+    @property
+    def is_released_for_execution(self):
+        """True when the action may be executed under its class rules."""
+        if self.requires_approval:
+            return self.status == self.ActionStatus.APPROVED
+        return self.status in [self.ActionStatus.SELECTED, self.ActionStatus.APPROVED]
+
+    def request_approval(self):
+        """Hold a gated action in the pending-approval state (D3)."""
+        if not self.requires_approval:
+            raise ValidationError(
+                "Only approval-gated actions require manager approval."
+            )
+        if self.status != self.ActionStatus.SELECTED:
+            raise ValidationError(
+                f"Cannot request approval from status {self.status}."
+            )
+        self.status = self.ActionStatus.PENDING_APPROVAL
+        self.save(update_fields=["status", "updated_at"])
+
+    def mark_approved(self):
+        if self.status != self.ActionStatus.PENDING_APPROVAL:
+            raise ValidationError(
+                f"Cannot approve an action in status {self.status}."
+            )
+        self.status = self.ActionStatus.APPROVED
+        self.save(update_fields=["status", "updated_at"])
+
+    def mark_rejected(self):
+        if self.status != self.ActionStatus.PENDING_APPROVAL:
+            raise ValidationError(
+                f"Cannot reject an action in status {self.status}."
+            )
+        self.status = self.ActionStatus.REJECTED
+        self.save(update_fields=["status", "updated_at"])
+
+    def execute(self, *, outcome, assignee=None, executed_on=None):
+        """Execute the action, recording outcome, assignee and date."""
+        if self.requires_approval and self.status != self.ActionStatus.APPROVED:
+            raise ValidationError(
+                "Approval-gated action cannot be executed before it is approved."
+            )
+        if self.status not in [
+            self.ActionStatus.SELECTED,
+            self.ActionStatus.APPROVED,
+        ]:
+            raise ValidationError(
+                f"Action in status {self.status} cannot be executed."
+            )
+        self.status = self.ActionStatus.EXECUTED
+        self.outcome = outcome
+        if assignee:
+            self.assignee = assignee
+        self.executed_on = executed_on or timezone.now().date()
+        self.save(
+            update_fields=["status", "outcome", "assignee", "executed_on", "updated_at"]
+        )
+
+    def skip(self, *, outcome=""):
+        if self.status not in [
+            self.ActionStatus.SELECTED,
+            self.ActionStatus.APPROVED,
+        ]:
+            raise ValidationError(
+                f"Action in status {self.status} cannot be skipped."
+            )
+        self.status = self.ActionStatus.SKIPPED
+        if outcome:
+            self.outcome = outcome
+        self.save(update_fields=["status", "outcome", "updated_at"])
+
+
+class StrategyApproval(AuditableModel):
+    """
+    Approval record for a gated action, carrying approver, decision, date,
+    comments and any conditions attached to the approval (D4).
+    """
+
+    class Decision(models.TextChoices):
+        APPROVED = "APPROVED", _("Approved")
+        REJECTED = "REJECTED", _("Rejected")
+
+    approval_id = models.AutoField(primary_key=True)
+    action = models.ForeignKey(
+        StrategyAction, on_delete=models.CASCADE, related_name="approvals"
+    )
+    approver = models.ForeignKey(
+        get_user_model(),
+        on_delete=models.PROTECT,
+        related_name="strategy_approvals",
+    )
+    decision = models.CharField(max_length=10, choices=Decision.choices)
+    decided_at = models.DateTimeField(auto_now_add=True)
+    comments = models.TextField(blank=True)
+    conditions = models.TextField(
+        blank=True, help_text=_("Conditions attached to the approval (e.g. downpayment requirements)")
+    )
+
+    class Meta:
+        ordering = ["-decided_at"]
+        verbose_name = _("Strategy Approval")
+
+    def __str__(self):
+        return str(
+            f"{self.get_decision_display()} on action {self.action_id} by {self.approver}"
+        )
+
+
 class CollectionActivityLog(AuditableModel):
     ACTIVITY_TYPE_CHOICES = [
         ("Call", "Call"),
@@ -202,6 +553,14 @@ class CollectionActivityLog(AuditableModel):
     activity_id = models.AutoField(primary_key=True)
     account = models.ForeignKey(
         LoanAccount, on_delete=models.CASCADE, related_name="collection_activities"
+    )
+    action = models.ForeignKey(
+        StrategyAction,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="evidence_activities",
+        help_text=_("The strategy action this activity fulfills (evidence link)"),
     )
     activity_date = models.DateField()
     activity_type = models.CharField(max_length=20, choices=ACTIVITY_TYPE_CHOICES)

@@ -78,11 +78,52 @@ def start_escalation(account, *, user=None):
 
     Never creates a second open state for an account that already holds one
     (spec: "Each account tracks one escalation position").
-    Returns ``(state, created)``.
+
+    A ladder closed because of an approved arrangement stays closed when that
+    arrangement is later rescinded with approval (spec: "Rescinded arrangement
+    keeps the ladder closed") -- the account escalates through a direct
+    strategy recommendation instead. Returns ``(state, created)``.
     """
     open_state = get_open_state(account)
     if open_state is not None:
         return open_state, False
+
+    if _arrangement_rescinded_after_closure(account):
+        return None, False
+
+    first_stage = get_first_stage()
+    if first_stage is None:
+        raise EscalationError(
+            "Cannot start escalation: no escalation stages are seeded."
+        )
+
+    state = EscalationState.objects.create(
+        account=account,
+        current_stage=first_stage,
+        stage_started_on=timezone.now().date(),
+        status=EscalationState.Status.PENDING,
+        created_by=user,
+        updated_by=user,
+    )
+    return state, True
+
+
+def _arrangement_rescinded_after_closure(account):
+    """
+    True when the account's ladder was closed because of an approved
+    arrangement and that arrangement was later rescinded with approval.
+    """
+    latest_closed = (
+        account.escalation_states.filter(
+            status=EscalationState.Status.CLOSED,
+            closed_reason=EscalationState.CloseReason.ARRANGEMENT,
+        )
+        .order_by("-stage_started_on", "-escalation_id")
+        .first()
+    )
+    if latest_closed is None:
+        return False
+    return account.compromise_agreements.filter(status="RESCINDED").exists()
 
     first_stage = get_first_stage()
     if first_stage is None:
