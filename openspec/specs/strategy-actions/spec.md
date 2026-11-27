@@ -90,3 +90,97 @@ The system SHALL record each approval with the approver, decision, date, and any
 
 - **WHEN** conditions attached to an approval are not met and a loan officer declares them unmet
 - **THEN** the system records the declaration as the basis for marking the related agreement unsuccessful
+
+### Requirement: Action planning fields stay editable until the action is terminal
+
+The system SHALL let an officer edit an action's assigned staff and due date while the action is in a non-terminal status (SELECTED, PENDING_APPROVAL, or APPROVED), and SHALL reject editing those fields once the action is EXECUTED, SKIPPED, or REJECTED.
+
+#### Scenario: Planning fields editable while the action is in flight
+
+- **WHEN** an officer edits the assigned staff or due date on a SELECTED, PENDING_APPROVAL, or APPROVED action
+- **THEN** the fields are updated on the action
+
+#### Scenario: Editing is rejected after the action is terminal
+
+- **WHEN** an officer attempts to edit the assigned staff or due date on an EXECUTED, SKIPPED, or REJECTED action
+- **THEN** the system rejects the edit and the fields remain unchanged
+
+### Requirement: Outcome is written only by execution or skip and then locked
+
+The system SHALL write an action's outcome only when the action is executed or skipped, and SHALL NOT provide an editing path that changes an executed or skipped action's recorded outcome.
+
+#### Scenario: Outcome is captured at execution
+
+- **WHEN** an action is executed
+- **THEN** its outcome is recorded as entered
+
+#### Scenario: No path edits a recorded outcome
+
+- **WHEN** an officer attempts to change the outcome of an EXECUTED or SKIPPED action through the editing path
+- **THEN** the system rejects the change and the recorded outcome stands
+
+### Requirement: Officer can skip a non-pending action with a reason
+
+The system SHALL let an officer skip a non-pending action by recording a reason, which SHALL leave the action SKIPPED, and SHALL reject skipping an action that is PENDING_APPROVAL, REJECTED, EXECUTED, or SKIPPED. A non-approval-gated action is skippable while SELECTED; an approval-gated action is skippable once APPROVED.
+
+#### Scenario: Non-gated selected action is skipped with a reason
+
+- **WHEN** an officer skips a SELECTED non-approval-gated action, recording a reason
+- **THEN** the action is recorded SKIPPED with that reason
+
+#### Scenario: Approved gated action is skipped after approval
+
+- **WHEN** an officer skips an APPROVED approval-gated action, recording a reason
+- **THEN** the action is recorded SKIPPED with that reason
+
+#### Scenario: Pending-approval action is not skippable
+
+- **WHEN** an officer attempts to skip a PENDING_APPROVAL action
+- **THEN** the system rejects the skip
+
+#### Scenario: Executed action is not skippable
+
+- **WHEN** an officer attempts to skip an EXECUTED action
+- **THEN** the system rejects the skip
+
+### Requirement: Collection activity may cite the strategy action it fulfills
+
+The system SHALL let a collection activity optionally reference a strategy action of the account's ACTIVE strategy as the action it fulfills, SHALL treat the reference as informational evidence only, and SHALL NOT change the action's status as a result of the link.
+
+#### Scenario: Activity cites the action it fulfills
+
+- **WHEN** an officer logs a collection activity for an account with an ACTIVE strategy and selects an action from that strategy as the fulfilled action
+- **THEN** the activity is recorded with the action link
+
+#### Scenario: Activity is logged without an action link
+
+- **WHEN** an officer logs a collection activity for an account with no ACTIVE strategy or does not select an action
+- **THEN** the activity is recorded with no action link
+
+#### Scenario: Linking evidence does not execute the action
+
+- **WHEN** an officer links a collection activity to a SELECTED action
+- **THEN** the action remains SELECTED and execution still requires the officer's explicit execute action
+
+### Requirement: Evidence links are restricted to the account's active strategy actions
+
+The system SHALL allow linking a collection activity only to actions whose strategy belongs to the same account and is ACTIVE, and SHALL reject any attempt to link an activity to an action of another account or of a strategy that is not ACTIVE.
+
+#### Scenario: Link to a different account is rejected
+
+- **WHEN** an officer attempts to link a collection activity to an action whose strategy belongs to a different account
+- **THEN** the system rejects the link
+
+#### Scenario: Actions of an exited strategy cannot be newly linked
+
+- **WHEN** a strategy is not ACTIVE
+- **THEN** its actions cannot be newly linked as evidence, while links recorded while the strategy was active remain as history
+
+### Requirement: Action execution can log and link its evidence activity
+
+The system SHALL provide, when executing a strategy action, a one-step path that creates a collection activity for the strategy's account, links it to the action as evidence, and records the action as EXECUTED with the entered outcome in the same operation.
+
+#### Scenario: Log-and-execute creates a linked evidence activity
+
+- **WHEN** an officer executes an action using the log-and-execute path with an outcome
+- **THEN** the system creates a collection activity for the account linked to the action and marks the action EXECUTED with the outcome
