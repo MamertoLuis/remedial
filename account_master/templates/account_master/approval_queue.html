@@ -7,49 +7,103 @@
     <div class="app-entity-header app-section">
         <div class="min-w-0">
             <h1 class="app-page-title mb-0">Approval Queue</h1>
-            <p class="app-entity-sub">Pending approval-gated actions across accounts</p>
+            <p class="app-entity-sub">Pending manager decisions across accounts</p>
         </div>
     </div>
 
     <div class="app-section mt-3">
-        {% if pending_actions %}
-            <table class="app-table">
-                <thead>
-                    <tr>
-                        <th>Action</th>
-                        <th>Account</th>
-                        <th>Strategy</th>
-                        <th>Assignee</th>
-                        <th>Decision</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for action in pending_actions %}
-                    <tr>
-                        <td>{{ action.catalog_entry.name }} <span class="app-muted">({{ action.catalog_entry.code }})</span></td>
-                        <td>
-                            <a href="{% url 'account_detail' action.strategy.account.loan_id %}" class="app-link">{{ action.strategy.account.loan_id }}</a>
-                        </td>
-                        <td>
-                            <a href="{% url 'remedial_strategy_detail' action.strategy.account.loan_id action.strategy.strategy_id %}" class="app-link">{{ action.strategy.get_strategy_type_display }}</a>
-                        </td>
-                        <td>{{ action.assignee|default:"—" }}</td>
-                        <td>
-                            <form method="post" class="app-form-inline">
-                                {% csrf_token %}
-                                <input type="hidden" name="action_id" value="{{ action.action_id }}">
-                                <input type="text" name="conditions" placeholder="Conditions (e.g. 20% downpayment in 10 days)" class="app-input app-input-sm">
-                                <input type="text" name="comments" placeholder="Comments" class="app-input app-input-sm">
-                                <button type="submit" name="decision" value="approve" class="app-btn app-btn-primary app-btn-sm">Approve</button>
-                                <button type="submit" name="decision" value="reject" class="app-btn app-btn-secondary app-btn-sm">Reject</button>
-                            </form>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        <div class="flex gap-2 flex-wrap mb-3" role="tablist" aria-label="Approval queue views">
+            <a href="{% url 'approval_queue' %}" class="app-btn {% if tab == 'strategy' %}app-btn-primary{% else %}app-btn-secondary{% endif %}" role="tab" aria-selected="{% if tab == 'strategy' %}true{% else %}false{% endif %}">Strategy Approvals</a>
+            <a href="{% url 'approval_queue' %}?tab=litigation" class="app-btn {% if tab == 'litigation' %}app-btn-primary{% else %}app-btn-secondary{% endif %}" role="tab" aria-selected="{% if tab == 'litigation' %}true{% else %}false{% endif %}">Litigation Entries</a>
+        </div>
+
+        {% if tab == 'litigation' %}
+            <div role="tabpanel" aria-label="Litigation Entries">
+                {% if pending_entries %}
+                <div class="app-table-scroll">
+                    <table class="app-table" aria-label="Pending litigation entries">
+                        <thead>
+                            <tr>
+                                <th scope="col">Loan</th>
+                                <th scope="col">Borrower</th>
+                                <th scope="col">Strategy Type</th>
+                                <th scope="col">Start Date</th>
+                                <th scope="col">Raised By</th>
+                                <th scope="col">Raised At</th>
+                                <th scope="col">Decision</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for entry in pending_entries %}
+                            <tr>
+                                <td><a href="{% url 'account_detail' entry.account.loan_id %}" class="app-link">{{ entry.account.loan_id }}</a></td>
+                                <td>{{ entry.account.borrower.full_name }}</td>
+                                <td>{{ entry.strategy_type }}</td>
+                                <td>{{ entry.start_date }}</td>
+                                <td>{{ entry.raised_by.username|default:"—" }}</td>
+                                <td>{{ entry.raised_at|date:"Y-m-d H:i" }}</td>
+                                <td>
+                                    <form method="post" action="{% url 'decide_litigation_entry' entry.litigation_id %}" class="app-form-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="entry_id" value="{{ entry.litigation_id }}">
+                                        <input type="text" name="decision_notes" placeholder="Decision Notes" class="app-input app-input-sm">
+                                        <button type="submit" name="decision" value="APPROVE" class="app-btn app-btn-primary app-btn-sm">Approve</button>
+                                        <button type="submit" name="decision" value="REJECT" class="app-btn app-btn-secondary app-btn-sm">Reject</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                {% include 'partials/empty_state.html' with title="No pending litigation entries" message="No litigation entries are awaiting a manager decision." %}
+                {% endif %}
+            </div>
         {% else %}
-            {% include 'partials/empty_state.html' with title="Queue is empty" message="No approval-gated actions are awaiting a manager decision." %}
+            <div role="tabpanel" aria-label="Strategy Approvals">
+                {% if pending_actions %}
+                <div class="app-table-scroll">
+                    <table class="app-table" aria-label="Pending approval-gated actions">
+                        <thead>
+                            <tr>
+                                <th scope="col">Action</th>
+                                <th scope="col">Account</th>
+                                <th scope="col">Strategy</th>
+                                <th scope="col">Assignee</th>
+                                <th scope="col">Decision</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for action in pending_actions %}
+                            <tr>
+                                <td>{{ action.catalog_entry.name }} <span class="app-muted">({{ action.catalog_entry.code }})</span></td>
+                                <td>
+                                    <a href="{% url 'account_detail' action.strategy.account.loan_id %}" class="app-link">{{ action.strategy.account.loan_id }}</a>
+                                </td>
+                                <td>
+                                    <a href="{% url 'remedial_strategy_detail' action.strategy.account.loan_id action.strategy.strategy_id %}" class="app-link">{{ action.strategy.get_strategy_type_display }}</a>
+                                </td>
+                                <td>{{ action.assignee|default:"—" }}</td>
+                                <td>
+                                    <form method="post" class="app-form-inline">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="action_id" value="{{ action.action_id }}">
+                                        <input type="text" name="conditions" placeholder="Conditions (e.g. 20% downpayment in 10 days)" class="app-input app-input-sm">
+                                        <input type="text" name="comments" placeholder="Comments" class="app-input app-input-sm">
+                                        <button type="submit" name="decision" value="approve" class="app-btn app-btn-primary app-btn-sm">Approve</button>
+                                        <button type="submit" name="decision" value="reject" class="app-btn app-btn-secondary app-btn-sm">Reject</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                {% include 'partials/empty_state.html' with title="Queue is empty" message="No approval-gated actions are awaiting a manager decision." %}
+                {% endif %}
+            </div>
         {% endif %}
     </div>
 {% endblock %}

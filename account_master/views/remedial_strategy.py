@@ -7,7 +7,7 @@ from django_tables2 import RequestConfig
 
 from account_master.forms import RemedialStrategyForm, RemedialStrategyRecommendationForm
 from account_master.models import LoanAccount, RemedialStrategy, StrategyApproval
-from account_master.services import strategy_service
+from account_master.services import litigation_service, strategy_service
 from account_master.decorators import manager_required
 from compromise_agreement.tables import CompromiseAgreementTable
 
@@ -234,8 +234,18 @@ def approval_queue(request):
         return redirect("approval_queue")
 
     pending = strategy_service.list_pending_approvals()
+    pending_entries = litigation_service.get_pending_entries().select_related(
+        "account", "raised_by"
+    )
+    tab = request.GET.get("tab", "strategy")
+    if tab not in ("strategy", "litigation"):
+        tab = "strategy"
     return render(
         request,
         "account_master/approval_queue.html",
-        {"pending_actions": pending},
+        {
+            "pending_actions": pending,
+            "pending_entries": pending_entries,
+            "tab": tab,
+        },
     )

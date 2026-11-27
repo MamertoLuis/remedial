@@ -143,4 +143,20 @@ urlpatterns = [
         views.issue_escalation_notice,
         name="issue_escalation_notice",
     ),
+    # Account-level litigation entry URLs
+    path(
+        "account/<str:loan_id>/litigation/raise/",
+        views.raise_litigation_entry,
+        name="raise_litigation_entry",
+    ),
+    path(
+        "litigation-entries/",
+        views.litigation_entry_queue,
+        name="litigation_entry_queue",
+    ),
+    path(
+        "litigation-entries/<int:litigation_id>/",
+        views.decide_litigation_entry,
+        name="decide_litigation_entry",
+    ),
 ]

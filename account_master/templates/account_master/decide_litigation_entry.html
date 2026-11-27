@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+
+{% block title %}Litigation Entry Decision - {{ entry.account.loan_id }}{% endblock %}
+
+{% block content %}
+    <div class="app-section">
+        <div class="app-section-head">
+            <h1 class="app-section-title">Litigation Entry Decision</h1>
+            <a href="{% url 'litigation_entry_queue' %}" class="app-btn app-btn-secondary app-btn-sm">Back to Queue</a>
+        </div>
+        <p class="app-entity-sub mb-3">
+            <a href="{% url 'account_detail' entry.account.loan_id %}" class="app-link">Account {{ entry.account.loan_id }}</a>
+            &middot; {{ entry.account.borrower.full_name }}
+        </p>
+
+        <dl class="app-definition-grid mb-3">
+            <div><dt>Strategy type</dt><dd>{{ entry.strategy_type }}</dd></div>
+            <div><dt>Start date</dt><dd>{{ entry.start_date }}</dd></div>
+            <div><dt>Status</dt><dd>{% include 'partials/status_chip.html' with value=entry.status %}</dd></div>
+            <div><dt>Raised by</dt><dd>{{ entry.raised_by.username|default:"—" }}</dd></div>
+            <div><dt>Raised at</dt><dd>{{ entry.raised_at|date:"Y-m-d H:i" }}</dd></div>
+        </dl>
+
+        <h2 class="app-section-title mb-2">Officer Rationale</h2>
+        <div class="app-field">
+            <p class="app-text">{{ entry.rationale }}</p>
+        </div>
+
+        <form method="post" class="app-form">
+            {% csrf_token %}
+            <div class="app-form-grid">
+                <div class="app-field app-field-full">
+                    <label for="decision_notes">Decision Notes</label>
+                    <textarea name="decision_notes" id="decision_notes" rows="3"></textarea>
+                </div>
+            </div>
+            <div class="app-form-actions">
+                <a href="{% url 'litigation_entry_queue' %}" class="app-btn app-btn-secondary">Cancel</a>
+                <button type="submit" name="decision" value="REJECT" class="app-btn app-btn-danger">Reject</button>
+                <button type="submit" name="decision" value="APPROVE" class="app-btn app-btn-primary">Approve</button>
+            </div>
+        </form>
+    </div>
+{% endblock %}

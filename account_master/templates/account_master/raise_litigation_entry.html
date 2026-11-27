@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+
+{% block title %}Raise Litigation Entry - {{ account.loan_id }}{% endblock %}
+
+{% block content %}
+    {% include 'partials/form_page.html' with page_title='Raise Litigation Entry' page_subtitle='Account '|add:account.loan_id form=form cancel_url=cancel_url submit_label='Submit for Approval' %}
+{% endblock %}

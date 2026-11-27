@@ -14,6 +14,28 @@ from .models import (
 )
 
 
+LITIGATION_STRATEGY_TYPES = ("Legal Action", "Foreclosure")
+
+
+class LitigationEntryForm(forms.Form):
+    """
+    Officer form to raise an account-level litigation entry (target type,
+    litigation start date and an officer rationale).
+    """
+
+    strategy_type = forms.ChoiceField(
+        choices=[(t, t) for t in LITIGATION_STRATEGY_TYPES],
+        label="Target Strategy Type",
+    )
+    start_date = forms.DateField(
+        widget=forms.DateInput(attrs={"type": "date"}),
+        label="Litigation Start Date",
+    )
+    rationale = forms.CharField(
+        widget=forms.Textarea, label="Officer Rationale", help_text="Why is the account entering litigation?"
+    )
+
+
 class ECLProvisionHistoryForm(forms.ModelForm):
     class Meta:
         model = ECLProvisionHistory

@@ -78,12 +78,21 @@ def approved_rescind_exists(account):
 
 def _check_entry_gates(account, strategy_type):
     """Enforce the Legal Action / Foreclosure entry gates (design D9)."""
+    from .litigation_service import has_approved_litigation_entry  # local import to avoid a cycle
+
     if strategy_type not in ("Legal Action", "Foreclosure"):
         return
-    if not (ladder_terminal_closed(account) or approved_rescind_exists(account)):
+    if not (
+        ladder_terminal_closed(account)
+        or approved_rescind_exists(account)
+        or has_approved_litigation_entry(account)
+    ):
         raise ValidationError(
             "A Legal Action / Foreclosure recommendation requires the escalation "
-            "ladder's terminal stage or an approved agreement rescind."
+            "ladder's terminal stage, an approved agreement rescind, or an "
+            "approved litigation entry on the account. If the account is already "
+            "in litigation, raise an account-level litigation entry for manager "
+            "approval first."
         )
     if strategy_type == "Foreclosure" and account.loan_security != "SECURED":
         raise ValidationError("Foreclosure requires a SECURED account.")

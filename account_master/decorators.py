@@ -29,6 +29,29 @@ def system_admin_required(view_func):
     return _wrapped
 
 
+def officer_required(view_func):
+    """Gate a view to users with the ACCOUNT_OFFICER role.
+
+    Composes ``@login_required`` with a strict role check: any authenticated
+    user whose ``role`` is not ``User.Role.ACCOUNT_OFFICER`` receives the
+    shared 403 page.
+    """
+
+    @login_required
+    @wraps(view_func)
+    def _wrapped(request, *args, **kwargs):
+        if request.user.role != User.Role.ACCOUNT_OFFICER:
+            return render(
+                request,
+                "account_master/403.html",
+                {"required_roles": "the ACCOUNT_OFFICER"},
+                status=403,
+            )
+        return view_func(request, *args, **kwargs)
+
+    return _wrapped
+
+
 def manager_required(view_func):
     """Gate a view to users with the MANAGER role.
 

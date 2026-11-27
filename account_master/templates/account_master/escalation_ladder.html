@@ -17,6 +17,7 @@
             {% if escalation_state %}
             <a href="{% url 'issue_escalation_notice' account.loan_id %}" class="app-btn app-btn-primary">Issue Notice</a>
             {% endif %}
+            <a href="{% url 'raise_litigation_entry' account.loan_id %}" class="app-btn app-btn-primary">Raise Litigation Entry</a>
         </div>
     </div>
 

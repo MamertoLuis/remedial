@@ -28,7 +28,11 @@ from account_master.models import (
     StrategyApproval,
     StrategyAssessment,
 )
-from account_master.services import escalation_service, strategy_service
+from account_master.services import (
+    escalation_service,
+    litigation_service,
+    strategy_service,
+)
 from account_master.services.main import create_collection_activity
 from compromise_agreement.models import CompromiseAgreement
 
@@ -958,6 +962,65 @@ class EntryGateServiceTest(TestCase):
                 assessment=base_assessment(),
             )
 
+    def test_approved_litigation_entry_satisfies_legal_action_gate(self):
+        manager = User.objects.create_user(
+            username="lit-mgr1", password="pass", role=User.Role.MANAGER
+        )
+        entry = litigation_service.raise_litigation_entry(
+            account=self.account,
+            strategy_type="Legal Action",
+            start_date=_today(),
+            rationale="Account already in legal proceedings.",
+            officer=self.officer,
+        )
+        litigation_service.approve_litigation_entry(entry, approver=manager)
+        strategy = strategy_service.create_strategy_recommendation(
+            account=self.account,
+            strategy_type="Legal Action",
+            strategy_start_date=_today(),
+            officer=self.officer,
+            assessment=base_assessment(),
+        )
+        self.assertEqual(strategy.strategy_type, "Legal Action")
+
+    def test_pending_litigation_entry_does_not_satisfy_gate(self):
+        litigation_service.raise_litigation_entry(
+            account=self.account,
+            strategy_type="Legal Action",
+            start_date=_today(),
+            rationale="Account already in legal proceedings.",
+            officer=self.officer,
+        )
+        with self.assertRaises(ValidationError):
+            strategy_service.create_strategy_recommendation(
+                account=self.account,
+                strategy_type="Legal Action",
+                strategy_start_date=_today(),
+                officer=self.officer,
+                assessment=base_assessment(),
+            )
+
+    def test_rejected_litigation_entry_does_not_satisfy_gate(self):
+        manager = User.objects.create_user(
+            username="lit-mgr2", password="pass", role=User.Role.MANAGER
+        )
+        entry = litigation_service.raise_litigation_entry(
+            account=self.account,
+            strategy_type="Legal Action",
+            start_date=_today(),
+            rationale="Account already in legal proceedings.",
+            officer=self.officer,
+        )
+        litigation_service.reject_litigation_entry(entry, approver=manager)
+        with self.assertRaises(ValidationError):
+            strategy_service.create_strategy_recommendation(
+                account=self.account,
+                strategy_type="Legal Action",
+                strategy_start_date=_today(),
+                officer=self.officer,
+                assessment=base_assessment(),
+            )
+
     def test_ladder_terminal_satisfies_legal_action_gate(self):
         self._terminal_ladder()
         strategy = strategy_service.create_strategy_recommendation(
@@ -1213,6 +1276,16 @@ class AssessmentCaptureViewTest(TestCase):
         self.assertEqual(assessment.financial_condition, "STRONG")
         self.assertEqual(assessment.willingness_to_pay, "HIGH")
         self.assertEqual(assessment.recovery_outlook, "MEDIUM")
+
+    def test_ungated_legal_action_renders_litigation_entry_message(self):
+        self.client.force_login(self.officer)
+        response = self._post(strategy_type="Legal Action")
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(
+            self.account.remedial_strategies.filter(strategy_type="Legal Action").exists()
+        )
+        body = response.content.decode()
+        self.assertIn("litigation entry", body.lower())
 
 
 class StrategyDetailViewTest(TestCase):

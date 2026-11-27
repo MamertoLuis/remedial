@@ -35,3 +35,11 @@ from .escalation_service import (
     sync_pause_state,
     sync_escalation_on_snapshot,
 )
+from .litigation_service import (
+    raise_litigation_entry,
+    approve_litigation_entry,
+    reject_litigation_entry,
+    has_approved_litigation_entry,
+    get_active_entry,
+    get_pending_entries,
+)

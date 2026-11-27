@@ -19,6 +19,7 @@ from .models import (
     StrategyActionCatalogEntry,
     StrategyAction,
     StrategyApproval,
+    LitigationEntry,
 )
 from . import services
 from .services.provision_service import create_provision_entry
@@ -295,6 +296,22 @@ class NoticeAdmin(admin.ModelAdmin):
     search_fields = ("account__loan_id", "reference_no")
     list_filter = ("method", "issued_on")
     date_hierarchy = "issued_on"
+
+
+@admin.register(LitigationEntry)
+class LitigationEntryAdmin(admin.ModelAdmin):
+    list_display = (
+        "account",
+        "strategy_type",
+        "start_date",
+        "status",
+        "raised_by",
+        "raised_at",
+        "decided_by",
+    )
+    search_fields = ("account__loan_id", "account__borrower__full_name")
+    list_filter = ("status", "strategy_type")
+    date_hierarchy = "raised_at"
 
 
 @admin.register(Alert)

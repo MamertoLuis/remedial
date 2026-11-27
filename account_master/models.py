@@ -559,6 +559,78 @@ class StrategyApproval(AuditableModel):
         )
 
 
+class LitigationEntry(AuditableModel):
+    """
+    Account-level, officer-raised, manager-approved entry to legal action.
+
+    Records that an account is entering (or has entered) litigation so a
+    Legal Action / Foreclosure strategy can be recommended without a
+    terminal-stage escalation ladder. The entry is set only by an account
+    officer and approved only by a manager; it is never derived from
+    delinquency. At most one active (PENDING_APPROVAL or APPROVED) entry
+    exists per account; a REJECTED entry does not count and may be re-raised.
+    """
+
+    class Status(models.TextChoices):
+        PENDING_APPROVAL = "PENDING_APPROVAL", _("Pending Approval")
+        APPROVED = "APPROVED", _("Approved")
+        REJECTED = "REJECTED", _("Rejected")
+
+    litigation_id = models.AutoField(primary_key=True)
+    account = models.ForeignKey(
+        LoanAccount, on_delete=models.CASCADE, related_name="litigation_entries"
+    )
+    strategy_type = models.CharField(
+        max_length=50, choices=RemedialStrategy.STRATEGY_TYPE_CHOICES
+    )
+    start_date = models.DateField(help_text=_("Date litigation started / is expected"))
+    rationale = models.TextField(
+        default="", help_text=_("Officer rationale for entering litigation")
+    )
+    status = models.CharField(
+        max_length=20, choices=Status.choices, default=Status.PENDING_APPROVAL
+    )
+    raised_by = models.ForeignKey(
+        get_user_model(),
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="raised_litigation_entries",
+    )
+    raised_at = models.DateTimeField(auto_now_add=True)
+    decided_by = models.ForeignKey(
+        get_user_model(),
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="decided_litigation_entries",
+    )
+    decided_at = models.DateTimeField(null=True, blank=True)
+    decision_notes = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ["-raised_at"]
+        verbose_name = _("Litigation Entry")
+        verbose_name_plural = _("Litigation Entries")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["account"],
+                condition=models.Q(status__in=["PENDING_APPROVAL", "APPROVED"]),
+                name="uniq_active_litigation_entry_per_account",
+            )
+        ]
+        indexes = [
+            models.Index(fields=["status"]),
+            models.Index(fields=["account", "status"]),
+        ]
+
+    def __str__(self):
+        return str(
+            f"{self.get_status_display()} {self.strategy_type} for "
+            f"{self.account.loan_id}"
+        )
+
+
 class CollectionActivityLog(AuditableModel):
     ACTIVITY_TYPE_CHOICES = [
         ("Call", "Call"),
