@@ -98,6 +98,7 @@ Every agent **MUST** strictly follow the project's versioning standards as defin
 - **Atomic Commits**: Commits must be atomic and, whenever possible, reference task IDs from `tasks.md`.
 - **History Integrity**: Use `rebase` to maintain a linear history before merging into `main`.
 - **Isolated Execution (Worktree)**: For **Medium+** tasks or when working on parallel features, agents **MUST** use `git worktree` to maintain isolated environments and prevent context contamination between branches.
+- **Documentation Sync**: Every feature/task commit that changes externally visible behavior MUST keep the manuals in `docs/` in sync — update `DEMO-USER-MANUAL.md` and `TECHNICAL-MANUAL.md` (and `DESIGN.md` when architecture changes) either in the same commit or as an immediately following `docs:` commit. Manuals MUST never drift from the implemented behavior. Similarly, README changes are documented in the README, not duplicated in the manuals.
 
 
 ## 🔒 7. SESSION EXIT GATE (EXECUTE BEFORE ENDING)
@@ -106,6 +107,7 @@ Before ending the session or delivering the task, the agent **MUST** validate:
 2. **Tasks Update**: Does `tasks.md` reflect the real state of implementation?
 3. **State Sync**: Has `STATE.md` been updated with progress and next steps?
 4. **Learnings Capture**: Update `LEARNINGS.md` with new patterns or fixed bugs.
+5. **Docs Update**: Update the `docs/` documents as needed, or after every feature commit — manuals MUST reflect the delivered behavior (new screens, commands, workflows, or removal of old ones).
 6. **Audit Pass**: Execute `make audit` and ensure "100% COMPLIANT" status. Failures MUST be fixed before session delivery.
 7. **Knowledge Update**: Refresh the Central Knowledge Map (embedded in Section 4) if the project structure or skill relationships changed.
 
@@ -130,6 +132,6 @@ version: "2.3.0"
 feature_id: "GLOBAL-MANDATES-EVOLUTION"
 phase: "IMPLEMENT"
 status: "COMPLETED"
-last_update: "2026-05-22T14:46:00Z"
+last_update: "2026-11-28T08:52:00Z"
 evidence_checksum: "ffb546e"
 ```
