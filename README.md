@@ -86,15 +86,15 @@ was removed with this contract.
 
 ### CSV imports
 
-Repository sample files compatible with the contract: `sample_borrowers.csv`,
-`sample_accounts.csv`, and `sample_exposures.csv`. Import them in order
-(borrowers → accounts → exposures) because accounts reference borrowers and
-exposure `loan_id`s must already exist as loan accounts:
+Repository sample files compatible with the contract live in `docs/samples/`:
+`sample_borrowers.csv`, `sample_accounts.csv`, and `sample_exposures.csv`. Import
+them in order (borrowers → accounts → exposures) because accounts reference
+borrowers and exposure `loan_id`s must already exist as loan accounts:
 
 ```bash
-uv run python manage.py import_borrowers sample_borrowers.csv
-uv run python manage.py import_accounts sample_accounts.csv
-uv run python manage.py import_exposures --cutoff 2026-03-14 sample_exposures.csv
+uv run python manage.py import_borrowers docs/samples/sample_borrowers.csv
+uv run python manage.py import_accounts docs/samples/sample_accounts.csv
+uv run python manage.py import_exposures --cutoff 2026-03-14 docs/samples/sample_exposures.csv
 ```
 
 **Borrowers** — required: `borrower_id`, `full_name`; optional: `borrower_type`
