@@ -121,6 +121,38 @@ referential integrity, within-file uniqueness — and write nothing when any
 row is invalid (the exit code is non-zero). Re-importing an identical file is
 idempotent: nothing changes and the command exits zero.
 
+## Demo database
+
+For a cloud-hosted, open-play demo the app ships a fake-data seeder that
+provisions a complete demo database in one command (small and bounded, no
+real data):
+
+```bash
+uv run python manage.py seed_demo [--seed 42]
+```
+
+It seeds role users, the foundational portfolio, and per-account exposure
+timelines written **through the normal derivation cascade**, so account
+status, NPL, escalation ladders, and ECL provisions are coherent — accounts
+cross 90 DPD and become NPL, ladders open and cure, ECL tiers move.
+
+Demo logins (password `demo-password-123` for all):
+
+| Username | Role | Shows |
+|---|---|---|
+| `admin` | System Administrator | everything, admin UI |
+| `demo-manager` | Manager | approval queue, litigation decisions |
+| `demo-officer` | Account Officer | raising entries, escalations |
+| `demo-board` | Board Member | portfolio reports |
+
+Without `--seed` the generated values vary per run (open play); the same
+`--seed` reproduces an identical database. Re-running replaces the demo data.
+
+> **Fake-only guardrail**: `seed_demo` refuses to run when the database holds
+> exposure or delinquency rows outside the demo portfolio, and real imports
+> (`import_from_iaccs`, CSV imports) must never run on a demo host. The demo
+> database is fabricated data only.
+
 ## Deployment
 
 `deploy/gunicorn.conf.py` and `deploy/nginx.conf` contain the reference
