@@ -24,6 +24,7 @@ doc/*.md
 !**/migrations/__init__.py
 **/__pycache__/
 /staticfiles/
+*.log
 media/
 .agents/
 pi-sess.txt
