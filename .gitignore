@@ -11,7 +11,7 @@ db.sqlite3
 doc/*.md
 !/README.md
 !/AGENTS.md
-!/DESIGN.md
+!/docs/*.md
 
 # OpenSpec specs and change artifacts are the source of record — track them
 !openspec/**/*.md

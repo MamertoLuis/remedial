@@ -205,7 +205,7 @@ Single source of truth in the `status_chip_class` template tag
 
 ## 7. Verification status
 
-Tracked in the change's `tasks.md` (groups 11–12). Repo root `DESIGN.md` is
+Tracked in the change's `tasks.md` (groups 11–12). `docs/DESIGN.md` is
 kept in sync by task 11.5.
 
 ### Phase 11 sweep results (updates)

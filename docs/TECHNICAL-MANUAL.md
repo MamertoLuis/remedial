@@ -1,0 +1,366 @@
+# Remedial — Technical Manual
+
+A complete reference for developers and maintainers of the Remedial loan
+remedial-management system. It assumes you know Django; it tells you how this
+codebase is put together, how its domain rules work, and where to change
+things.
+
+---
+
+## 1. System overview
+
+Remedial is a **monolithic Django application** (Django 5, Python 3.12.12 via
+`uv`, pinned in `.python-version`) for bank loan remedial management:
+borrowers and loan accounts, delinquency tracking, ECL provisioning,
+collection activities, remedial strategies with approval flows, escalation
+ladders, litigation entries, compromise agreements, alerts, and portfolio
+reports. One database, one process, no background workers (no Celery/Redis).
+
+```
+                    +-----------------------------------------------------+
+                    |                     Django (WSGI)                   |
+                    |-----------------------------------------------------|
+                    |  account_master   compromise_agreement   reporting  |
+                    |  (core domain)    (agreements/installments)         |
+                    |  users (roles)    allauth (login)                   |
+                    +-----------------------------------------------------+
+                       | read-only SQL (iAccs MySQL, MYSQL56_*)           |
+                       |              | local DB (SQLite dev / Postgres)  |
+                  [ iAccs source ]     [ exposures, delinquency, ECL,     |
+                       ^                    strategies, ladders, ... ]     |
+                       | reads only; never writes                         |
+```
+
+Data flows into the local DB through three ingestion paths — the **iAccs
+single-hop import**, the **CSV contract imports**, and the **demo seeder** —
+all of which converge on the same service layer and derivation cascade
+(Section 4).
+
+---
+
+## 2. Repository layout
+
+```
+remedial/                Django project: settings, root urls, wsgi/asgi
+account_master/          Core domain (models, services, views, commands)
+  services/              Facade + domain services (the "how rules run")
+    iaccs/               Read-only iAccs source access (loader/mapper/dpd)
+  management/commands/   Import/seeding/maintenance commands
+compromise_agreement/    Compromise agreements + installment schedules
+reporting/               Portfolio/board reports (five views)
+users/                   Custom user model with roles (4 roles + invariant)
+deploy/                  Reference Gunicorn + Nginx configuration
+openspec/                Spec-Driven-Development artifacts (specs, changes)
+tools/                   Tailwind standalone CLI (gitignored, fetched by make css)
+```
+
+**Settings split** (`remedial/settings/`): `base.py` (shared defaults; local
+DB is SQLite at `BASE_DIR/db.sqlite3`), `development.py` (DEBUG), and
+`production.py` (env-driven; `DATABASE_URL`, fail-fast `SECRET_KEY` /
+`ALLOWED_HOSTS`; HSTS + proxy-SSL posture behind nginx). `manage.py` defaults
+to development.
+
+---
+
+## 3. Domain model
+
+Everything hangs off `LoanAccount` (loan_id is the canonical five-part key,
+see Section 5.1). `AuditableModel` adds `created_by`/`updated_by` FKs to the
+custom user, so every row carries an audit trail.
+
+| Model | Key / unique | Notes |
+|---|---|---|
+| `Borrower` | `borrower_id` PK | borrower_type PERSON/CORP/COOP |
+| `LoanAccount` | `loan_id` PK | terms, `status`, `loan_security` (SECURED/UNSECURED), `transaction_type` |
+| `Guarantor` / `Collateral` | FK account | guarantee and collateral detail |
+| `Exposure` | unique `(account, as_of_date)` | point-in-time snapshot: principal, interest, penalty, DPD, `source` provenance |
+| `DelinquencyStatus` | unique `(account, as_of_date)` | derived DPD/bucket/classification/NPL from Exposure; `source` provenance |
+| `ECLProvisionHistory` | FK exposure | `is_current` deactivated on rewrite; RULE_BASED/MANUAL method |
+| `EscalationState` | one open per account | PENDING/ACTIVE/PAUSED/CLOSED + stage + close reason (cured/arrangement/terminal) |
+| `RemedialStrategy` | FK account | ACTIVE/CANCELLED/COMPLETED/FAILED; save() cancels sibling actives + supersedes active compromise |
+| `StrategyAction` | FK strategy | SELECTED→PENDING_APPROVAL→APPROVED/REJECTED→EXECUTED/SKIPPED |
+| `StrategyApproval` | FK action | manager decision records |
+| `StrategyActionCatalogEntry` | — | the available action catalog |
+| `StrategyAssessment` | FK strategy | scoring snapshot at recommendation time |
+| `LitigationEntry` | FK account, one active | PENDING_APPROVAL/APPROVED/REJECTED; officer raise, manager decide |
+| `CollectionActivityLog` | FK account | activity type, PTP, staff, evidence links |
+| `CompromiseAgreement` / `CompromiseInstallment` | FK account | approval level (AO/MANAGER/BOARD), status, monthly installment plans |
+| `Alert` / `AlertRule` | FK account / rule defs | type, severity, status; generated by `AlertService.check_alert_rules` |
+| `Alert` severity/status | — | ACTIVE/RESOLVED, etc. |
+
+**Enforcement by constraints**: `Exposure` and `DelinquencyStatus` use
+`UniqueConstraint(account, as_of_date)` — a point-in-time story can only be
+rewritten, never duplicated. `RemedialStrategy.save()` enforces "one
+ACTIVE strategy per account, at most one active repayment arrangement."
+
+---
+
+## 4. The derivation cascade (the center of gravity)
+
+The app's core rule is: **delinquency facts are derived, never stored by
+hand, never imported from files.** The chain, all in
+`services/classification.py` (the single source of truth) and `main.py`:
+
+```
+ Exposure.days_past_due  (computed by iaccs loader / seeded; CSV may not carry it)
+   → derive_aging_bucket  (Current, 1-30, ..., Over 360)
+   → derive_classification (C: 0, SM: 1-90, SS: 91-180, D: 181-360, L: >360)
+   → derive_status  (sentinels override classification!)
+        principal_outstanding == 1.00  → WRITEOFF
+        principal_outstanding == 0.00  → CLOSED
+        SS/D/L → NPL   |   SM → PAST_DUE   |   otherwise PERFORMING
+   → loan account status + ECL + escalation, via:
+        _update_loan_account_status()   (latest exposure balance applies)
+        sync_escalation_on_snapshot()   (start ladder / close cured/arrangement)
+        DelinquencyStatus post_save → update_ecl_provision_for_account()
+```
+
+**ECL rates** (`ecl_service._get_provision_rate_for_classification`): Stage 1
+(C/SM) 1–5 %; Stage 2 (SS/D) 20–50 %; Stage 3 (L) 100 %, plus a small
+days-past-due factor, capped at 100 %. Amount = `principal_outstanding ×
+rate`; the old `is_current` provision is deactivated, a new one is booked.
+
+**Escalation ladder** (`escalation_service`): a delinquent account starts a
+PENDING ladder at stage 1; `issue_notice` advances stages; `recommend_terminal`
+closes with terminal reason enabling Legal-Action gating; closure with reason
+`cured` when the account performs; `arrangement` when an active compromise
+(or Restructuring strategy) exists; PTP pause/resume is re-derived on every
+snapshot. A rescinded-arrangement premise keeps the ladder closed.
+
+**Mutations live in services, not views/models**: `take_snapshot`,
+`upsert_exposure`, `upsert_delinquency_status`, `create_collection_activity`,
+`create_remedial_strategy`, `raise/approve/reject_litigation_entry`,
+`start_escalation`, `issue_notice`, strategy action approve/reject with side
+effects (booking a write-off via the 1.00 sentinel, activating a compromise,
+applying a rescind). Views and importers call these; they do not re-implement
+the rules.
+
+---
+
+## 5. Data ingestion
+
+### 5.1 iAccs single-hop import (`import_from_iaccs`)
+
+The production source of truth is the bank's iAccs MySQL (read-only).
+`services/iaccs/`:
+
+- **`connection.py`** — resolves `MYSQL56_HOST/PORT/USER/PASS/DB` from
+  environment (a repo-root `.env` is loaded for missing variables), opens a
+  pymysql connection, and **guards every statement**: only
+  `SELECT/SHOW/DESCRIBE/EXPLAIN` pass, and write keywords on whole words are
+  rejected. The importer cannot mutate the source database.
+- **`loader.py`** — three per-branch queries: loan masters (`_MASTER_SQL`),
+  `sldtl` aggregates (SLE codes 11/23/41, collection trunks), and `amortsched`
+  schedules. Loans belong to SL class `SLC_CODE = 12`; approved statuses are
+  3/7. Per-loan `fetch_loan_schedule`/`fetch_loan_repayments` also exist for
+  single-key (CSV) use. Row failures are collected and reported; the command
+  exits non-zero when any row failed. Settled loans: the loader deliberately
+  omits the reference extractor's `HAVING SUM(...) <> 0`, so settled loans
+  keep `outstanding == 0` and `DPD == 0`.
+- **`mapper.py`** — canonical identity: `loan_id = "{BR:02d}-12-{SLT:02d}-{REF}-{CLIENT}"`
+  (five parts; `parse_loan_id` reverses it), `borrower_id = str(client)`.
+  `compute_schedule_dpd` implements the **aggregate-shortfall** rule: walk
+  `amortsched` in due-date order, find the oldest installment whose cumulative
+  scheduled principal due exceeds total principal repaid, DPD = cutoff minus
+  that due date, floored at 0.
+- **`dpd.py`** — `compute_dpd_for_loan(conn, loan_id, cutoff)` shared helper
+  used by the CSV path.
+
+Writes go through `upsert_borrower` / `upsert_loan_account` /
+`upsert_exposure` with `source="IACCS"`, so classification, status, ECL, and
+ladders derive normally.
+
+### 5.2 CSV contract imports (`import_borrowers` / `import_accounts` / `import_exposures`)
+
+Specified in `openspec/specs/csv-import/spec.md` and implemented by
+`services/csv_import.py`. Key points:
+
+- **Two-phase**: the whole file (exact headers, types, referential integrity,
+  within-file uniqueness, provenance conflicts) is validated before any row is
+  written; any invalid row rejects the file with zero writes and non-zero exit.
+- **Exact header allow-lists** per command; derived columns are rejected:
+  `status` (accounts), `days_past_due` (exposures), and
+  `classification/aging_bucket/npl_flag/npl_date` everywhere. Unknown columns
+  also reject the file.
+- **Strict parsing**: ISO `YYYY-MM-DD` dates only; `borrower_type`/`loan_security`
+  validated against choices; no silent coercion (no PERSON fallback, no DPD→0).
+- **Exposures**: DPD is computed from the iAccs schedule via
+  `compute_dpd_for_loan`, which is why `import_exposures` requires `--cutoff`
+  and a live `MYSQL56_*` connection.
+- **Provenance**: rows written by CSV are tagged `source="CSV"`; a CSV file
+  that would modify an `IACCS`-tagged exposure/delinquency for the same
+  (account, as_of_date) is rejected.
+- `load_delinquency_csv` was **removed** by this contract.
+
+### 5.3 Demo seeding (`seed_demo`)
+
+`services/demo_seed.py` + `management/commands/seed_demo.py`. Composes
+`load_dummy_data` → cascade timeline (16 weekly snapshots per account through
+`upsert_exposure`) → enrichment loaders (collection activities, strategies,
+compromise) → one approved litigation entry. Deterministic demo users
+(`admin`, `demo-officer`, `demo-manager`, `demo-board`, password
+`demo-password-123`); `--seed` pins values; re-runs purge and replace only the
+demo set; an **organic-data guard** refuses to run when Exposure/Delinquency
+rows exist outside the demo accounts (ACC001–ACC010). Spec: `demo-data`.
+
+### 5.4 In-app manual entry
+
+System admins can create/update borrowers, accounts, exposures, and
+delinquency records through views; `DelinquencyStatusForm` and `ExposureForm`
+exclude `source` (provenance is never operator-editable). Manual delinquency
+edits still trigger the ECL post-save path.
+
+---
+
+## 6. Views, routing, and authorization
+
+All URLs under `/` (account_master), `/admin/` (Django admin),
+`/compromise/`, `/reports/`, `/accounts/` (allauth), `/profile/`. Key routes:
+
+| URL name | Purpose | Role gate |
+|---|---|---|
+| `dashboard`, `portfolio_summary`, `account_list`, `borrower_list`, `search` | browsing | any authenticated |
+| `account_detail`, `borrower_detail`, `remedial_strategy_detail`, `escalation_ladder_detail`, `alert_list` | detail | any authenticated |
+| `create_*` / `update_*` (borrower, account, exposure, delinquency) | data entry | SYSTEM_ADMINISTRATOR |
+| `raise_litigation_entry` | litigation raise | ACCOUNT_OFFICER |
+| `litigation_entry_queue`, `decide_litigation_entry` | litigation decision | MANAGER |
+| `approval_queue` (tabs: strategy approvals + litigation) | manager hub | MANAGER |
+| `remedial_strategy` actions/approvals (`remedial_strategy.py:203` area) | strategy approval | MANAGER |
+| `reports/*` (5 report views) | portfolio analysis | any authenticated |
+| `api/alerts/*` | alert refresh/ack/resolve/dismiss + rules | any authenticated (user-scoped) |
+
+**Role gates** (`decorators.py`): `system_admin_required`,
+`officer_required`, `manager_required` wrap `login_required` + strict role
+match (403 otherwise). Roles: `ACCOUNT_OFFICER`, `MANAGER`, `BOARD_MEMBER`,
+`SYSTEM_ADMINISTRATOR`. Invariant: `is_staff == (role == SYSTEM_ADMINISTRATOR)`
+(see also `users/` data migration 0003: superusers are auto-assigned the admin
+role; role changes are system-admin-only).
+
+---
+
+## 7. Alerts and reports
+
+- `services/alert_service.py` — `AlertService` class: create/generate,
+  `check_alert_rules` (rule-driven), active queries, acknowledge/resolve/
+  dismiss with user attribution; cached queries.
+- `reporting/views.py` — five views: loan portfolio breakdown, past-due aging
+  summary, NPL portfolio analysis, top-20 NPL accounts, loan officer
+  performance summary; `reports_index` lists them.
+
+---
+
+## 8. Management commands (reference)
+
+| Command | Purpose | Key flags / contract |
+|---|---|---|
+| `import_from_iaccs` | single-hop iAccs refresh | `--cutoff` (required), `--branch`, `--dry-run` |
+| `import_borrowers`, `import_accounts`, `import_exposures` | CSV contract imports | two-phase; exposures need `--cutoff` + MYSQL56_* |
+| `seed_demo` | demo DB provisioning | `--seed`; refuses on organic data |
+| `load_dummy_data` / `load_dummy_exposure` / `load_dummy_delinquency` / `load_dummy_collection_activities` / `load_dummy_remedial_strategies` / `load_dummy_compromise` | ad-hoc dummy slices | dev-only; delinquency/exposure write directly (bypassing cascade) |
+| `update_delinquency` | daily snapshot for PAST_DUE/NPL accounts | idempotent per day |
+| `update_ecl_provisions` | rebook provisions | `--loan-id` |
+| `repair_legacy_npl_rows` | fix legacy 90-DPD SS rows | — |
+| `find_duplicates` | diagnostic: duplicate Exposure/Delinquency | — |
+| `test_snapshot` | smoke test `take_snapshot` | — |
+
+---
+
+## 9. Settings, environment, and tooling
+
+`.env.example` documents the environment. Production requires
+`SECRET_KEY`, `DATABASE_URL`, `ALLOWED_HOSTS` (fail-fast); supports
+`DEBUG`, `CSRF_TRUSTED_ORIGINS`, and a set of security toggles (HSTS,
+`SECURE_*`). `DATABASE_URL` uses django-environ (`env.db`), so Postgres
+works out of the box. iAccs reads use the `MYSQL56_*` convention.
+
+Tooling: `uv` (lockfile `uv.lock`), `make check`/`make test`/`make audit`
+(the delivery gate: check + full suite, `AUDIT PASSED`), `make css` to
+compile Tailwind v4 from `static/css/input.css` into the committed
+`app.css` (no Node; the standalone binary is fetched into `tools/`).
+PDF generation uses xhtml2pdf → svglib → pycairo (Cairo headers needed at
+install on Linux).
+
+---
+
+## 10. Signals, invariants, error handling
+
+- **`DelinquencyStatus` post_save** → `update_ecl_provision_for_account`
+  (models.py bottom). It **catches and logs** failures rather than breaking
+  the save — a known silent-failure surface when the matching Exposure does
+  not exist at `as_of_date`.
+- **iAccs import isolation**: each loan is processed in its own transaction;
+  a failing row is reported and the import continues, exiting non-zero at the
+  end (no partial-write ambiguity on the source).
+- **CSV imports**: whole-file rejection; zero writes on any invalid row.
+- **Uniqueness constraints** enforce one exposure/delinquency per
+  (account, as_of_date) and one open escalation per account.
+- **Provenance**: `source` (`IACCS`/`CSV`) on Exposure + DelinquencyStatus;
+  CSV may not overwrite iAccs-tagged same-date rows.
+- **Interest-rate convention**: iAccs and dummy data store rates as percent
+  (e.g. `6.25`); be consistent when authoring new importers/samples.
+
+**Known gotchas**:
+- Migrations are **gitignored** (`**/migrations/*.py`): run
+  `makemigrations` per environment; migration files are not versioned.
+- `*.md` files are gitignored except README/AGENTS/DESIGN — new manuals need
+  `git add -f` or a gitignore change.
+- The ECL post-save signal swallows exceptions (see above).
+- CSV exposure imports and iAccs imports require the iAccs database to be
+  reachable; the demo host must never run them (seed_demo guard enforces the
+  absence, docs must enforce the practice).
+
+---
+
+## 11. Tests
+
+`account_master/tests*.py` cover UI views, gating, strategy framework,
+escalation ladder, litigation, import commands, iaccs sync (mapper/DPD
+offline), CSV contract, demo seed, dashboard, alerts, and models. The suite
+is ~444 tests; 6 tests are skipped unless `IACCS_LIVE=1` (they run against a
+live iAccs connection). The release gate is `make audit` — all checks and
+tests must pass before delivery.
+
+---
+
+## 12. Deployment
+
+Reference configuration lives in `deploy/` (Gunicorn WSGI server +
+Nginx TLS termination; Django trusts `X-Forwarded-Proto`). Production is
+env-driven and stateless per request; durable state lives only in
+`DATABASE_URL` (external/managed Postgres). A containerization change
+(`containerized-production-deploy`) is in flight in `openspec/changes/`
+(Dockerfile + compose, host-level edge TLS, no-state-on-the-box) — check its
+artifacts for the latest deployment plan. The demo path is
+`migrate` + `seed_demo --seed 42` on a disposable database.
+
+---
+
+## 13. Contributing workflow (SDD + OpenSpec)
+
+Development is spec-driven: features live as **changes** under
+`openspec/changes/` (proposal → `specs/<capability>/spec.md` deltas →
+design → tasks), are implemented via `/opsx-apply`, synced into
+`openspec/specs/` on completion, and archived under
+`openspec/changes/archive/YYYY-MM-DD-<name>/`. Commit conventions
+(`.agents/skills/git-workflow/SKILL.md`): conventional commits
+(`feat:`, `fix:`, `docs(openspec):`, ...), English only, atomic, task-ID
+referenced; linear history via rebase. Validate with `openspec validate`.
+
+---
+
+## 14. Operations quick reference
+
+```bash
+# Daily delinquency snapshot + ECL consistency
+uv run python manage.py update_delinquency
+uv run python manage.py update_ecl_provisions
+
+# After a legacy data correction
+uv run python manage.py repair_legacy_npl_rows
+uv run python manage.py find_duplicates          # diagnostic
+
+# Backup / freshness
+# The local dev DB is remedial/db.sqlite3; move it aside to start fresh.
+# Demo reset:
+uv run python manage.py seed_demo --seed 42
+```

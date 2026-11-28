@@ -153,6 +153,12 @@ Without `--seed` the generated values vary per run (open play); the same
 > (`import_from_iaccs`, CSV imports) must never run on a demo host. The demo
 > database is fabricated data only.
 
+## Documentation
+
+- `docs/DEMO-USER-MANUAL.md` — demo guide for presenters and users (four role chapters, logins, demo data stories)
+- `docs/TECHNICAL-MANUAL.md` — full reference for developers and maintainers (domain model, derivation cascade, ingestion, commands, deployment)
+- `docs/DESIGN.md` — the original system design narrative
+
 ## Deployment
 
 `deploy/gunicorn.conf.py` and `deploy/nginx.conf` contain the reference
