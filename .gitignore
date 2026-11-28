@@ -1,4 +1,6 @@
 db.sqlite3
+*.sqlite
+*.sqlite3
 .venv/
 
 # Secrets: never commit real environment files (keep the example)
