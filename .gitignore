@@ -18,10 +18,8 @@ doc/*.md
 # OpenSpec specs and change artifacts are the source of record — track them
 !openspec/**/*.md
 
-# Tailwind standalone CLI binary (platform-specific, fetched by `make css`)
+# Removed: migrations are now versioned in git (containerized deploy needs fresh-clone migrate)
 /tools/
-**/migrations/*.py
-!**/migrations/__init__.py
 **/__pycache__/
 /staticfiles/
 *.log

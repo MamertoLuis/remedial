@@ -1,0 +1,28 @@
+# Build-context exclusions: keep secrets, VCS history, local caches and
+# environment-only artifacts out of the image and out of the build context.
+.git
+.venv
+**/__pycache__/
+*.pyc
+db.sqlite3
+*.sqlite
+*.sqlite3
+*.log
+.env
+.env-remote
+.env.*
+!.env.example
+backup_*.sqlite3
+backup_*.sql
+staticfiles
+tools
+.agents
+.reversa
+openspec
+docs
+scripts
+fix_*.py
+test_*.py
+route_sweep.py
+start_server.py
+server.log

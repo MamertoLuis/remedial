@@ -1,0 +1,47 @@
+# Demo posture fragment — apply on top of the base compose:
+#
+#   docker compose -f compose.yaml -f compose.demo.yaml up -d
+#
+# Adds the in-stack postgres + edge services and overrides web's environment
+# with demo values, so the whole fake stack runs with zero host configuration.
+# Compose merges fragments per service: the environment map below wins over
+# the base env_file for the same keys.
+
+services:
+  web:
+    environment:
+      DATABASE_URL: "postgres://remedial:demo-password-123@postgres:5432/remedial_demo"
+      SECRET_KEY: "demo-secret-key"
+      ALLOWED_HOSTS: "localhost,127.0.0.1"
+      SEED_DEMO_ON_BOOT: "1"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: remedial-demo-postgres
+    environment:
+      POSTGRES_DB: remedial_demo
+      POSTGRES_USER: remedial
+      POSTGRES_PASSWORD: demo-password-123
+    volumes:
+      - demo-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U remedial -d remedial_demo"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  edge:
+    image: nginx:1.27-alpine
+    container_name: remedial-demo-edge
+    ports:
+      - "80:80"
+    volumes:
+      - ./deploy/edge-demo.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - web
+
+volumes:
+  demo-postgres-data:

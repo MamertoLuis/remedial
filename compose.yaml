@@ -1,0 +1,27 @@
+# Remedial deployment — two postures, base compose + demo fragment.
+#
+#   production (default):  docker compose up -d
+#       web container only; DATABASE_URL points at external/managed Postgres;
+#       TLS terminates on a host-level edge (nginx/Caddy) outside the stack.
+#
+#   demo (one-shot):       docker compose -f compose.yaml -f compose.demo.yaml up -d
+#       adds in-stack postgres (named volume) and an edge nginx on port 80,
+#       and overrides web env with demo values (see compose.demo.yaml).
+#       See deploy/compose-topology.md.
+#
+# This file defines NO runtime defaults: missing SECRET_KEY / DATABASE_URL /
+# ALLOWED_HOSTS fail fast (production settings refuse insecure fallbacks).
+# The web container is stateless; all durable state lives in the database.
+
+services:
+  web:
+    build: .
+    ports:
+      # Loopback-only publish; the host edge (or the demo edge) is the only
+      # network path in. WEB_PORT is the optional host-side port (default 8000).
+      - "127.0.0.1:${WEB_PORT:-8000}:8000"
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DJANGO_SETTINGS_MODULE: remedial.settings.production
