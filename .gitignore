@@ -27,5 +27,6 @@ doc/*.md
 *.log
 media/
 .agents/
+.reversa/
 pi-sess.txt
 
