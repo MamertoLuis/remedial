@@ -2,7 +2,7 @@ from django.test import TestCase
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 
-from .forms import UserUpdateForm
+from users.forms import UserUpdateForm
 
 User = get_user_model()
 

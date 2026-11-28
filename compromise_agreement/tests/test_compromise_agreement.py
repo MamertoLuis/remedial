@@ -2,7 +2,7 @@ from django.test import TestCase, Client
 from django.urls import reverse
 from django.contrib.auth import get_user_model
 from account_master.models import Borrower, LoanAccount, RemedialStrategy
-from .models import CompromiseAgreement, CompromiseInstallment
+from compromise_agreement.models import CompromiseAgreement, CompromiseInstallment
 from decimal import Decimal
 from datetime import date, timedelta
 
