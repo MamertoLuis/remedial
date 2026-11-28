@@ -13,7 +13,11 @@ services:
       DATABASE_URL: "postgres://remedial:demo-password-123@postgres:5432/remedial_demo"
       SECRET_KEY: "demo-secret-key"
       ALLOWED_HOSTS: "localhost,127.0.0.1"
-      SEED_DEMO_ON_BOOT: "1"
+      SEED_DEMO_ON_BOOT: "0"
+      SECURE_SSL_REDIRECT: "0"
+      SECURE_HSTS_SECONDS: "0"
+    volumes:
+      - staticfiles-volume:/app/remedial/staticfiles
     depends_on:
       postgres:
         condition: service_healthy
@@ -40,8 +44,10 @@ services:
       - "80:80"
     volumes:
       - ./deploy/edge-demo.conf:/etc/nginx/conf.d/default.conf:ro
+      - staticfiles-volume:/app/remedial/staticfiles:ro
     depends_on:
       - web
 
 volumes:
   demo-postgres-data:
+  staticfiles-volume:
